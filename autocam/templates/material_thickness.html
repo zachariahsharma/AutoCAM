@@ -1,0 +1,624 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  <div class="col-md-4">
+    <div class="card gh-box mb-3">
+      <div class="card-body">
+        <h5>Material · Thickness</h5>
+        <div class="text-white-50"><strong>Material:</strong> {{ material }}</div>
+        <div class="text-white-50"><strong>Thickness:</strong> {{ thickness }}</div>
+        <form id="breakdownForm" method="post" action="{{ url_for('main.auto_breakdown_mt', material_enc=material|tojson|safe, thickness_enc=thickness|tojson|safe) }}" class="mt-3" onsubmit="return fixRoute()">
+          <input type="hidden" name="selected_parts_json" id="selected_parts_json" />
+          <input type="hidden" name="plates_json" id="plates_json" />
+          <input type="hidden" name="plate_parts_json" id="plate_parts_json" />
+          <button id="submitBtn" class="btn btn-primary" disabled>Request Auto Breakdown</button>
+          <div class="form-text mt-2 text-danger">Select at least one part and add at least one plate to proceed.</div>
+          <div class="form-text small text-white-50">Last updated: <span id="updatedAt">{{ updated_at }}</span></div>
+        </form>
+      </div>
+    </div>
+    <div class="card gh-box">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="m-0">Plates to Create</h6>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="addPlate()">Add Plate</button>
+        </div>
+        <ul class="list-group list-group-flush" id="platesList"></ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card gh-box mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="m-0">Available Parts</h6>
+          <button class="btn btn-sm btn-outline-primary" onclick="selectAllRecommended()">Select All (Recommended)</button>
+        </div>
+        <ul class="list-group list-group-flush" style="max-height:420px; overflow:auto;" id="partsList">
+          {% for p in parts_info %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">{{ p.display }}</div>
+              <div class="small text-white-50">Recommended: {{ p.recommended }} • Available: {{ p.available }} • ID: {{ p.id }}</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="input-group input-group-sm" style="width: 200px;">
+                <button class="btn btn-outline-primary" type="button" onclick="decQty('{{ p.id }}')">-</button>
+                <input id="qty-{{ p.id }}" type="number" min="0" step="1" class="form-control gh-input text-center text-white" value="0" onchange="updateSelection('{{ p.id }}')">
+                <button class="btn btn-outline-primary" type="button" onclick="incQty('{{ p.id }}')">+</button>
+              </div>
+            </div>
+          </li>
+          {% else %}
+          <li class="list-group-item">No parts.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="card gh-box" id="assignCard" style="display:none;">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="m-0">Assign Parts to Plates</h6>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="unassignAll()">Unassign All</button>
+          </div>
+        </div>
+        <div class="row g-3" id="assignRow">
+          <div class="col-lg-4">
+            <div class="gh-box p-2">
+              <div class="small text-white-50 mb-2">Unassigned</div>
+              <ul id="assign-unassigned" class="list-group list-group-flush min-vh-25" style="min-height:220px;"></ul>
+            </div>
+          </div>
+          <div class="col-lg-8" id="assignPlates"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script>
+const selected = new Map();
+let platesState = [];
+let sortables = [];
+const initialSelected = {{ (initial_selected or [])|tojson }};
+const initialPlates = {{ (initial_plates or [])|tojson }};
+const initialAssignments = {{ (initial_assignments or [])|tojson }};
+let saveTimer = null;
+let lastUpdated = '{{ updated_at or "" }}';
+let lastUpdatedBy = '{{ updated_by or "" }}';
+let suppressPoll = false;
+
+// Build a lookup for display names once
+const PARTS_INFO = {{ (parts_info or [])|tojson }};
+const DISPLAY_BY_ID = Object.fromEntries((PARTS_INFO || []).map(p => [p.id, p.display]));
+
+function setUpdated(ts){
+  lastUpdated = ts || '';
+  document.getElementById('updatedAt').textContent = lastUpdated;
+}
+
+function debounceSave(){
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(persistState, 400);
+}
+
+async function persistState(){
+  try{
+    const resp = await fetch(`{{ url_for('main.save_mt_session', material_enc=material|tojson|safe, thickness_enc=thickness|tojson|safe) }}`.replaceAll('"',''), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        selected_parts: Array.from(selected.entries()).map(([id,q])=>({id, quantity:q})),
+        plates: platesState,
+        assignments: collectAssignments(),
+      })
+    });
+    if(resp.ok){
+      // fetch fresh stamp
+      await pollOnce();
+    }
+  } catch(e) { /* ignore transient errors */ }
+}
+
+async function pollOnce(){
+  try{
+    if (suppressPoll) return;
+    const url = `{{ url_for('main.mt_state', material_enc=material|tojson|safe, thickness_enc=thickness|tojson|safe) }}`.replaceAll('"','');
+    const resp = await fetch(url);
+    if(!resp.ok) return;
+    const data = await resp.json();
+    // Always apply state to avoid staleness if updatedAt/updatedBy did not change
+    setUpdated(data.updatedAt || lastUpdated);
+    lastUpdatedBy = data.updatedBy || lastUpdatedBy;
+    // Selected
+    selected.clear();
+    (data.selected_parts||[]).forEach(({id, quantity}) => { selected.set(id, quantity); const el = document.getElementById(`qty-${encode(id)}`); if(el){ el.value = String(quantity); } });
+    // Plates
+    platesState = (data.plates||[]).map(p => ({
+      id: p.plateId || p.id || crypto.randomUUID(),
+      Width: p.Width||24,
+      Length: p.Length||48,
+      trueDepth: p.trueDepth||{{ thickness|tojson }},
+      verifiedSignature: p.verifiedSignature || '',
+      cam_download_url: p.cam_download_url || '',
+      cam_bundle_rel: p.cam_bundle_rel || '',
+      screenshot_url: p.screenshot_url || ''
+    }));
+    renderPlates();
+    // Assignments
+    (data.assignments||[]).forEach(({plateId, parts}) => {
+      const ul = document.getElementById(`assign-${plateId}`);
+      if(!ul) return;
+      (parts||[]).forEach(({id, quantity}) => { for(let i=0;i<quantity;i++) ul.appendChild(tokenLi(id)); });
+    });
+    rebuildAssignmentTokens();
+    syncPayloadAndEnable();
+    updateCamButtons();
+    // Clear cooking state if a bundle or screenshot arrived
+    platesState.forEach(p => {
+      if (p.cam_download_url || p.screenshot_url) {
+        setCamCooking(p.id, false);
+        const st = document.getElementById(`cam-status-${p.id}`);
+        if (st) {
+          st.textContent = p.cam_download_url ? 'Bundle ready' : 'Screenshot updated';
+          st.classList.add('ready');
+        }
+      }
+    });
+  } catch(e) {}
+}
+
+setInterval(pollOnce, 3000);
+
+function encode(name){
+  return CSS.escape(name);
+}
+
+function incQty(id){
+  const el = document.getElementById(`qty-${encode(id)}`);
+  el.value = (parseInt(el.value || '0', 10) + 1).toString();
+  updateSelection(id);
+}
+function decQty(id){
+  const el = document.getElementById(`qty-${encode(id)}`);
+  el.value = Math.max(0, parseInt(el.value || '0', 10) - 1).toString();
+  updateSelection(id);
+}
+function trimAssignedToSelectionFor(pid){
+  const target = selected.get(pid) || 0;
+  const assignedLis = [];
+  platesState.forEach(p => {
+    const ul = document.getElementById(`assign-${p.id}`);
+    if(!ul) return;
+    ul.querySelectorAll('li').forEach(li => { if(li.dataset.partId === pid){ assignedLis.push(li); } });
+  });
+  let extra = assignedLis.length - target;
+  while(extra > 0 && assignedLis.length){
+    const li = assignedLis.pop();
+    if(li && li.parentElement){ li.parentElement.removeChild(li); }
+    extra--;
+  }
+}
+
+function updateSelection(id){
+  const el = document.getElementById(`qty-${encode(id)}`);
+  const qty = parseInt(el.value || '0', 10);
+  if(qty > 0){ selected.set(id, qty); } else { selected.delete(id); }
+  // Immediately trim assigned tokens for this id if decreased
+  trimAssignedToSelectionFor(id);
+  rebuildAssignmentTokens();
+  syncPayloadAndEnable();
+  debounceSave();
+}
+
+function snapshotAssignments(){
+  const perPlate = new Map();
+  platesState.forEach(p => {
+    const ul = document.getElementById(`assign-${p.id}`);
+    if(!ul) { perPlate.set(p.id, []); return; }
+    const arr = [];
+    ul.querySelectorAll('li').forEach(li => arr.push(li.dataset.partId));
+    perPlate.set(p.id, arr);
+  });
+  // Compute remaining (unassigned) from DOM as well
+  const unassigned = [];
+  const unEl = document.getElementById('assign-unassigned');
+  if(unEl){ unEl.querySelectorAll('li').forEach(li => unassigned.push(li.dataset.partId)); }
+  return { perPlate, unassigned };
+}
+
+function tokenLi(pid){
+  const li = document.createElement('li');
+  li.className = 'list-group-item d-flex justify-content-between align-items-center';
+  li.dataset.partId = pid;
+  const name = DISPLAY_BY_ID[pid] || pid;
+  li.innerHTML = `<span>${name}</span><span class="badge bg-primary">1</span>`;
+  return li;
+}
+
+function addPlate(){
+  const snap = snapshotAssignments();
+  const newPlate = { id: crypto.randomUUID(), Width: 24, Length: 48, trueDepth: {{ thickness|tojson }} };
+  platesState.push(newPlate);
+  renderPlates(snap);
+  debounceSave();
+}
+function removePlate(pid){
+  const snap = snapshotAssignments();
+  platesState = platesState.filter(p => p.id !== pid);
+  renderPlates(snap);
+  debounceSave();
+}
+function onPlateField(pid, field, value){
+  const p = platesState.find(x => x.id === pid);
+  if(!p) return;
+  const num = Number(value);
+  p[field] = isNaN(num) ? 0 : num;
+  syncPayloadAndEnable();
+  debounceSave();
+}
+function renderPlates(snap){
+  const ul = document.getElementById('platesList');
+  ul.innerHTML = '';
+  platesState.forEach((p, idx) => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item';
+    li.innerHTML = `
+      <div class="d-flex align-items-end justify-content-between flex-wrap gap-2">
+        <div>
+          <div class="small text-white-50">Plate ${idx+1}</div>
+          <div class="row g-2">
+            <div class="col-4">
+              <label class="form-label small">Width</label>
+              <input type="number" step="0.01" min="0" class="form-control text-white form-control-sm gh-input" value="${p.Width}" onchange="onPlateField('${p.id}','Width',this.value)">
+            </div>
+            <div class="col-4">
+              <label class="form-label small">Length</label>
+              <input type="number" step="0.01" min="0" class="form-control text-white form-control-sm gh-input" value="${p.Length}" onchange="onPlateField('${p.id}','Length',this.value)">
+            </div>
+            <div class="col-4">
+              <label class="form-label small">True Depth</label>
+              <input type="number" step="0.001" min="0" class="form-control form-control-sm gh-input text-white" value="${p.trueDepth||0}" onchange="onPlateField('${p.id}','trueDepth',this.value)">
+            </div>
+          </div>
+        </div>
+        <div>
+          <button type="button" class="btn btn-sm btn-danger" onclick="removePlate('${p.id}')">Remove</button>
+        </div>
+      </div>`;
+    ul.appendChild(li);
+  });
+  rebuildAssignmentLayout();
+  // Restore assignments if snapshot provided
+  if(snap){
+    platesState.forEach(p => {
+      const arr = snap.perPlate.get(p.id) || [];
+      const list = document.getElementById(`assign-${p.id}`);
+      arr.forEach(pid => list && list.appendChild(tokenLi(pid)));
+    });
+  }
+  rebuildAssignmentTokens();
+  syncPayloadAndEnable();
+  updateCamButtons();
+}
+
+function formValid(){
+  if(selected.size === 0) return false;
+  if(platesState.length === 0) return false;
+  return platesState.every(p => (p.Width>0 && p.Length>0 && p.trueDepth>0));
+}
+
+function syncPayloadAndEnable(){
+  document.getElementById('selected_parts_json').value = JSON.stringify(Array.from(selected.entries()).map(([pid,q])=>({id:pid, quantity:q})));
+  document.getElementById('plates_json').value = JSON.stringify(platesState);
+  document.getElementById('plate_parts_json').value = JSON.stringify(collectAssignments());
+  document.getElementById('submitBtn').disabled = !formValid();
+  document.getElementById('assignCard').style.display = formValid() ? '' : 'none';
+  updateCamButtons();
+}
+
+function selectAllRecommended(){
+  {% for p in parts_info %}
+  const el_{{ loop.index }} = document.getElementById(`qty-{{ p.id }}`);
+  if(el_{{ loop.index }}){ el_{{ loop.index }}.value = String({{ p.recommended }}); }
+  if({{ p.recommended }}){ selected.set("{{ p.id }}", {{ p.recommended }}); } else { selected.delete("{{ p.id }}"); }
+  {% endfor %}
+  rebuildAssignmentTokens();
+  syncPayloadAndEnable();
+  debounceSave();
+}
+
+function fixRoute(){
+  const form = event.target;
+  const m = encodeURIComponent({{ material|tojson }});
+  const t = encodeURIComponent({{ (thickness|string)|tojson }});
+  form.action = `/mt/${m}/${t}/auto_breakdown`;
+  return true;
+}
+
+// Drag-and-drop assignment
+function clearSortables(){
+  sortables.forEach(s => s.destroy && s.destroy());
+  sortables = [];
+}
+
+function moveAllUnassignedToPlate(plateId){
+  const unassigned = document.getElementById('assign-unassigned');
+  const target = document.getElementById(`assign-${plateId}`);
+  if(!unassigned || !target) return;
+  const items = Array.from(unassigned.querySelectorAll('li'));
+  items.forEach(li => target.appendChild(li));
+  syncPayloadAndEnable();
+  debounceSave();
+}
+
+function rebuildAssignmentLayout(){
+  const container = document.getElementById('assignPlates');
+  container.innerHTML = '';
+  platesState.forEach((p, idx) => {
+    const col = document.createElement('div');
+    col.className = 'mb-3';
+    // Modal for screenshot (if exists)
+    const modal = p.screenshot_url ? `
+    <div class="modal fade screenshot-modal" id="shot-${p.id}" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title">Plate ${idx+1} Screenshot</h6>
+            <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Close" style="filter:none;"></button>
+          </div>
+          <div class="modal-body"><img src="${p.screenshot_url}" class="img-fluid screenshot-img"/></div>
+        </div>
+      </div>
+    </div>` : '';
+    col.innerHTML = `
+      <div id="plate-box-${p.id}" class="gh-box p-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="small text-white-50">Plate ${idx+1}</div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="moveAllUnassignedToPlate('${p.id}')">Fill with Unassigned</button>
+          </div>
+        </div>
+        <ul id="assign-${p.id}" class="list-group list-group-flush min-vh-25" style="min-height:220px;"></ul>
+        <div id="cam-controls-${p.id}" class="mt-2" style="display:none;">
+          <form onsubmit="return sendCam('${p.id}', this)">
+            <div class="d-flex align-items-center gap-2">
+              <select name="machine" class="form-select form-select-sm text-white gh-input d-inline w-auto">
+                <option value="IQ">IQ</option>
+                <option value="Swift">Swift</option>
+              </select>
+              <button class="btn btn-sm btn-primary" type="submit">CAM</button>
+              ${(p.cam_bundle_rel && p.cam_download_url) ? `<a class="btn btn-sm btn-outline-primary" href="${p.cam_download_url}" target="_blank" rel="noopener noreferrer">Download</a>` : ''}
+              ${p.screenshot_url ? `<button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#shot-${p.id}">View Screenshot</button>` : ''}
+              <span id="cam-status-${p.id}" class="cam-status"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+      ${modal}`;
+    container.appendChild(col);
+  });
+  initSortable();
+}
+
+function rebuildAssignmentTokens(){
+  // Trim assigned tokens if selection decreased
+  const pidSet = new Set();
+  selected.forEach((_, pid) => pidSet.add(pid));
+  platesState.forEach(p => {
+    const ul = document.getElementById(`assign-${p.id}`);
+    if(!ul) return;
+    ul.querySelectorAll('li').forEach(li => pidSet.add(li.dataset.partId));
+  });
+  pidSet.forEach(pid => {
+    const target = selected.get(pid) || 0;
+    // collect all assigned tokens for this pid across plates
+    const assignedLis = [];
+    platesState.forEach(p => {
+      const ul = document.getElementById(`assign-${p.id}`);
+      if(!ul) return;
+      ul.querySelectorAll('li').forEach(li => { if(li.dataset.partId === pid){ assignedLis.push(li); } });
+    });
+    let extra = assignedLis.length - target;
+    while(extra > 0 && assignedLis.length){
+      const li = assignedLis.pop();
+      if(li && li.parentElement){ li.parentElement.removeChild(li); }
+      extra--;
+    }
+  });
+
+  // Build tokens in unassigned based on selected quantities minus assigned counts
+  const unassigned = document.getElementById('assign-unassigned');
+  if(!unassigned) return;
+  const assignedCounts = aggregateAssignedCounts();
+  unassigned.innerHTML = '';
+  for(const [pid, total] of selected.entries()){
+    const assigned = assignedCounts.get(pid) || 0;
+    const remaining = Math.max(0, total - assigned);
+    for(let i=0;i<remaining;i++){
+      unassigned.appendChild(tokenLi(pid));
+    }
+  }
+}
+
+function initSortable(){
+  clearSortables();
+  const lists = [document.getElementById('assign-unassigned')];
+  platesState.forEach(p => lists.push(document.getElementById(`assign-${p.id}`)) );
+  lists.forEach(list => {
+    if(!list) return;
+    const s = new Sortable(list, {
+      group: 'assign',
+      animation: 150,
+      onAdd(){ syncPayloadAndEnable(); rebuildAssignmentTokens(); debounceSave(); },
+      onEnd(){ syncPayloadAndEnable(); rebuildAssignmentTokens(); debounceSave(); },
+    });
+    sortables.push(s);
+  });
+}
+
+function aggregateAssignedCounts(){
+  const counts = new Map();
+  platesState.forEach(p => {
+    const ul = document.getElementById(`assign-${p.id}`);
+    if(!ul) return;
+    ul.querySelectorAll('li').forEach(li => {
+      const pid = li.dataset.partId;
+      counts.set(pid, (counts.get(pid)||0) + 1);
+    });
+  });
+  return counts;
+}
+
+function collectAssignments(){
+  const res = [];
+  platesState.forEach(p => {
+    const ul = document.getElementById(`assign-${p.id}`);
+    if(!ul) return;
+    const counts = new Map();
+    ul.querySelectorAll('li').forEach(li => {
+      const pid = li.dataset.partId;
+      counts.set(pid, (counts.get(pid)||0) + 1);
+    });
+    const parts = Array.from(counts.entries()).map(([id,q])=>({id, quantity:q}));
+    res.push({ plateId: p.id, parts });
+  });
+  return res;
+}
+
+function autoPropagate(){
+  // Move remaining tokens from unassigned to Plate 1
+  const unassigned = document.getElementById('assign-unassigned');
+  if(!platesState.length) return;
+  const firstPlateUl = document.getElementById(`assign-${platesState[0].id}`);
+  if(!unassigned || !firstPlateUl) return;
+  const items = Array.from(unassigned.querySelectorAll('li'));
+  items.forEach(li => firstPlateUl.appendChild(li));
+  syncPayloadAndEnable();
+  debounceSave();
+}
+
+function unassignAll(){
+  const unassigned = document.getElementById('assign-unassigned');
+  platesState.forEach(p => {
+    const ul = document.getElementById(`assign-${p.id}`);
+    if(!ul) return;
+    const items = Array.from(ul.querySelectorAll('li'));
+    items.forEach(li => unassigned.appendChild(li));
+  });
+  syncPayloadAndEnable();
+  debounceSave();
+}
+
+function currentPlateSignature(plateId){
+  const ul = document.getElementById(`assign-${plateId}`);
+  if(!ul) return '';
+  const counts = new Map();
+  ul.querySelectorAll('li').forEach(li => {
+    const pid = li.dataset.partId;
+    counts.set(pid, (counts.get(pid)||0)+1);
+  });
+  return Array.from(counts.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([pid,q])=>`${pid}:${q}`).join(',');
+}
+
+function updateCamButtons(){
+  platesState.forEach(p => {
+    const ctrl = document.getElementById(`cam-controls-${p.id}`);
+    const box = document.getElementById(`plate-box-${p.id}`);
+    if(!ctrl || !box) return;
+    const hasParts = (document.getElementById(`assign-${p.id}`)?.querySelectorAll('li').length || 0) > 0;
+    const sigOk = (p.verifiedSignature || '') === currentPlateSignature(p.id);
+    const show = hasParts && sigOk;
+    ctrl.style.display = show ? '' : 'none';
+    if(show){ box.classList.add('plate-ready'); } else { box.classList.remove('plate-ready'); }
+  });
+}
+
+function setCamCooking(plateId, cooking){
+  const box = document.getElementById(`plate-box-${plateId}`);
+  const status = document.getElementById(`cam-status-${plateId}`);
+  if(!box) return;
+  if(cooking){
+    box.classList.add('plate-cooking');
+    if(status){ status.textContent = 'Sending to CAM...'; status.classList.remove('ready','error'); }
+  } else {
+    box.classList.remove('plate-cooking');
+    if(status){ status.textContent = ''; status.classList.remove('ready','error'); }
+  }
+}
+
+function sendCam(plateId, form){
+  const plate = platesState.find(p => p.id === plateId);
+  if(!plate) return false;
+  const ul = document.getElementById(`assign-${plateId}`);
+  const counts = new Map();
+  ul.querySelectorAll('li').forEach(li => { const pid=li.dataset.partId; counts.set(pid,(counts.get(pid)||0)+1); });
+  const parts = Array.from(counts.entries()).map(([id,q])=>({name:id, quantity:q}));
+  const machine = form.querySelector('select[name="machine"]').value || 'IQ';
+  const body = {
+    material: {{ material|tojson }},
+    trueDepth: plate.trueDepth,
+    width: plate.Width,
+    length: plate.Length,
+    machine: machine,
+    parts: parts,
+    thickness: {{ (thickness|string)|tojson }}
+  };
+  setCamCooking(plateId, true);
+  fetch(`/mt/${encodeURIComponent({{ material|tojson }}.replaceAll('"',''))}/${encodeURIComponent(String({{ (thickness|string)|tojson }}).replaceAll('"',''))}/cam_json/${plateId}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  }).then(()=>{ debounceSave(); setTimeout(pollOnce, 1000); }).catch(()=>{ setCamCooking(plateId, false); });
+  return false;
+}
+
+// Initialize from server state
+(function initFromServer(){
+  setUpdated('{{ updated_at or "" }}');
+  // Selected
+  (initialSelected || []).forEach(({id, quantity}) => {
+    const el = document.getElementById(`qty-${encode(id)}`);
+    if(el){ el.value = String(quantity); selected.set(id, quantity); }
+  });
+  // Plates (carry additional fields)
+  if(Array.isArray(initialPlates) && initialPlates.length){
+    platesState = initialPlates.map(p => ({
+      id: p.id || crypto.randomUUID(),
+      Width: p.Width||24,
+      Length: p.Length||48,
+      trueDepth: p.trueDepth||{{ thickness|tojson }},
+      verifiedSignature: p.verifiedSignature || '',
+      cam_download_url: p.cam_download_url || '',
+        cam_bundle_rel: p.cam_bundle_rel || '',
+      screenshot_url: p.screenshot_url || ''
+    }));
+  }
+  renderPlates();
+  // Assignments
+  (initialAssignments || []).forEach(({plateId, parts}) => {
+    const ul = document.getElementById(`assign-${plateId}`);
+    if(!ul) return;
+    (parts||[]).forEach(({id, quantity}) => {
+      for(let i=0;i<quantity;i++) ul.appendChild(tokenLi(id));
+    });
+  });
+  rebuildAssignmentTokens();
+  syncPayloadAndEnable();
+  updateCamButtons();
+})();
+
+// Pause polling when screenshot modal is open to avoid re-rendering under the modal
+document.addEventListener('shown.bs.modal', function (e) {
+  if (e.target && e.target.classList.contains('screenshot-modal')) {
+    suppressPoll = true;
+  }
+});
+document.addEventListener('hidden.bs.modal', function (e) {
+  if (e.target && e.target.classList.contains('screenshot-modal')) {
+    suppressPoll = false;
+    setTimeout(pollOnce, 100);
+  }
+});
+</script>
+{% endblock %} 

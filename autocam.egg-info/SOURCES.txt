@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+autocam/__init__.py
+autocam/admin.py
+autocam/app.py
+autocam/auth.py
+autocam/db.py
+autocam/models.py
+autocam/routes.py
+autocam.egg-info/PKG-INFO
+autocam.egg-info/SOURCES.txt
+autocam.egg-info/dependency_links.txt
+autocam.egg-info/top_level.txt
+tests/test_app.py

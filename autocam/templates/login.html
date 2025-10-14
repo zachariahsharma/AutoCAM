@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container login-white" style="max-width:460px;">
+  <div class="card gh-box">
+    <div class="card-body">
+      <h3 class="mb-3">Login</h3>
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input name="email" type="text" id="emailInput" class="form-control gh-input" placeholder="valor" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input name="password" type="password" id="passwordInput" class="form-control gh-input" placeholder="Your password" required>
+        </div>
+        <button class="btn btn-primary w-100">Login</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %} 

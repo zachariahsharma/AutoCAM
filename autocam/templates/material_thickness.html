@@ -79,6 +79,17 @@
   </div>
 </div>
 <script>
+// UUID helper for browsers/environments without crypto.randomUUID
+function uuidv4(){
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+  // Fallback RFC4122-ish UUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
 const selected = new Map();
 let platesState = [];
 let sortables = [];
@@ -137,7 +148,7 @@ async function pollOnce(){
     (data.selected_parts||[]).forEach(({id, quantity}) => { selected.set(id, quantity); const el = document.getElementById(`qty-${encode(id)}`); if(el){ el.value = String(quantity); } });
     // Plates
     platesState = (data.plates||[]).map(p => ({
-      id: p.plateId || p.id || crypto.randomUUID(),
+      id: p.plateId || p.id || uuidv4(),
       Width: p.Width||24,
       Length: p.Length||48,
       trueDepth: p.trueDepth||{{ thickness|tojson }},
@@ -240,7 +251,7 @@ function tokenLi(pid){
 
 function addPlate(){
   const snap = snapshotAssignments();
-  const newPlate = { id: crypto.randomUUID(), Width: 24, Length: 48, trueDepth: {{ thickness|tojson }} };
+  const newPlate = { id: uuidv4(), Width: 24, Length: 48, trueDepth: {{ thickness|tojson }} };
   platesState.push(newPlate);
   renderPlates(snap);
   debounceSave();
@@ -584,7 +595,7 @@ function sendCam(plateId, form){
   // Plates (carry additional fields)
   if(Array.isArray(initialPlates) && initialPlates.length){
     platesState = initialPlates.map(p => ({
-      id: p.id || crypto.randomUUID(),
+      id: p.id || uuidv4(),
       Width: p.Width||24,
       Length: p.Length||48,
       trueDepth: p.trueDepth||{{ thickness|tojson }},

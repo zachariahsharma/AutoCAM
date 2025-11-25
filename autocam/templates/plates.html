@@ -17,6 +17,16 @@
 </div>
 
 <script>
+// UUID helper for browsers/environments without crypto.randomUUID
+function uuidv4(){
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
 const initialPlates = {{ plates_doc.plates|tojson }};
 
 function renderPlates() {
@@ -98,7 +108,7 @@ function renderPlates() {
 }
 
 function addPlate(){
-  initialPlates.push({ plateId: crypto.randomUUID(), name: `Plate ${initialPlates.length+1}`, Width: 24, Length: 48, trueDepth: {{ plates_doc.thickness|tojson }}, Parts: [] });
+  initialPlates.push({ plateId: uuidv4(), name: `Plate ${initialPlates.length+1}`, Width: 24, Length: 48, trueDepth: {{ plates_doc.thickness|tojson }}, Parts: [] });
   renderPlates();
 }
 

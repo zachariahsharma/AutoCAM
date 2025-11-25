@@ -135,25 +135,20 @@ def set_plate_download(doc_id: str, plate_id: str, download_url: str) -> None:
 
 
 def save_draft(user_id: str, task_id: str, payload: dict[str, Any]) -> str:
-    db = get_db()
-    existing = db.drafts.find_one({"user_id": ObjectId(user_id), "task_id": task_id})
-    if existing:
-        db.drafts.update_one({"_id": existing["_id"]}, {"$set": {"payload": payload}})
-        return str(existing["_id"])
-    did = db.drafts.insert_one({"user_id": ObjectId(user_id), "task_id": task_id, "payload": payload}).inserted_id
-    return str(did)
+    """Deprecated: drafts feature removed. Left as no-op for safety."""
+    return ""
 
 
 def list_drafts(user_id: str) -> list[dict[str, Any]]:
-    db = get_db()
-    return list(db.drafts.find({"user_id": ObjectId(user_id)}))
+    """Deprecated: drafts feature removed. Always returns empty list."""
+    return []
 
 
 def get_draft(draft_id: str, user_id: str) -> Optional[dict[str, Any]]:
-    db = get_db()
-    return db.drafts.find_one({"_id": ObjectId(draft_id), "user_id": ObjectId(user_id)})
+    """Deprecated: drafts feature removed. Always returns None."""
+    return None
 
 
 def delete_draft(draft_id: str, user_id: str) -> None:
-    db = get_db()
-    db.drafts.delete_one({"_id": ObjectId(draft_id), "user_id": ObjectId(user_id)}) 
+    """Deprecated: drafts feature removed. No-op."""
+    return None

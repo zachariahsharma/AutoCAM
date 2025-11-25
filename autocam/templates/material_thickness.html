@@ -31,28 +31,74 @@
     <div class="card gh-box mb-3">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="m-0">Available Parts</h6>
+          <h6 class="m-0">Available Parts by Epic</h6>
           <button class="btn btn-sm btn-outline-primary" onclick="selectAllRecommended()">Select All (Recommended)</button>
         </div>
-        <ul class="list-group list-group-flush" style="max-height:420px; overflow:auto;" id="partsList">
-          {% for p in parts_info %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <div class="fw-semibold">{{ p.display }}</div>
-              <div class="small text-white-50">Recommended: {{ p.recommended }} • Available: {{ p.available }} • ID: {{ p.id }}</div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-              <div class="input-group input-group-sm" style="width: 200px;">
-                <button class="btn btn-outline-primary" type="button" onclick="decQty('{{ p.id }}')">-</button>
-                <input id="qty-{{ p.id }}" type="number" min="0" step="1" class="form-control gh-input text-center text-white" value="0" onchange="updateSelection('{{ p.id }}')">
-                <button class="btn btn-outline-primary" type="button" onclick="incQty('{{ p.id }}')">+</button>
+        <div style="max-height:420px; overflow:auto;" id="partsList">
+          {% if epic_groups and epic_groups|length %}
+            {% if box_tubes and box_tubes|length %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold text-white-50">Box Tubes</span>
               </div>
+              <ul class="list-group list-group-flush">
+                {% for t in box_tubes %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-semibold">{{ t.display }}</div>
+                    <div class="small text-white-50">
+                      ID: {{ t.id }}{% if t.recommended %} • Recommended: {{ t.recommended }}{% endif %}
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-primary" type="button" onclick="camTube('{{ t.id }}', this)">CAM (IQ)</button>
+                    <span class="small text-white-50" data-tube-status-for="{{ t.id }}"></span>
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
             </div>
-          </li>
+            {% endif %}
+            {% for group in epic_groups %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold text-white-50">{{ group.epic }}</span>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-light epic-toggle-btn"
+                  data-epic="{{ group.epic }}"
+                  onclick="toggleEpic('{{ group.epic }}', this)"
+                >
+                  Insert
+                </button>
+              </div>
+              <ul class="list-group list-group-flush">
+                {% for p in group.parts %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-semibold">{{ p.display }}</div>
+                    <div class="small text-white-50">
+                      Recommended: {{ p.recommended }} • Available: {{ p.available }} • ID: {{ p.id }}
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm" style="width: 200px;">
+                      <button class="btn btn-outline-primary" type="button" onclick="decQty('{{ p.id }}')">-</button>
+                      <input id="qty-{{ p.id }}" type="number" min="0" step="1" class="form-control gh-input text-center text-white" value="0" onchange="updateSelection('{{ p.id }}')">
+                      <button class="btn btn-outline-primary" type="button" onclick="incQty('{{ p.id }}')">+</button>
+                    </div>
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% endfor %}
           {% else %}
-          <li class="list-group-item">No parts.</li>
-          {% endfor %}
-        </ul>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">No parts.</li>
+          </ul>
+          {% endif %}
+        </div>
       </div>
     </div>
 
@@ -140,30 +186,36 @@ async function pollOnce(){
     const resp = await fetch(url);
     if(!resp.ok) return;
     const data = await resp.json();
-    // Always apply state to avoid staleness if updatedAt/updatedBy did not change
+    // Always refresh timestamps and CAM-related info, but avoid overwriting local selections
+    // to prevent counters from \"jumping\" while the user is editing.
     setUpdated(data.updatedAt || lastUpdated);
     lastUpdatedBy = data.updatedBy || lastUpdatedBy;
-    // Selected
-    selected.clear();
-    (data.selected_parts||[]).forEach(({id, quantity}) => { selected.set(id, quantity); const el = document.getElementById(`qty-${encode(id)}`); if(el){ el.value = String(quantity); } });
-    // Plates
-    platesState = (data.plates||[]).map(p => ({
+    // Update CAM-related plate metadata without touching current selections.
+    const incomingPlates = (data.plates || []).map(p => ({
       id: p.plateId || p.id || uuidv4(),
-      Width: p.Width||24,
-      Length: p.Length||48,
-      trueDepth: p.trueDepth||{{ thickness|tojson }},
+      Width: p.Width || 24,
+      Length: p.Length || 48,
+      trueDepth: p.trueDepth || {{ thickness|tojson }},
       verifiedSignature: p.verifiedSignature || '',
       cam_download_url: p.cam_download_url || '',
       cam_bundle_rel: p.cam_bundle_rel || '',
       screenshot_url: p.screenshot_url || ''
     }));
-    renderPlates();
-    // Assignments
-    (data.assignments||[]).forEach(({plateId, parts}) => {
-      const ul = document.getElementById(`assign-${plateId}`);
-      if(!ul) return;
-      (parts||[]).forEach(({id, quantity}) => { for(let i=0;i<quantity;i++) ul.appendChild(tokenLi(id)); });
+    // Merge incoming plate CAM metadata into existing platesState by id,
+    // but do not add new plates or overwrite dimensions so that plate edits
+    // only propagate from the server on initial page load.
+    const byId = new Map(platesState.map(p => [p.id, p]));
+    incomingPlates.forEach(p => {
+      const existing = byId.get(p.id);
+      if (existing) {
+        existing.verifiedSignature = p.verifiedSignature;
+        existing.cam_download_url = p.cam_download_url;
+        existing.cam_bundle_rel = p.cam_bundle_rel;
+        existing.screenshot_url = p.screenshot_url;
+      }
     });
+    renderPlates();
+    // Re-apply current selected/assignments purely from local state
     rebuildAssignmentTokens();
     syncPayloadAndEnable();
     updateCamButtons();
@@ -222,6 +274,8 @@ function updateSelection(id){
   rebuildAssignmentTokens();
   syncPayloadAndEnable();
   debounceSave();
+  // Keep epic Insert/Remove buttons in sync with current quantities
+  refreshAllEpicButtons();
 }
 
 function snapshotAssignments(){
@@ -339,6 +393,7 @@ function selectAllRecommended(){
   rebuildAssignmentTokens();
   syncPayloadAndEnable();
   debounceSave();
+  refreshAllEpicButtons();
 }
 
 function fixRoute(){
@@ -584,6 +639,86 @@ function sendCam(plateId, form){
   return false;
 }
 
+function camTube(partId, btn){
+  const statusEl = document.querySelector(`[data-tube-status-for=\"${CSS.escape(partId)}\"]`);
+  if(statusEl){ statusEl.textContent = 'Sending to CAM...'; }
+  if(btn){ btn.disabled = true; }
+  const m = encodeURIComponent({{ material|tojson }}.replaceAll('"',''));
+  const t = encodeURIComponent(String({{ (thickness|string)|tojson }}).replaceAll('"',''));
+  fetch(`/mt/${m}/${t}/cam_tube/${encodeURIComponent(partId)}`, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  }).then(resp => {
+    if(statusEl){
+      if(resp.ok){
+        statusEl.textContent = 'CAM request sent';
+      } else {
+        statusEl.textContent = 'Error sending CAM';
+      }
+    }
+  }).catch(() => {
+    if(statusEl){ statusEl.textContent = 'Error sending CAM'; }
+  }).finally(() => {
+    if(btn){ btn.disabled = false; }
+  });
+}
+
+function isEpicAtRecommended(epic){
+  let any = false;
+  let allMatch = true;
+  (PARTS_INFO || []).forEach(p => {
+    if (p.epic === epic) {
+      any = true;
+      const rec = Number(p.recommended) || 0;
+      const el = document.getElementById(`qty-${encode(p.id)}`);
+      const current = el ? Number(el.value || '0') : 0;
+      if (current !== rec) {
+        allMatch = false;
+      }
+    }
+  });
+  return any && allMatch;
+}
+
+function updateEpicButtonLabel(epic){
+  const btn = document.querySelector(`.epic-toggle-btn[data-epic=\"${CSS.escape(epic)}\"]`);
+  if (!btn) return;
+  if (isEpicAtRecommended(epic)) {
+    btn.textContent = 'Remove';
+  } else {
+    btn.textContent = 'Insert';
+  }
+}
+
+function refreshAllEpicButtons(){
+  const buttons = document.querySelectorAll('.epic-toggle-btn[data-epic]');
+  buttons.forEach(btn => {
+    const epic = btn.getAttribute('data-epic') || '';
+    updateEpicButtonLabel(epic);
+  });
+}
+
+function toggleEpic(epic, btn){
+  const atRec = isEpicAtRecommended(epic);
+  (PARTS_INFO || []).forEach(p => {
+    if (p.epic === epic) {
+      const targetQty = atRec ? 0 : (Number(p.recommended) || 0);
+      const el = document.getElementById(`qty-${encode(p.id)}`);
+      if (!el) return;
+      el.value = String(targetQty);
+      if (targetQty > 0) {
+        selected.set(p.id, targetQty);
+      } else {
+        selected.delete(p.id);
+      }
+    }
+  });
+  rebuildAssignmentTokens();
+  syncPayloadAndEnable();
+  debounceSave();
+  updateEpicButtonLabel(epic);
+}
+
 // Initialize from server state
 (function initFromServer(){
   setUpdated('{{ updated_at or "" }}');
@@ -617,6 +752,7 @@ function sendCam(plateId, form){
   rebuildAssignmentTokens();
   syncPayloadAndEnable();
   updateCamButtons();
+  refreshAllEpicButtons();
 })();
 
 // Pause polling when screenshot modal is open to avoid re-rendering under the modal

@@ -16,10 +16,6 @@ from .models import (
     update_plates,
     assign_plate,
     set_plate_download,
-    save_draft,
-    list_drafts,
-    get_draft,
-    delete_draft,
     upsert_user_api_base_url,
     append_user_allowed_api_base_url,
 )
@@ -177,17 +173,25 @@ def material_thickness(material_enc: str, thickness_enc: str):
     thickness = None if thickness_enc in ("", "None") else float(unquote(thickness_enc))
     # FTC override: if session contains uploaded parts and ftc=1, use those
     parts_info: list[dict[str, Any]] = []
+    box_tubes: list[dict[str, Any]] = []
     if request.args.get('ftc') == '1':
         ftc_parts = session.get('ftc_parts') or []
         ftc_material = session.get('ftc_material')
         ftc_thickness = session.get('ftc_thickness')
         if ftc_parts and ftc_material == material and ftc_thickness == thickness:
-            parts_info = [{
-                "id": p.get('id'),
-                "display": p.get('display') or p.get('id'),
-                "recommended": 0,
-                "available": 1,
-            } for p in ftc_parts]
+            for p in ftc_parts:
+                display_name = (p.get('display') or p.get('id') or "").strip()
+                entry = {
+                    "id": p.get('id'),
+                    "display": display_name or p.get('id'),
+                    "recommended": 0,
+                    "available": 1,
+                }
+                # Treat any part with "Tube" in its name as a Box Tube
+                if "tube" in display_name.lower():
+                    box_tubes.append(entry)
+                else:
+                    parts_info.append(entry)
     if not parts_info:
         db = get_db()
         # Fetch all matching tasks and aggregate parts with available counts
@@ -200,8 +204,10 @@ def material_thickness(material_enc: str, thickness_enc: str):
         part_ids = list(part_to_count.keys())
         id_to_display: dict[str, str] = {}
         id_to_recommended: dict[str, int] = {}
+        id_to_is_tube: dict[str, bool] = {}
+        id_to_epic: dict[str, str] = {}
         if part_ids:
-            imported_docs = list(db.imported.find({"child": {"$in": part_ids}}, {"child": 1, "name": 1, "quantity": 1}))
+            imported_docs = list(db.imported.find({"child": {"$in": part_ids}}, {"child": 1, "name": 1, "quantity": 1, "epic": 1}))
             for d in imported_docs:
                 cid = d.get("child")
                 dname = d.get("name")
@@ -213,13 +219,37 @@ def material_thickness(material_enc: str, thickness_enc: str):
                 if cid and dname:
                     id_to_display[str(cid)] = str(dname)
                 if cid:
+                    # Recommended quantity per imported doc
                     id_to_recommended[str(cid)] = rq
-        parts_info = [{
-            "id": pid,
-            "display": id_to_display.get(pid, pid),
-            "recommended": id_to_recommended.get(pid, 0),
-            "available": part_to_count[pid],
-        } for pid in sorted(part_to_count.keys())]
+                    # Flag Box Tubes based on name containing 'Tube'
+                    id_to_is_tube[str(cid)] = "tube" in str(dname or "").lower()
+                    # Epic grouping
+                    epic_val = d.get("epic") or "Unknown Epic"
+                    id_to_epic[str(cid)] = epic_val
+        for pid in sorted(part_to_count.keys()):
+            display_name = id_to_display.get(pid, pid)
+            entry = {
+                "id": pid,
+                "display": display_name,
+                "recommended": id_to_recommended.get(pid, 0),
+                "available": part_to_count[pid],
+                "epic": id_to_epic.get(pid, "Unknown Epic"),
+            }
+            if id_to_is_tube.get(pid, False):
+                box_tubes.append(entry)
+            else:
+                parts_info.append(entry)
+
+    # Build epic groups for display (non-Box-Tube parts only)
+    parts_by_epic: dict[str, list[dict[str, Any]]] = {}
+    for p in parts_info:
+        epic = p.get("epic") or "Unknown Epic"
+        parts_by_epic.setdefault(epic, []).append(p)
+    epic_groups: list[dict[str, Any]] = []
+    for epic, plist in parts_by_epic.items():
+        plist_sorted = sorted(plist, key=lambda x: (str(x.get("display") or ""), str(x.get("id") or "")))
+        epic_groups.append({"epic": epic, "parts": plist_sorted})
+    epic_groups.sort(key=lambda g: g["epic"])
 
     # Load any existing shared session state
     # Try normalized material first, then fallback to quoted variant if present in DB
@@ -239,6 +269,8 @@ def material_thickness(material_enc: str, thickness_enc: str):
         material=material,
         thickness=thickness,
         parts_info=parts_info,
+        box_tubes=box_tubes,
+        epic_groups=epic_groups,
         initial_selected=initial_selected,
         initial_plates=initial_plates,
         initial_assignments=initial_assignments,
@@ -705,16 +737,38 @@ def mt_cam_request_json(material_enc: str, thickness_enc: str, plate_id: str):
     return jsonify({"status": "ok"})
 
 
-@main_bp.route("/task/<task_id>")
+@main_bp.route("/mt/<material_enc>/<thickness_enc>/cam_tube/<part_id>", methods=["POST"])
 @login_required
-def task_detail(task_id: str):
+def mt_cam_tube(material_enc: str, thickness_enc: str, part_id: str):
+    """
+    CAM request for a single Box Tube part. Box Tubes are not placed on plates and
+    are always run individually on the IQ.
+    """
+    material = _norm_material_val(unquote(material_enc))
+    thickness = None if thickness_enc in ("", "None") else float(unquote(thickness_enc))
     db = get_db()
-    task = db[current_app.config["TASKS_COLLECTION"]].find_one({"_id": ObjectId(task_id)})
-    if not task:
-        flash("Task not found", "warning")
-        return redirect(url_for("main.dashboard"))
-    thickness = parse_thickness(task.get("Thickness"))
-    return render_template("task.html", task=task, thickness=thickness)
+    # Optional: verify part exists in imported collection
+    imported_doc = db.imported.find_one({"child": part_id}) or {}
+    # Always run Box Tubes on IQ with quantity 1
+    body = {
+        "plateId": f"tube-{part_id}-{int(datetime.utcnow().timestamp())}",
+        "material": material,
+        "trueDepth": thickness,
+        "width": 0,
+        "length": 0,
+        "machine": "IQ",
+        "parts": [{"name": part_id, "quantity": 1}],
+        "thickness": thickness,
+        "isBoxTube": True,
+        "displayName": imported_doc.get("name") or part_id,
+    }
+    try:
+        requests.post(f"{_user_api_base()}/autocam", json=body, timeout=10)
+    except Exception:
+        # For now we silently ignore failures; UI can be enhanced later to surface errors.
+        pass
+    # Return a lightweight JSON response for the JS caller
+    return jsonify({"status": "ok"})
 
 
 @main_bp.route("/task/<task_id>/auto_breakdown", methods=["POST"])
@@ -738,7 +792,15 @@ def auto_breakdown(task_id: str):
         data = resp.json()
     except Exception as e:
         flash(f"Breakdown request failed: {e}", "danger")
-        return redirect(url_for("main.task_detail", task_id=task_id))
+        material = task.get("Material") or ""
+        t_val = parse_thickness(task.get("Thickness"))
+        return redirect(
+            url_for(
+                "main.material_thickness",
+                material_enc=quote(material, safe=""),
+                thickness_enc=quote(str(t_val if t_val is not None else ""), safe=""),
+            )
+        )
 
     plates_raw = data.get("Plates") or []
     normalized: list[dict[str, Any]] = []
@@ -881,32 +943,6 @@ def mt_plate_image_webhook():
             p["screenshot_path_rel"] = rel
     db.mt_sessions.update_one({"_id": doc["_id"]}, {"$set": {"plates": plates, "updatedBy": "webhook-plate-image", "updatedAt": datetime.utcnow().isoformat() + "Z"}})
     return {"status": "ok", "url": url}
-
-
-@main_bp.route("/drafts")
-@login_required
-def drafts():
-    drafts_list = list_drafts(current_user.id)
-    return render_template("drafts.html", drafts=drafts_list)
-
-
-@main_bp.route("/drafts/save", methods=["POST"])
-@login_required
-def save_draft_route():
-    task_id = request.form.get("task_id") or ""
-    payload_str = request.form.get("payload") or "{}"
-    payload = json.loads(payload_str)
-    draft_id = save_draft(current_user.id, task_id, payload)
-    flash("Draft saved", "success")
-    return redirect(url_for("main.drafts"))
-
-
-@main_bp.route("/drafts/<draft_id>/delete", methods=["POST"])
-@login_required
-def delete_draft_route(draft_id: str):
-    delete_draft(draft_id, current_user.id)
-    flash("Draft deleted", "success")
-    return redirect(url_for("main.drafts"))
 
 
 @main_bp.route("/settings", methods=["GET", "POST"])

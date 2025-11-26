@@ -52,6 +52,15 @@
                   </div>
                   <div class="d-flex align-items-center gap-2">
                     <button class="btn btn-sm btn-primary" type="button" onclick="camTube('{{ t.id }}', this)">CAM (IQ)</button>
+                    {% if t.cam_download_url %}
+                    <a
+                      class="btn btn-sm btn-outline-primary"
+                      data-tube-download="{{ t.id }}"
+                      href="{{ t.cam_download_url }}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >Download</a>
+                    {% endif %}
                     <span class="small text-white-50" data-tube-status-for="{{ t.id }}"></span>
                   </div>
                 </li>
@@ -190,6 +199,8 @@ async function pollOnce(){
     // to prevent counters from \"jumping\" while the user is editing.
     setUpdated(data.updatedAt || lastUpdated);
     lastUpdatedBy = data.updatedBy || lastUpdatedBy;
+    const updatedBy = data.updatedBy || '';
+    const isWebhookUpdate = updatedBy.startsWith('webhook');
     // Update CAM-related plate metadata without touching current selections.
     const incomingPlates = (data.plates || []).map(p => ({
       id: p.plateId || p.id || uuidv4(),
@@ -214,8 +225,52 @@ async function pollOnce(){
         existing.screenshot_url = p.screenshot_url;
       }
     });
-    renderPlates();
-    // Re-apply current selected/assignments purely from local state
+    // Update plate Download buttons and Box Tube download links
+    refreshPlateDownloads();
+    if (Array.isArray(data.tube_bundles)) {
+      data.tube_bundles.forEach(tb => {
+        const pid = tb.partId;
+        const url = tb.cam_download_url;
+        if (!pid || !url) return;
+        const row = document.querySelector(`[data-tube-status-for=\"${CSS.escape(pid)}\"]`)?.closest('li');
+        if (!row) return;
+        // If a Download button doesn't exist yet for this tube, create one
+        let dl = row.querySelector('[data-tube-download]');
+        if (!dl) {
+          const container = row.querySelector('.d-flex.align-items-center.gap-2');
+          if (!container) return;
+          dl = document.createElement('a');
+          dl.className = 'btn btn-sm btn-outline-primary';
+          dl.setAttribute('data-tube-download', pid);
+          dl.target = '_blank';
+          dl.rel = 'noopener noreferrer';
+          dl.textContent = 'Download';
+          container.insertBefore(dl, row.querySelector(`[data-tube-status-for=\"${CSS.escape(pid)}\"]`));
+        }
+        dl.href = url;
+      });
+    }
+    // If this update came from the CAM server (webhook), trust server-side
+    // assignments and re-sync tokens from data.assignments.
+    if (isWebhookUpdate) {
+      // Clear all plate assignment lists
+      platesState.forEach(p => {
+        const ul = document.getElementById(`assign-${p.id}`);
+        if (ul) ul.innerHTML = '';
+      });
+      // Rebuild tokens per plate from server assignments
+      (data.assignments || []).forEach(({plateId, parts}) => {
+        const ul = document.getElementById(`assign-${plateId}`);
+        if (!ul) return;
+        (parts || []).forEach(({id, quantity}) => {
+          for (let i = 0; i < (quantity || 0); i++) {
+            ul.appendChild(tokenLi(id));
+          }
+        });
+      });
+    }
+
+    // Re-apply unassigned tokens and CAM button visibility from current DOM/selection
     rebuildAssignmentTokens();
     syncPayloadAndEnable();
     updateCamButtons();
@@ -230,6 +285,8 @@ async function pollOnce(){
         }
       }
     });
+  // Ensure any new screenshots have corresponding modals/buttons without re-rendering plates
+  refreshPlateScreenshots();
   } catch(e) {}
 }
 
@@ -426,19 +483,7 @@ function rebuildAssignmentLayout(){
   platesState.forEach((p, idx) => {
     const col = document.createElement('div');
     col.className = 'mb-3';
-    // Modal for screenshot (if exists)
-    const modal = p.screenshot_url ? `
-    <div class="modal fade screenshot-modal" id="shot-${p.id}" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-      <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h6 class="modal-title">Plate ${idx+1} Screenshot</h6>
-            <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Close" style="filter:none;"></button>
-          </div>
-          <div class="modal-body"><img src="${p.screenshot_url}" class="img-fluid screenshot-img"/></div>
-        </div>
-      </div>
-    </div>` : '';
+    const modal = '';
     col.innerHTML = `
       <div id="plate-box-${p.id}" class="gh-box p-2">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -456,8 +501,6 @@ function rebuildAssignmentLayout(){
                 <option value="Swift">Swift</option>
               </select>
               <button class="btn btn-sm btn-primary" type="submit">CAM</button>
-              ${(p.cam_bundle_rel && p.cam_download_url) ? `<a class="btn btn-sm btn-outline-primary" href="${p.cam_download_url}" target="_blank" rel="noopener noreferrer">Download</a>` : ''}
-              ${p.screenshot_url ? `<button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#shot-${p.id}">View Screenshot</button>` : ''}
               <span id="cam-status-${p.id}" class="cam-status"></span>
             </div>
           </form>
@@ -599,6 +642,96 @@ function updateCamButtons(){
     const show = hasParts && sigOk;
     ctrl.style.display = show ? '' : 'none';
     if(show){ box.classList.add('plate-ready'); } else { box.classList.remove('plate-ready'); }
+  });
+}
+
+function refreshPlateScreenshots(){
+  // Ensure screenshot modals/buttons exist for plates with screenshot_url, without
+  // rebuilding the entire plate layout so drag-and-drop stays client-side.
+  platesState.forEach(p => {
+    const plateId = p.id;
+    const url = p.screenshot_url;
+    const box = document.getElementById(`plate-box-${plateId}`);
+    if (!box) return;
+    const modalId = `shot-${plateId}`;
+    let modal = document.getElementById(modalId);
+    if (url) {
+      // Create or update modal
+      if (!modal) {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+        <div class="modal fade screenshot-modal" id="${modalId}" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+          <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h6 class="modal-title">Plate Screenshot</h6>
+                <button type="button" class="btn-close bg-white" data-bs-dismiss="modal" aria-label="Close" style="filter:none;"></button>
+              </div>
+              <div class="modal-body"><img src="${url}" class="img-fluid screenshot-img"/></div>
+            </div>
+          </div>
+        </div>`;
+        const modalEl = wrapper.firstElementChild;
+        if (modalEl) {
+          document.body.appendChild(modalEl);
+          modal = modalEl;
+        }
+      } else {
+        const img = modal.querySelector('.screenshot-img');
+        if (img) img.src = url;
+      }
+      // Ensure "View Screenshot" button exists in cam controls
+      const controls = document.getElementById(`cam-controls-${plateId}`);
+      if (!controls) return;
+      let btn = controls.querySelector('[data-plate-screenshot-btn]');
+      if (!btn) {
+        const statusSpan = controls.querySelector(`#cam-status-${plateId}`);
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-outline-success';
+        btn.setAttribute('data-bs-toggle', 'modal');
+        btn.setAttribute('data-bs-target', `#${modalId}`);
+        btn.setAttribute('data-plate-screenshot-btn', plateId);
+        btn.textContent = 'View Screenshot';
+        const container = controls.querySelector('.d-flex.align-items-center.gap-2') || controls.firstElementChild;
+        if (container) {
+          container.insertBefore(btn, statusSpan || null);
+        }
+      } else {
+        btn.setAttribute('data-bs-target', `#${modalId}`);
+      }
+    }
+  });
+}
+
+function refreshPlateDownloads(){
+  // Ensure plate Download buttons reflect the latest cam_download_url.
+  platesState.forEach(p => {
+    const plateId = p.id;
+    const url = p.cam_download_url;
+    const controls = document.getElementById(`cam-controls-${plateId}`);
+    if (!controls) return;
+    let link = controls.querySelector('[data-plate-download]');
+    if (url) {
+      if (!link) {
+        const statusSpan = controls.querySelector(`#cam-status-${plateId}`);
+        link = document.createElement('a');
+        link.className = 'btn btn-sm btn-outline-primary';
+        link.setAttribute('data-plate-download', plateId);
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Download';
+        const container = controls.querySelector('.d-flex.align-items-center.gap-2') || controls.firstElementChild;
+        if (container) {
+          container.insertBefore(link, statusSpan || null);
+        }
+      }
+      link.href = url;
+      link.style.display = '';
+    } else if (link) {
+      // Hide or remove Download button if no bundle is available
+      link.remove();
+    }
   });
 }
 
@@ -753,6 +886,8 @@ function toggleEpic(epic, btn){
   syncPayloadAndEnable();
   updateCamButtons();
   refreshAllEpicButtons();
+  refreshPlateDownloads();
+  refreshPlateScreenshots();
 })();
 
 // Pause polling when screenshot modal is open to avoid re-rendering under the modal

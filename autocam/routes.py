@@ -171,6 +171,7 @@ def dashboard():
 def material_thickness(material_enc: str, thickness_enc: str):
     material = _norm_material_val(unquote(material_enc))
     thickness = None if thickness_enc in ("", "None") else float(unquote(thickness_enc))
+    db = get_db()
     # FTC override: if session contains uploaded parts and ftc=1, use those
     parts_info: list[dict[str, Any]] = []
     box_tubes: list[dict[str, Any]] = []
@@ -193,7 +194,6 @@ def material_thickness(material_enc: str, thickness_enc: str):
                 else:
                     parts_info.append(entry)
     if not parts_info:
-        db = get_db()
         # Fetch all matching tasks and aggregate parts with available counts
         tasks = list(db[current_app.config["TASKS_COLLECTION"]].find({"Material": material}, {"Parts": 1, "Thickness": 1, "name": 1}))
         part_to_count: dict[str, int] = {}
@@ -250,6 +250,23 @@ def material_thickness(material_enc: str, thickness_enc: str):
         plist_sorted = sorted(plist, key=lambda x: (str(x.get("display") or ""), str(x.get("id") or "")))
         epic_groups.append({"epic": epic, "parts": plist_sorted})
     epic_groups.sort(key=lambda g: g["epic"])
+
+    # Attach any existing tube CAM bundles to Box Tubes for UI download links
+    if box_tubes:
+        tube_ids = [t.get("id") for t in box_tubes if t.get("id")]
+        if tube_ids:
+            tube_docs = list(
+                db.tube_cam_bundles.find(
+                    {"partId": {"$in": tube_ids}},
+                    {"_id": 0, "partId": 1, "cam_download_url": 1, "cam_bundle_rel": 1},
+                )
+            )
+            by_pid = {d.get("partId"): d for d in tube_docs}
+            for t in box_tubes:
+                info = by_pid.get(t.get("id"))
+                if info:
+                    t["cam_download_url"] = info.get("cam_download_url")
+                    t["cam_bundle_rel"] = info.get("cam_bundle_rel")
 
     # Load any existing shared session state
     # Try normalized material first, then fallback to quoted variant if present in DB
@@ -327,11 +344,22 @@ def mt_state(material_enc: str, thickness_enc: str):
     if not session_doc:
         session_doc = db.mt_sessions.find_one({"material": f'"{material}"', "thickness": thickness})
     session_doc = session_doc or {}
+    # Include any Box Tube bundles so the UI can refresh download links without reload.
+    # We don't filter by material/thickness here because those fields may not always
+    # be provided by the external CAM server; the client filters by partId.
+    tube_bundles = list(
+        db.tube_cam_bundles.find(
+            {},
+            {"_id": 0, "partId": 1, "cam_download_url": 1},
+        )
+    )
     return jsonify({
         "selected_parts": session_doc.get("selected_parts") or [],
         "plates": session_doc.get("plates") or [],
         "assignments": session_doc.get("assignments") or [],
         "updatedAt": session_doc.get("updatedAt") or "",
+        "updatedBy": session_doc.get("updatedBy") or "",
+        "tube_bundles": tube_bundles,
     })
 
 
@@ -398,10 +426,11 @@ def mt_not_fit_webhook():
     updated = []
 
     # 1) Optional corrections payload (JSON body or 'payload' form field)
+    current_app.logger.info("data: ", request.form.get('json'))
     data = request.get_json(silent=True) or {}
-    if not data and request.form.get('payload'):
+    if not data and request.form.get('json'):
         try:
-            data = json.loads(request.form.get('payload') or '{}')
+            data = json.loads(request.form.get('json') or '{}')
         except Exception:
             data = {}
 
@@ -763,7 +792,8 @@ def mt_cam_tube(material_enc: str, thickness_enc: str, part_id: str):
         "displayName": imported_doc.get("name") or part_id,
     }
     try:
-        requests.post(f"{_user_api_base()}/autocam", json=body, timeout=10)
+        # Send to dedicated /boxtube endpoint with the same shape as a normal plate CAM request
+        requests.post(f"{_user_api_base()}/boxtube", json=body, timeout=10)
     except Exception:
         # For now we silently ignore failures; UI can be enhanced later to surface errors.
         pass
@@ -1055,10 +1085,19 @@ def mt_cam_bundle_webhook():
         return {"status": "invalid", "error": "plateId required"}, 400
 
     db = get_db()
-    # Find session by plateId
+    # Find session by plateId (for normal plates)
     doc = db.mt_sessions.find_one({"plates.id": plate_id})
+    # For Box Tubes, there is no plate in mt_sessions; infer partId from tube-style plateId
+    part_id: str | None = None
     if not doc:
-        return {"status": "not_found"}, 404
+        # plateId format for tubes: 'tube-{partId}-{timestamp}'
+        if plate_id and plate_id.startswith("tube-"):
+            base = plate_id[len("tube-"):]
+            if "-" in base:
+                part_id = base.rsplit("-", 1)[0]
+        # If still no part_id, treat as not found
+        if not part_id:
+            return {"status": "not_found"}, 404
 
     # Collect files
     incoming = request.files.getlist('files[]') or request.files.getlist('files') or list(request.files.values())
@@ -1081,12 +1120,39 @@ def mt_cam_bundle_webhook():
             return {"status": "error", "error": "save_failed"}, 500
         rel = f"cam_bundles/{safe}"
         url = f"/static/{rel}"
-        plates = doc.get("plates") or []
-        for p in plates:
-            if p.get("id") == plate_id or p.get("plateId") == plate_id:
-                p["cam_download_url"] = url
-                p["cam_bundle_rel"] = rel
-        db.mt_sessions.update_one({"_id": doc["_id"]}, {"$set": {"plates": plates, "updatedBy": "webhook-cam-bundle", "updatedAt": datetime.utcnow().isoformat() + "Z"}})
+        if doc:
+            plates = doc.get("plates") or []
+            for p in plates:
+                if p.get("id") == plate_id or p.get("plateId") == plate_id:
+                    p["cam_download_url"] = url
+                    p["cam_bundle_rel"] = rel
+            db.mt_sessions.update_one(
+                {"_id": doc["_id"]},
+                {
+                    "$set": {
+                        "plates": plates,
+                        "updatedBy": "webhook-cam-bundle",
+                        "updatedAt": datetime.utcnow().isoformat() + "Z",
+                    }
+                },
+            )
+        elif part_id:
+            # Box Tube: store bundle reference separately for UI
+            db.tube_cam_bundles.update_one(
+                {"plateId": plate_id},
+                {
+                    "$set": {
+                        "plateId": plate_id,
+                        "partId": part_id,
+                        "cam_bundle_rel": rel,
+                        "cam_download_url": url,
+                        "material": data_json.get("material"),
+                        "thickness": data_json.get("thickness"),
+                        "updatedAt": datetime.utcnow().isoformat() + "Z",
+                    }
+                },
+                upsert=True,
+            )
         return {"status": "ok", "bundle": url}
 
     # Otherwise, save multiple files to temp and zip
@@ -1113,26 +1179,53 @@ def mt_cam_bundle_webhook():
         rel = f"cam_bundles/{zip_name}"
         url = f"/static/{rel}"
 
-        plates = doc.get("plates") or []
-        changed = False
-        old_rel = None
-        for p in plates:
-            if p.get("id") == plate_id or p.get("plateId") == plate_id:
-                old_url = p.get("cam_download_url") or ""
-                if old_url.startswith("/static/"):
-                    old_rel = old_url[len("/static/"):]
-                p["cam_download_url"] = url
-                p["cam_bundle_rel"] = rel
-                changed = True
-        if changed:
-            if old_rel:
-                old_full = os.path.join(current_app.static_folder, old_rel)
-                try:
-                    if os.path.exists(old_full):
-                        os.remove(old_full)
-                except Exception:
-                    pass
-            db.mt_sessions.update_one({"_id": doc["_id"]}, {"$set": {"plates": plates, "updatedBy": "webhook-cam-bundle", "updatedAt": datetime.utcnow().isoformat() + "Z"}})
+        if doc:
+            plates = doc.get("plates") or []
+            changed = False
+            old_rel = None
+            for p in plates:
+                if p.get("id") == plate_id or p.get("plateId") == plate_id:
+                    old_url = p.get("cam_download_url") or ""
+                    if old_url.startswith("/static/"):
+                        old_rel = old_url[len("/static/"):]
+                    p["cam_download_url"] = url
+                    p["cam_bundle_rel"] = rel
+                    changed = True
+            if changed:
+                if old_rel:
+                    old_full = os.path.join(current_app.static_folder, old_rel)
+                    try:
+                        if os.path.exists(old_full):
+                            os.remove(old_full)
+                    except Exception:
+                        pass
+                db.mt_sessions.update_one(
+                    {"_id": doc["_id"]},
+                    {
+                        "$set": {
+                            "plates": plates,
+                            "updatedBy": "webhook-cam-bundle",
+                            "updatedAt": datetime.utcnow().isoformat() + "Z",
+                        }
+                    },
+                )
+        elif part_id:
+            # Box Tube: store bundle reference separately for UI
+            db.tube_cam_bundles.update_one(
+                {"plateId": plate_id},
+                {
+                    "$set": {
+                        "plateId": plate_id,
+                        "partId": part_id,
+                        "cam_bundle_rel": rel,
+                        "cam_download_url": url,
+                        "material": data_json.get("material"),
+                        "thickness": data_json.get("thickness"),
+                        "updatedAt": datetime.utcnow().isoformat() + "Z",
+                    }
+                },
+                upsert=True,
+            )
     finally:
         try:
             shutil.rmtree(tmpdir)

@@ -2,8 +2,8 @@
 	--bs-body-bg: #0d1117 !important;
 	--bg-elev: #161b22;
 	--header: #010409;
-	--border: #3d444d; /* slightly brighter for contrast */
-	--bs-border-color: var(--border) !important;
+	--bs-border-color: #3d444d !important;
+	--bs-body-font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji" !important;
 	--text: #c9d1d9;
 	--muted: #9aa1a9; /* improved contrast */
 	--brand: #f0f6fc;
@@ -15,32 +15,32 @@
 	--bs-heading-color: white;
 }
 
-html, body { background: var(--bs-body-bg); color: var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+html, body { color: var(--text); }
 
 .text-foreground { color: var(--text) !important; }
 
 /* Header */
-.gh-header { background: var(--header) !important; border-color: var(--border) !important; box-shadow: 0 2px 8px rgba(1, 4, 9, 0.6); }
+.gh-header { background: var(--header) !important; border-color: var(--bs-border-color) !important; box-shadow: 0 2px 8px rgba(1, 4, 9, 0.6); }
 .gh-brand { color: var(--brand) !important; font-weight: 600; letter-spacing: 0.2px; }
 .gh-link { color: var(--text) !important; opacity: 0.9; }
 .gh-link:hover { color: var(--brand) !important; opacity: 1; }
 
 /* Boxes */
-.gh-box { background: var(--bg-elev) !important; border: 1px solid var(--border) !important; border-radius: 10px; }
+.gh-box { background: var(--bg-elev) !important; border: 1px solid var(--bs-border-color) !important; border-radius: 10px; }
 .card.gh-box { box-shadow: 0 1px 0 rgba(31,35,40,0.2), 0 8px 24px rgba(1,4,9,0.5); transition: box-shadow 160ms ease, transform 160ms ease; }
 .gh-card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(31,35,40,0.24), 0 12px 28px rgba(1,4,9,0.55); }
 card-body {
 	color:white;
 }
 /* Alerts */
-.gh-alert { border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elev); color: var(--text); box-shadow: 0 2px 10px rgba(1,4,9,0.45); }
+.gh-alert { border-radius: 8px; border: 1px solid var(--bs-border-color); background: var(--bg-elev); color: var(--text); box-shadow: 0 2px 10px rgba(1,4,9,0.45); }
 
 /* Lists */
-.list-group-item { background: var(--bg-elev); color: var(--text); border-color: var(--border); }
+.list-group-item { background: var(--bg-elev); color: var(--text); border-color: var(--bs-border-color); }
 .list-group-item:hover { background: #1e2530; }
 
 /* Forms */
-.gh-input, .form-control, .form-select { background: var(--bg); color: black; border: 1px solid var(--border); }
+.gh-input, .form-control, .form-select { background: var(--bg); color: black; border: 1px solid var(--bs-border-color); }
 .gh-input:focus, .form-control:focus, .form-select:focus { box-shadow: 0 0 0 3px rgba(56,139,253,0.35); border-color: var(--accent); }
 .form-text { color: black; }
 
@@ -49,7 +49,7 @@ card-body {
 }
 
 /* Buttons */
-.btn { border-radius: 8px; border: 1px solid var(--border); }
+.btn { border-radius: 8px; border: 1px solid var(--bs-border-color); }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-outline-primary { background: rgba(47,129,247,0.08); color: var(--brand); border-color: var(--accent); }
@@ -60,7 +60,7 @@ card-body {
 
 /* Tables and misc */
 .navbar-brand { letter-spacing: 0.3px; }
-hr, .border-bottom { border-color: var(--border) !important; }
+hr, .border-bottom { border-color: var(--bs-border-color) !important; }
 
 /* Drag area min-height */
 .min-vh-25 { min-height: 25vh; } 
@@ -85,9 +85,9 @@ hr, .border-bottom { border-color: var(--border) !important; }
 .screenshot-img { max-width: 100%; max-height: 85vh; height: auto; width: auto; object-fit: contain; display: block; margin: 0 auto; }
 
 /* Screenshot modal theme */
-.screenshot-modal .modal-content { background: #0f141a; color: var(--text); border: 1px solid var(--border); }
-.screenshot-modal .modal-header { border-bottom: 1px solid var(--border); }
-.screenshot-modal .modal-footer { border-top: 1px solid var(--border); }
+.screenshot-modal .modal-content { background: #0f141a; color: var(--text); border: 1px solid var(--bs-border-color); }
+.screenshot-modal .modal-header { border-bottom: 1px solid var(--bs-border-color); }
+.screenshot-modal .modal-footer { border-top: 1px solid var(--bs-border-color); }
 
 /* CAM status */
 .cam-status { font-size: 0.85rem; color: #9aa1a9; }

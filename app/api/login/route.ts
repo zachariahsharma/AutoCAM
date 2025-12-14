@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
         .setIssuedAt()
         .setExpirationTime(process.env.JWT_EXPIRY_TIME!)
         .sign(new TextEncoder().encode(process.env.JWT_SECRET!))
-    const response = new NextResponse(null, { status: 200 });
+    const response = NextResponse.redirect("/", 303);
     response.cookies.set("token", token, {
         secure: true,
         maxAge: expiryTime,

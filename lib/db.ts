@@ -20,7 +20,7 @@ const DEFAULT_USERS = [
 if (!process.env.MONGODB_URI)
     throw new Error("MONGODB_URI not found");
 
-const db = await mongoose.connect(process.env.MONGODB_URI);
+const db = await mongoose.connect(process.env.MONGODB_URI, { dbName: "jira" });
 await User.bulkWrite(DEFAULT_USERS.map(user => {
     return {
         updateOne: {

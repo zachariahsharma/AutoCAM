@@ -4,7 +4,7 @@ export default function Home() {
       <div className="card gh-box">
         <div className="card-body">
           <h3 className="mb-3">Login</h3>
-          <form method="post">
+          <form method="post" action="/auth/login">
             <div className="mb-3">
               <label className="form-label">Email</label>
               <input name="email" type="text" id="emailInput" className="form-control gh-input" placeholder="valor" required />

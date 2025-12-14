@@ -26,22 +26,8 @@ export const Imported = mongoose.models.Imported || mongoose.model("Imported", n
     epic: String,
 }, { collection: "imported" }))
 
-const DEFAULT_USERS = [
-    { email: "valor", password: await hash("6800"), admin: true },
-    { email: "ftc", password: await hash("viperbots"), admin: false }
-]
-
 if (!process.env.MONGODB_URI)
     throw new Error("MONGODB_URI not found");
 
 const db = await mongoose.connect(process.env.MONGODB_URI, { dbName: "jira" });
-await User.bulkWrite(DEFAULT_USERS.map(user => {
-    return {
-        updateOne: {
-            filter: { email: user.email },
-            update: { $set: user },
-            upsert: true,
-        }
-    }
-}))
 export default db;

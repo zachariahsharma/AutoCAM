@@ -1,9 +1,21 @@
+"use client";
+import { authClient } from "@/lib/auth-client";
+import { FormEvent } from "react";
+
 export default function Login() {
+  const login = async (e: FormEvent) => {
+    e.preventDefault();
+    const {data, error} = await authClient.signIn.email({
+      email: e.target.email.value,
+      password: e.target.password.value,
+      callbackURL: "/"
+    })
+  };
   return <div className="container login-white" style={{ maxWidth: "460px" }}>
     <div className="card gh-box">
       <div className="card-body">
         <h3 className="mb-3">Login</h3>
-        <form method="post" action="/api/login">
+        <form onSubmit={login}>
           <div className="mb-3">
             <label className="form-label">Email</label>
             <input name="email" type="text" id="emailInput" className="form-control gh-input" placeholder="valor" required />

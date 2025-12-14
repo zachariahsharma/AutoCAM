@@ -1,4 +1,3 @@
-import "dotenv";
 import { verify } from "@/lib/auth";
 import { User } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";

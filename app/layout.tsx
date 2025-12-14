@@ -27,7 +27,7 @@ export default function RootLayout({
             <a className="navbar-brand gh-brand" href="/dashboard">AutoCAM</a>
             <div className="d-flex gap-3">
               <a className="nav-link gh-link" href="/settings">Settings</a>
-              <form method="post" action="/auth/logout">
+              <form method="post" action="/api/logout">
                 <button className="nav-link gh-link">Logout</button>
               </form>
             </div>

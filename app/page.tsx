@@ -46,7 +46,7 @@ export default async function Dashboard() {
                                     <div className="fw-bold text-white">{combo.Material}</div>
                                     <div className="small text-white-50">Thickness: {combo.Thickness} • Parts: {combo.PartsCount}</div>
                                 </div>
-                                <a className="btn btn-sm btn-primary" href="">Open</a>
+                                <a className="btn btn-sm btn-primary" href={`/mt/${encodeURIComponent(combo.Material)}/${encodeURIComponent(combo.Thickness)}`}>Open</a>
                             </li>
                         )) : (
                             <li className="list-group-item text-white-50">No materials found.</li>

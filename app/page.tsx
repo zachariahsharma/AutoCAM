@@ -1,4 +1,4 @@
-import { Task } from "@/lib/db"
+import { Imported, Task } from "@/lib/db"
 
 export default async function Dashboard() {
     const combos = await Task.aggregate([
@@ -24,15 +24,7 @@ export default async function Dashboard() {
         }
     ])
     // # Recently added parts from imported collection (sorted by newest ObjectId)
-    // recent_imported = list(db.imported.find({}, {"child": 1, "name": 1, "quantity": 1}).sort("_id", -1).limit(10))
-    // recent_parts = [
-    //     {
-    //         "id": doc.get("child"),
-    //         "name": doc.get("name"),
-    //         "quantity": doc.get("quantity"),
-    //     }
-    //     for doc in recent_imported
-    // ]
+    const imported = await Imported.find().sort({ _id: "desc" }).limit(10)
 
     return <div className="row">
         <div className="col-md-3">
@@ -60,13 +52,13 @@ export default async function Dashboard() {
                 <div className="card-body">
                     <h5 className="text-white">Recently Added Parts</h5>
                     <ul className="list-group list-group-flush">
-                        {/* {% for p in recent_parts %}
-                        <li className="list-group-item d-flex justify-content-between align-items-center text-white">
-                            <span className="text-white">{{ p.name }} ({{ p.id }}) — Qty: {{ p.quantity }}</span>
-                        </li>
-                        {% else %}
-                        <li className="list-group-item text-white-50">No recent parts.</li>
-                        {% endfor %} */}
+                        {imported.length > 0 ? imported.map(imp => (
+                            <li key={imp.id} className="list-group-item d-flex justify-content-between align-items-center text-white">
+                                <span className="text-white">{imp.name} ({imp.child}) — Qty: {imp.quantity}</span>
+                            </li>
+                        )) : (
+                            <li className="list-group-item text-white-50">No materials found.</li>
+                        )}
                     </ul>
                 </div>
             </div>

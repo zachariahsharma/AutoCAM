@@ -1,4 +1,4 @@
-export default function Home() {
+export default function Login() {
   return (
     <div className="container login-white" style={{ maxWidth: "460px" }}>
       <div className="card gh-box">

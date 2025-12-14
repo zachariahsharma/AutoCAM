@@ -1,6 +1,6 @@
 import "server-only";
 import mongoose from "mongoose";
-import { hash } from "./auth";
+import { hash } from "argon2";
 
 export const userSchema = new mongoose.Schema({
     email: {

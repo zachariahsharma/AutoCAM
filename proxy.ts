@@ -20,6 +20,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
-        '/((?!_next/static|_next/image|\\.well-known|auth\\/login).*)'
+        '/((?!_next/static|_next/image|\\.well-known|api\\/login).*)'
     ]
 }

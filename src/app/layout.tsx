@@ -24,8 +24,35 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+      <head>
+        <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" />
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+      </head>
+      <body className="text-foreground">
+        <nav className="navbar navbar-expand-lg navbar-dark gh-header border-bottom">
+          <div className="container-fluid">
+            <a className="navbar-brand gh-brand" href="/dashboard">AutoCAM</a>
+            <div className="d-flex gap-3">
+              <a className="nav-link gh-link" href="/settings">Settings</a>
+              <a className="nav-link gh-link" href="/logout">Logout</a>
+            </div>
+          </div>
+        </nav>
+        <div className="container-fluid py-3">
+          {/* {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+          <div class="container">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'warning' if category=='danger' else category }} gh-alert">
+              {{ message }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% endwith %} */}
+          {children}
+        </div>
       </body>
     </html>
   );

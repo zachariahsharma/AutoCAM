@@ -1,16 +1,30 @@
 import "server-only";
 import mongoose from "mongoose";
-import { hash } from "./auth";
+import { hash } from "argon2";
 
-export const userSchema = new mongoose.Schema({
+export const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema({
     email: {
         type: String,
         unique: true,
     },
     password: String,
     admin: Boolean,
-})
-export const User = mongoose.model("User", userSchema);
+}));
+
+export const Task = mongoose.models.Task || mongoose.model("Task", new mongoose.Schema({
+    Material: String,
+    Thickness: Number,
+    Parts: [String],
+    Status: String,
+    name: String,
+}));
+
+export const Imported = mongoose.models.Imported || mongoose.model("Imported", new mongoose.Schema({
+    child: String,
+    quantity: String,
+    name: String,
+    epic: String,
+}, { collection: "imported" }))
 
 const DEFAULT_USERS = [
     { email: "valor", password: await hash("6800"), admin: true },

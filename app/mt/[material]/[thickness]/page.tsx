@@ -2,17 +2,17 @@ import MaterialThickness from "@/components/MaterialThickness";
 import { Imported, MTSession, Task } from "@/lib/db";
 
 type Props = {
-  params: {
+  params: Promise<{
     material: string;
     thickness: string;
-  }
+  }>
 }
 
 export default async function MT(props: Props) {
   const params = await props.params;
   const material = decodeURIComponent(params.material);
   const thickness = +decodeURIComponent(params.thickness);
-  const sessionDoc = await MTSession.findOne({ material, thickness });
+  const session = await MTSession.findOne({ material, thickness }).select("-_id").lean();
   const [parts] = await Imported.aggregate([
     // 1. Join tasks to compute availability
     {
@@ -105,5 +105,5 @@ export default async function MT(props: Props) {
     }
   ]);
   parts.epics = Object.fromEntries(parts.epics.map((epic: any) => [epic.epic, epic.parts]))
-  return <MaterialThickness sessionDoc={JSON.stringify(sessionDoc)} parts={parts} />
+  return <MaterialThickness session={session! as any} parts={parts} />
 }

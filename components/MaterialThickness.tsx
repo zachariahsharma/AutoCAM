@@ -8,6 +8,10 @@ type Plate = {
   Width: number;
   Length: number;
   trueDepth: number;
+  verifiedSignature?: string;
+  cam_download_url?: string;
+  cam_bundle_rel?: string;
+  screenshot_url?: string;
 }
 
 type Assignment = {
@@ -27,7 +31,16 @@ type Parts = {
   epics: Record<string, Part[]>
 }
 
-export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: string, parts: Parts }) {
+type Session = {
+  material: string;
+  thickness: number;
+  assignments: Assignment[];
+  plates: Plate[];
+  updatedAt: string;
+  updatedBy: string;
+};
+
+export default function MaterialThickness({ session, parts }: { session: Session, parts: Parts }) {
   function addPlate() {
     const id = crypto.randomUUID();
     setPlates(prev => [...prev, {
@@ -56,7 +69,7 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
 
   function toggleEpic(name: string) {
     setQuantities(prev => {
-      const next = {...prev};
+      const next = { ...prev };
       const atRecommended = epicAtRecommended(name);
       for (const part of parts.epics[name])
         next[part.id] = atRecommended ? 0 : part.quantity;
@@ -83,8 +96,12 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
     }))
   }
 
-  const session = JSON.parse(sessionDoc);
-  const [plates, setPlates] = useState<Plate[]>([]);
+  function formValid() {
+    return plates.every(plate => plate.Length > 0 && plate.Width > 0 && plate.trueDepth > 0) &&
+      Object.values(quantities).some(quant => quant > 0);
+  }
+
+  const [plates, setPlates] = useState<Plate[]>(session.plates);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [quantities, setQuantities] = useState(selectAllQuantities);
 
@@ -149,21 +166,22 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
           </div>
           <div style={{ maxHeight: "420px", overflow: "auto" }}>
             {parts.boxTubes.length || parts.epics.length ? <>
-              {parts.boxTubes.length && <>
-                <div className="d-flex justify-content-between align-items-center mb-1">
-                  <span className="fw-semibold text-white-50">Box Tubes</span>
-                </div>
-                <ul className="list-group list-group-flush">
-                  {parts.boxTubes.map(tube => (
-                    <li key={tube.id} className="list-group-item d-flex justify-content-between align-items-center">
-                      <div>
-                        <div className="fw-semibold">{tube.name}</div>
-                        <div className="small text-white-50">
-                          ID: {tube.id} • Recommended: {tube.quantity}
+              {parts.boxTubes.length && (
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <span className="fw-semibold text-white-50">Box Tubes</span>
+                  </div>
+                  <ul className="list-group list-group-flush">
+                    {parts.boxTubes.map(tube => (
+                      <li key={tube.id} className="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                          <div className="fw-semibold">{tube.name}</div>
+                          <div className="small text-white-50">
+                            ID: {tube.id} • Recommended: {tube.quantity}
+                          </div>
                         </div>
-                      </div>
-                      <div className="d-flex align-items-center gap-2">
-                        {/* <button className="btn btn-sm btn-primary" type="button" onclick="camTube('{{ t.id }}', this)">CAM (IQ)</button>
+                        <div className="d-flex align-items-center gap-2">
+                          {/* <button className="btn btn-sm btn-primary" type="button" onclick="camTube('{{ t.id }}', this)">CAM (IQ)</button>
                        {% if t.cam_download_url %}
                        <a
                          className="btn btn-sm btn-outline-primary"
@@ -173,12 +191,13 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
                          rel="noopener noreferrer"
                        >Download</a>
                        {% endif %} */}
-                        <span className="small text-white-50"></span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </>}
+                          <span className="small text-white-50"></span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {Object.entries(parts.epics).map(([epic, parts]) => (
                 <div key={epic} className="mb-3">
                   <div className="d-flex justify-content-between align-items-center mb-1">
@@ -233,7 +252,7 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
         </div>
       </div>
 
-      <div className="card gh-box" id="assignCard" style={{ display: "none" }}>
+      <div className="card gh-box" id="assignCard" style={{ display: formValid() ? '' : "none" }}>
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h6 className="m-0">Assign Parts to Plates</h6>

@@ -14,7 +14,25 @@ type Assignment = {
   parts: { id: string; quantity: number }[];
 }
 
-export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: string, parts: object }) {
+type Parts = {
+  boxTubes: {
+    quantity: number;
+    available: number;
+    id: string;
+    name: string;
+  }[];
+  epics: {
+    epic: string;
+    parts: {
+      id: string;
+      name: string;
+      quantity: number;
+      available: number;
+    }[]
+  }[]
+}
+
+export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: string, parts: Parts }) {
   function addPlate() {
     const id = crypto.randomUUID();
     setPlates(prev => [...prev, {

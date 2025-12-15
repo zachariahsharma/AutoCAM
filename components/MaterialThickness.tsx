@@ -57,17 +57,30 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
   }
 
   function toggleEpic(name: string) {
+    setQuantities(prev => {
+      const next = { ...prev };
+      const atRecommended = epicAtRecommended(name);
+
+      parts.epics[name].forEach(p => {
+        if (atRecommended) {
+          delete next[p.id];      // Remove
+        } else if (p.quantity > 0) {
+          next[p.id] = p.quantity; // Insert recommended
+        }
+      });
+
+      return next;
+    });
   }
 
   function epicAtRecommended(epic: string) {
-    return parts.epics[epic].every(p => selected[p.id] ?? 0 === p.quantity)
+    return parts.epics[epic].every(p => quantities[p.id] ?? 0 === p.quantity)
   }
 
   const session = JSON.parse(sessionDoc);
   const [plates, setPlates] = useState<Plate[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [selected, setSelected] = useState<Record<string, number>>({});
-  console.log(JSON.stringify(parts, null, 2));
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   return <div className="row">
     <div className="col-md-4">
@@ -136,7 +149,7 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
                 </div>
                 <ul className="list-group list-group-flush">
                   {parts.boxTubes.map(tube => (
-                    <li className="list-group-item d-flex justify-content-between align-items-center">
+                    <li key={tube.id} className="list-group-item d-flex justify-content-between align-items-center">
                       <div>
                         <div className="fw-semibold">{tube.name}</div>
                         <div className="small text-white-50">
@@ -160,8 +173,8 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
                   ))}
                 </ul>
               </>}
-              {Object.entries(parts.epics).forEach(([epic, parts]) => (
-                <div className="mb-3">
+              {Object.entries(parts.epics).map(([epic, parts]) => (
+                <div key={epic} className="mb-3">
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     <span className="fw-semibold text-white-50">{epic}</span>
                     <button
@@ -174,7 +187,7 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
                   </div>
                   <ul className="list-group list-group-flush">
                     {parts.map(part => (
-                      <li className="list-group-item d-flex justify-content-between align-items-center">
+                      <li key={part.id} className="list-group-item d-flex justify-content-between align-items-center">
                         <div>
                           <div className="fw-semibold">{part.name}</div>
                           <div className="small text-white-50">

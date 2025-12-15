@@ -1,3 +1,6 @@
+import MaterialThickness from "@/components/MaterialThickness";
+import { MTSession } from "@/lib/db";
+
 type Props = {
   params: {
     material: string;
@@ -5,158 +8,16 @@ type Props = {
   }
 }
 
-export default async function MaterialThickness({ params }: Props) {
+export default async function MT({ params }: Props) {
   let { material, thickness } = await params;
   material = decodeURIComponent(material);
   thickness = decodeURIComponent(thickness);
-  return <div className="row">
-    <div className="col-md-4">
-      <div className="card gh-box mb-3">
-        <div className="card-body">
-          <h5>Material · Thickness</h5>
-          <div className="text-white-50"><strong>Material:</strong> {material}</div>
-          <div className="text-white-50"><strong>Thickness:</strong> {thickness}</div>
-          <form id="breakdownForm" method="post" action={`/mt/${encodeURIComponent(material)}/${encodeURIComponent(thickness)}/auto_breakdown`} className="mt-3">
-            <input type="hidden" name="selected_parts_json" id="selected_parts_json" />
-            <input type="hidden" name="plates_json" id="plates_json" />
-            <input type="hidden" name="plate_parts_json" id="plate_parts_json" />
-            <button id="submitBtn" className="btn btn-primary" disabled>Request Auto Breakdown</button>
-            <div className="form-text mt-2 text-danger">Select at least one part and add at least one plate to proceed.</div>
-            {/* <div className="form-text small text-white-50">Last updated: <span id="updatedAt">{{ updated_at }}</span></div> */}
-          </form>
-        </div>
-      </div>
-      {/* <div className="card gh-box">
-      <div className="card-body">
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h6 className="m-0">Plates to Create</h6>
-          <button type="button" className="btn btn-sm btn-outline-primary" onclick="addPlate()">Add Plate</button>
-        </div>
-        <ul className="list-group list-group-flush" id="platesList"></ul>
-      </div>
-    </div> */}
-    </div>
-    {/* <div className="col-md-8">
-    <div className="card gh-box mb-3">
-      <div className="card-body">
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h6 className="m-0">Available Parts by Epic</h6>
-          <button className="btn btn-sm btn-outline-primary" onclick="selectAllRecommended()">Select All (Recommended)</button>
-        </div>
-        <div style="max-height:420px; overflow:auto;" id="partsList">
-          {% if epic_groups and epic_groups|length %}
-            {% if box_tubes and box_tubes|length %}
-            <div className="mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-1">
-                <span className="fw-semibold text-white-50">Box Tubes</span>
-              </div>
-              <ul className="list-group list-group-flush">
-                {% for t in box_tubes %}
-                <li className="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <div className="fw-semibold">{{ t.display }}</div>
-                    <div className="small text-white-50">
-                      ID: {{ t.id }}{% if t.recommended %} • Recommended: {{ t.recommended }}{% endif %}
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-2">
-                    <button className="btn btn-sm btn-primary" type="button" onclick="camTube('{{ t.id }}', this)">CAM (IQ)</button>
-                    {% if t.cam_download_url %}
-                    <a
-                      className="btn btn-sm btn-outline-primary"
-                      data-tube-download="{{ t.id }}"
-                      href="{{ t.cam_download_url }}"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >Download</a>
-                    {% endif %}
-                    <span className="small text-white-50" data-tube-status-for="{{ t.id }}"></span>
-                  </div>
-                </li>
-                {% endfor %}
-              </ul>
-            </div>
-            {% endif %}
-            {% for group in epic_groups %}
-            <div className="mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-1">
-                <span className="fw-semibold text-white-50">{{ group.epic }}</span>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-light epic-toggle-btn"
-                  data-epic="{{ group.epic }}"
-                  onclick="toggleEpic('{{ group.epic }}', this)"
-                >
-                  Insert
-                </button>
-              </div>
-              <ul className="list-group list-group-flush">
-                {% for p in group.parts %}
-                <li className="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <div className="fw-semibold">{{ p.display }}</div>
-                    <div className="small text-white-50">
-                      Recommended: {{ p.recommended }} • Available: {{ p.available }} • ID: {{ p.id }}
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-2">
-                    <div className="input-group input-group-sm" style="width: 200px;">
-                      <button className="btn btn-outline-primary" type="button" onclick="decQty('{{ p.id }}')">-</button>
-                      <input id="qty-{{ p.id }}" type="number" min="0" step="1" className="form-control gh-input text-center text-white" value="0" onchange="updateSelection('{{ p.id }}')">
-                      <button className="btn btn-outline-primary" type="button" onclick="incQty('{{ p.id }}')">+</button>
-                    </div>
-                  </div>
-                </li>
-                {% endfor %}
-              </ul>
-            </div>
-            {% endfor %}
-          {% else %}
-          <ul className="list-group list-group-flush">
-            <li className="list-group-item">No parts.</li>
-          </ul>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    <div className="card gh-box" id="assignCard" style="display:none;">
-      <div className="card-body">
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h6 className="m-0">Assign Parts to Plates</h6>
-          <div className="d-flex gap-2">
-            <button type="button" className="btn btn-sm btn-outline-danger" onclick="unassignAll()">Unassign All</button>
-          </div>
-        </div>
-        <div className="row g-3" id="assignRow">
-          <div className="col-lg-4">
-            <div className="gh-box p-2">
-              <div className="small text-white-50 mb-2">Unassigned</div>
-              <ul id="assign-unassigned" className="list-group list-group-flush min-vh-25" style="min-height:220px;"></ul>
-            </div>
-          </div>
-          <div className="col-lg-8" id="assignPlates"></div>
-        </div>
-      </div>
-    </div>
-
-  </div> */}
-  </div>
+  const sessionDoc = await MTSession.findOne({ material, thickness });
+  return <MaterialThickness sessionDoc={JSON.stringify(sessionDoc)} />
 }
 
 /*
 <script>
-// UUID helper for browsers/environments without crypto.randomUUID
-function uuidv4(){
-  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-    return window.crypto.randomUUID();
-  }
-  // Fallback RFC4122-ish UUID
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-    return v.toString(16);
-  });
-}
 const selected = new Map();
 let platesState = [];
 let sortables = [];

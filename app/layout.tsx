@@ -40,7 +40,31 @@ export default function RootLayout({
         />
       </head>
       <body className="text-foreground">
+<<<<<<< HEAD
         <div className={zalando.variable + " " + roboto.variable}>
+=======
+        <nav className="navbar navbar-expand-lg navbar-dark gh-header border-bottom">
+          <div className="container-fluid">
+            <a className="navbar-brand gh-brand" href="/">AutoCAM</a>
+            <div className="d-flex gap-3">
+              <a className="nav-link gh-link" href="/settings">Settings</a>
+              <Logout />
+            </div>
+          </div>
+        </nav>
+        <div className="container-fluid py-3">
+          {/* {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+          <div class="container">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'warning' if category=='danger' else category }} gh-alert">
+              {{ message }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% endwith %} */}
+>>>>>>> 6b84133 (feat: Got left column working)
           {children}
         </div>
       </body>

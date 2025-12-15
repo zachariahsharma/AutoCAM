@@ -1,33 +1,32 @@
 import "server-only";
 import mongoose from "mongoose";
-import { hash } from "argon2";
 
 export const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema({
-    email: {
-        type: String,
-        unique: true,
-    },
-    password: String,
-    admin: Boolean,
+  email: {
+    type: String,
+    unique: true,
+  },
+  password: String,
+  admin: Boolean,
 }));
 
 export const Task = mongoose.models.Task || mongoose.model("Task", new mongoose.Schema({
-    Material: String,
-    Thickness: Number,
-    Parts: [String],
-    Status: String,
-    name: String,
+  Material: String,
+  Thickness: Number,
+  Parts: [String],
+  Status: String,
+  name: String,
 }));
 
 export const Imported = mongoose.models.Imported || mongoose.model("Imported", new mongoose.Schema({
-    child: String,
-    quantity: String,
-    name: String,
-    epic: String,
+  child: String,
+  quantity: String,
+  name: String,
+  epic: String,
 }, { collection: "imported" }))
 
 if (!process.env.MONGODB_URI)
-    throw new Error("MONGODB_URI not found");
+  throw new Error("MONGODB_URI not found");
 
 const db = await mongoose.connect(process.env.MONGODB_URI, { dbName: "jira" });
 export default db;

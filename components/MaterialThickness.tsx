@@ -14,7 +14,7 @@ type Assignment = {
   parts: { id: string; quantity: number }[];
 }
 
-export default function MaterialThickness({ sessionDoc }: { sessionDoc: string }) {
+export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: string, parts: object }) {
   function addPlate() {
     const id = crypto.randomUUID();
     setPlates(prev => [...prev, {
@@ -44,6 +44,7 @@ export default function MaterialThickness({ sessionDoc }: { sessionDoc: string }
   const session = JSON.parse(sessionDoc);
   const [plates, setPlates] = useState<Plate[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  console.log(JSON.stringify(parts, null, 2))
   return <div className="row">
     <div className="col-md-4">
       <div className="card gh-box mb-3">
@@ -103,80 +104,78 @@ export default function MaterialThickness({ sessionDoc }: { sessionDoc: string }
             <h6 className="m-0">Available Parts by Epic</h6>
             {/* <button className="btn btn-sm btn-outline-primary" onclick="selectAllRecommended()">Select All (Recommended)</button> */}
           </div>
-          {/* <div style="max-height:420px; overflow:auto;" id="partsList">
-            {% if epic_groups and epic_groups|length %}
-              {% if box_tubes and box_tubes|length %}
-              <div className="mb-3">
+          <div style={{ maxHeight: "420px", overflow: "auto" }}>
+            {parts.boxTubes.length || parts.epics.length ? <>
+              {parts.boxTubes.length && <>
                 <div className="d-flex justify-content-between align-items-center mb-1">
                   <span className="fw-semibold text-white-50">Box Tubes</span>
                 </div>
                 <ul className="list-group list-group-flush">
-                  {% for t in box_tubes %}
-                  <li className="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                      <div className="fw-semibold">{{ t.display }}</div>
-                      <div className="small text-white-50">
-                        ID: {{ t.id }}{% if t.recommended %} • Recommended: {{ t.recommended }}{% endif %}
+                  {parts.boxTubes.map(tube => (
+                    <li className="list-group-item d-flex justify-content-between align-items-center">
+                      <div>
+                        <div className="fw-semibold">{tube.name}</div>
+                        <div className="small text-white-50">
+                          ID: {tube.id} • Recommended: {tube.quantity}
+                        </div>
                       </div>
-                    </div>
-                    <div className="d-flex align-items-center gap-2">
-                      <button className="btn btn-sm btn-primary" type="button" onclick="camTube('{{ t.id }}', this)">CAM (IQ)</button>
-                      {% if t.cam_download_url %}
-                      <a
-                        className="btn btn-sm btn-outline-primary"
-                        data-tube-download="{{ t.id }}"
-                        href="{{ t.cam_download_url }}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >Download</a>
-                      {% endif %}
-                      <span className="small text-white-50" data-tube-status-for="{{ t.id }}"></span>
-                    </div>
-                  </li>
-                  {% endfor %}
+                      <div className="d-flex align-items-center gap-2">
+                        {/* <button className="btn btn-sm btn-primary" type="button" onclick="camTube('{{ t.id }}', this)">CAM (IQ)</button>
+                       {% if t.cam_download_url %}
+                       <a
+                         className="btn btn-sm btn-outline-primary"
+                         data-tube-download="{{ t.id }}"
+                         href="{{ t.cam_download_url }}"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                       >Download</a>
+                       {% endif %} */}
+                        <span className="small text-white-50" data-tube-status-for={tube.id}></span>
+                      </div>
+                    </li>
+                  ))}
                 </ul>
-              </div>
-              {% endif %}
-              {% for group in epic_groups %}
-              <div className="mb-3">
-                <div className="d-flex justify-content-between align-items-center mb-1">
-                  <span className="fw-semibold text-white-50">{{ group.epic }}</span>
-                  <button
+              </>}
+              {parts.epics.map(epic => (
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <span className="fw-semibold text-white-50">{epic.epic}</span>
+                    {/* <button
                     type="button"
                     className="btn btn-sm btn-outline-light epic-toggle-btn"
                     data-epic="{{ group.epic }}"
                     onclick="toggleEpic('{{ group.epic }}', this)"
                   >
                     Insert
-                  </button>
-                </div>
-                <ul className="list-group list-group-flush">
-                  {% for p in group.parts %}
-                  <li className="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                      <div className="fw-semibold">{{ p.display }}</div>
-                      <div className="small text-white-50">
-                        Recommended: {{ p.recommended }} • Available: {{ p.available }} • ID: {{ p.id }}
-                      </div>
-                    </div>
-                    <div className="d-flex align-items-center gap-2">
-                      <div className="input-group input-group-sm" style="width: 200px;">
+                  </button> */}
+                  </div>
+                  <ul className="list-group list-group-flush">
+                    {epic.parts.map(part => (
+                      <li className="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                          <div className="fw-semibold">{part.name}</div>
+                          <div className="small text-white-50">
+                            Recommended: {part.quantity} • Available: {part.available} • ID: {part.id}
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center gap-2">
+                          {/* <div className="input-group input-group-sm" style="width: 200px;">
                         <button className="btn btn-outline-primary" type="button" onclick="decQty('{{ p.id }}')">-</button>
                         <input id="qty-{{ p.id }}" type="number" min="0" step="1" className="form-control gh-input text-center text-white" value="0" onchange="updateSelection('{{ p.id }}')">
                         <button className="btn btn-outline-primary" type="button" onclick="incQty('{{ p.id }}')">+</button>
-                      </div>
-                    </div>
-                  </li>
-                  {% endfor %}
-                </ul>
-              </div>
-              {% endfor %}
-            {% else %}
-            <ul className="list-group list-group-flush">
-              <li className="list-group-item">No parts.</li>
-            </ul>
-            {% endif %}
-          </div> */}
+                      </div> */}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </> : (
+              <ul className="list-group list-group-flush">
+                <li className="list-group-item">No parts.</li>
+              </ul>
+            )}
+          </div>
         </div>
       </div>
 

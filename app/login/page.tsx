@@ -1,14 +1,17 @@
 "use client";
 import { authClient } from "@/lib/auth-client";
+import { redirect } from "next/navigation";
 import { FormEvent } from "react";
 
 export default function Login() {
   const login = async (e: FormEvent) => {
     e.preventDefault();
-    const {data, error} = await authClient.signIn.email({
-      email: e.target.email.value,
+    const {data, error} = await authClient.signIn.username({
+      username: e.target.username.value,
       password: e.target.password.value,
       callbackURL: "/"
+    }, {
+      onSuccess: () => redirect("/"),
     })
   };
   return <div className="container login-white" style={{ maxWidth: "460px" }}>
@@ -18,7 +21,7 @@ export default function Login() {
         <form onSubmit={login}>
           <div className="mb-3">
             <label className="form-label">Email</label>
-            <input name="email" type="text" id="emailInput" className="form-control gh-input" placeholder="valor" required />
+            <input name="username" type="text" id="emailInput" className="form-control gh-input" placeholder="valor" required />
           </div>
           <div className="mb-3">
             <label className="form-label">Password</label>

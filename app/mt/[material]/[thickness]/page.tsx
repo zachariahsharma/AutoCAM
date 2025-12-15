@@ -104,5 +104,6 @@ export default async function MT(props: Props) {
       }
     }
   ]);
+  parts.epics = Object.fromEntries(parts.epics.map((epic: any) => [epic.epic, epic.parts]))
   return <MaterialThickness sessionDoc={JSON.stringify(sessionDoc)} parts={parts} />
 }

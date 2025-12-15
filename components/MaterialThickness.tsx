@@ -71,15 +71,17 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
     return parts.epics[epic].every(p => quantities[p.id] === p.quantity)
   }
 
-  const session = JSON.parse(sessionDoc);
-  const [plates, setPlates] = useState<Plate[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [quantities, setQuantities] = useState(() => {
-    let quantities: Record<string, number> = {};
+  function selectAllQuantities() {
+    let quantities: Record<string, number> = {}
     for (const part of Object.values(parts.epics).flat())
       quantities[part.id] = part.quantity;
     return quantities;
-  });
+  }
+
+  const session = JSON.parse(sessionDoc);
+  const [plates, setPlates] = useState<Plate[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [quantities, setQuantities] = useState(selectAllQuantities);
 
   return <div className="row">
     <div className="col-md-4">
@@ -138,7 +140,7 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h6 className="m-0">Available Parts by Epic</h6>
-            {/* <button className="btn btn-sm btn-outline-primary" onclick="selectAllRecommended()">Select All (Recommended)</button> */}
+            <button className="btn btn-sm btn-outline-primary" onClick={() => setQuantities(selectAllQuantities())}>Select All (Recommended)</button>
           </div>
           <div style={{ maxHeight: "420px", overflow: "auto" }}>
             {parts.boxTubes.length || parts.epics.length ? <>

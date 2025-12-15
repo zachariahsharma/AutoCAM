@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent, useState } from "react";
 
 type Plate = {
   id: string;
@@ -60,27 +60,26 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
     setQuantities(prev => {
       const next = { ...prev };
       const atRecommended = epicAtRecommended(name);
-
-      parts.epics[name].forEach(p => {
-        if (atRecommended) {
-          delete next[p.id];      // Remove
-        } else if (p.quantity > 0) {
-          next[p.id] = p.quantity; // Insert recommended
-        }
-      });
+      for (const part of parts.epics[name])
+        next[part.id] = atRecommended ? 0 : part.quantity;
 
       return next;
     });
   }
 
   function epicAtRecommended(epic: string) {
-    return parts.epics[epic].every(p => quantities[p.id] ?? 0 === p.quantity)
+    return parts.epics[epic].every(p => quantities[p.id] === p.quantity)
   }
 
   const session = JSON.parse(sessionDoc);
   const [plates, setPlates] = useState<Plate[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [quantities, setQuantities] = useState(() => {
+    let quantities: Record<string, number> = {};
+    for (const part of Object.values(parts.epics).flat())
+      quantities[part.id] = part.quantity;
+    return quantities;
+  });
 
   return <div className="row">
     <div className="col-md-4">
@@ -167,7 +166,7 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
                          rel="noopener noreferrer"
                        >Download</a>
                        {% endif %} */}
-                        <span className="small text-white-50" data-tube-status-for={tube.id}></span>
+                        <span className="small text-white-50"></span>
                       </div>
                     </li>
                   ))}
@@ -195,11 +194,11 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
                           </div>
                         </div>
                         <div className="d-flex align-items-center gap-2">
-                          {/* <div className="input-group input-group-sm" style="width: 200px;">
-                        <button className="btn btn-outline-primary" type="button" onclick="decQty('{{ p.id }}')">-</button>
-                        <input id="qty-{{ p.id }}" type="number" min="0" step="1" className="form-control gh-input text-center text-white" value="0" onchange="updateSelection('{{ p.id }}')">
-                        <button className="btn btn-outline-primary" type="button" onclick="incQty('{{ p.id }}')">+</button>
-                      </div> */}
+                          <div className="input-group input-group-sm" style={{ width: "200px" }}>
+                            {/* <button className="btn btn-outline-primary" type="button" onclick="decQty('{{ p.id }}')">-</button> */}
+                            {/* <input type="number" min="0" step="1" className="form-control gh-input text-center text-white" value="0" onChange={updateQuantity(part.id)} /> */}
+                            {/* <button className="btn btn-outline-primary" type="button" onclick="incQty('{{ p.id }}')">+</button> */}
+                          </div>
                         </div>
                       </li>
                     ))}

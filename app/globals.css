@@ -13,16 +13,21 @@
 	--success: #2ea043;
 	--success-hover: #238636;
 	--danger: #f85149;
+<<<<<<< HEAD
 	--yellow-2: #DBC826;
 	--yellow-1:#E6DD5E;
 	--yellow-3:#CDB425;
 	--yellow-4:#B18F1D;
 	--yellow-5: #8D691B;
+=======
+	--bs-heading-color: white !important;
+>>>>>>> 4447fce (feat: Working on server side DB logic)
 }
 
 html,
 body {
 	--bs-body-bg: #0d1117;
+	color: var(--text);
 }
 
 /* Header */

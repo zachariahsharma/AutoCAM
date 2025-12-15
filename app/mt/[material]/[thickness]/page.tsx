@@ -1,5 +1,5 @@
 import MaterialThickness from "@/components/MaterialThickness";
-import { MTSession } from "@/lib/db";
+import { Imported, MTSession, Task } from "@/lib/db";
 
 type Props = {
   params: {
@@ -8,11 +8,30 @@ type Props = {
   }
 }
 
-export default async function MT({ params }: Props) {
-  let { material, thickness } = await params;
-  material = decodeURIComponent(material);
-  thickness = decodeURIComponent(thickness);
+export default async function MT(props: Props) {
+  const params = await props.params;
+  const material = decodeURIComponent(params.material);
+  const thickness = +decodeURIComponent(params.thickness);
   const sessionDoc = await MTSession.findOne({ material, thickness });
+  const partCounts = Object.fromEntries((await Task.aggregate([
+    {
+      $match: {
+        Material: material,
+        Thickness: thickness,
+      }
+    },
+    { $unwind: "$Parts" },
+    {
+      $group: {
+        _id: "$Parts",
+        count: { $sum: 1 }
+      }
+    }
+  ])).map(item => [item._id, item.count]));
+  const imported = await Imported.find({
+    child: { $in: Object.keys(partCounts) }
+  });
+  console.log(imported);
   return <MaterialThickness sessionDoc={JSON.stringify(sessionDoc)} />
 }
 

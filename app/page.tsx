@@ -1,67 +1,127 @@
-import { Imported, Task } from "@/lib/db"
+"use client";
+import Image from "next/image";
+import styles from "./page.module.css";
+import { motion } from "framer-motion";
 
-export default async function Dashboard() {
-  const combos = await Task.aggregate([
-    {
-      $group: {
-        _id: {
-          Material: "$Material",
-          Thickness: "$Thickness",
-        },
-        partsCount: {
-          $sum: {
-            $size: "$Parts"
-          }
-        }
-      }
-    },
-    {
-      $project: {
-        Material: "$_id.Material",
-        Thickness: "$_id.Thickness",
-        PartsCount: "$partsCount",
-      }
-    }
-  ])
-  // # Recently added parts from imported collection (sorted by newest ObjectId)
-  const imported = await Imported.find().sort({ _id: "desc" }).limit(10)
+function Background() {
+  return (
+    <div>
+      <span id={styles.blur} />
+      <video
+        width="320"
+        height="240"
+        preload="none"
+        autoPlay
+        muted
+        loop
+        id={styles.video}
+      >
+        <source src="/index/ValorReveal.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  );
+}
 
-  return <div className="row">
-    <div className="col-md-3">
-      <div className="card gh-box gh-card-hover mb-3">
-        <div className="card-body">
-          <h5 className="text-white">Material · Thickness</h5>
-          <ul className="list-group list-group-flush">
-            {combos.length > 0 ? combos.map(combo => (
-              <li key={combo.Material + combo.Thickness} className="list-group-item d-flex align-items-center justify-content-between text-white">
-                <div>
-                  <div className="fw-bold text-white">{combo.Material}</div>
-                  <div className="small text-white-50">Thickness: {combo.Thickness} • Parts: {combo.PartsCount}</div>
-                </div>
-                <a className="btn btn-sm btn-primary" href={`/mt/${encodeURIComponent(combo.Material)}/${encodeURIComponent(combo.Thickness)}`}>Open</a>
-              </li>
-            )) : (
-              <li className="list-group-item text-white-50">No materials found.</li>
-            )}
-          </ul>
+function SecondaryButton({
+  children,
+  className,
+  onclick,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  onclick?: () => void;
+}) {
+  return (
+    <button
+      onClick={onclick}
+      className={styles.secondaryButton + " " + className}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PrimaryButton({
+  children,
+  className,
+  onclick,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  onclick?: () => void;
+}) {
+  return (
+    <button
+      onClick={onclick}
+      className={styles.primaryButton + " " + className}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Header() {
+  return (
+    <div id={styles.header}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 0.5 }}
+      >
+        <img
+          src="/index/Document.svg"
+          width={2000}
+          height={2000}
+          alt="logo"
+          id={styles.headerlogo}
+        />
+        <div>
+          <SecondaryButton
+            className={styles.loginbutton}
+            onclick={() => {
+              window.location.href = "/login";
+            }}
+          >
+            <span className={styles.textGradient}>LOGIN</span>
+          </SecondaryButton>
+          <PrimaryButton className={styles.signupbutton}>
+            <span className={styles.textGradient}>SIGNUP</span>
+          </PrimaryButton>
         </div>
-      </div>
+      </motion.div>
     </div>
-    <div className="col-md-9">
-      <div className="card gh-box gh-card-hover">
-        <div className="card-body">
-          <h5 className="text-white">Recently Added Parts</h5>
-          <ul className="list-group list-group-flush">
-            {imported.length > 0 ? imported.map(imp => (
-              <li key={imp.id} className="list-group-item d-flex justify-content-between align-items-center text-white">
-                <span className="text-white">{imp.name} ({imp.child}) — Qty: {imp.quantity}</span>
-              </li>
-            )) : (
-              <li className="list-group-item text-white-50">No materials found.</li>
-            )}
-          </ul>
-        </div>
-      </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <div>
+      <Background />
+
+      <Header />
+
+      <h1 id={styles.mainHeading}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          the <span className={styles.mainHeadingLargeText}>Future</span> of{" "}
+          <span className={styles.mainHeadingLargeText}>FRC's</span>
+        </motion.div>
+      </h1>
+      <h1 id={styles.secondaryHeading}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: .5, duration: 0.5 }}
+        >
+          <span className={styles.secondarytextGradient}>
+            Computer-Aided Manufacturing
+          </span>
+        </motion.div>
+      </h1>
     </div>
-  </div>
+  );
 }

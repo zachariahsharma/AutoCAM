@@ -1,0 +1,140 @@
+/* Background */
+
+#video {
+  width: 100%;
+  height: auto;
+  z-index: 2;
+}
+#blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(70px);
+  z-index: 1;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0,1));
+}
+
+
+
+/* Header */
+
+#header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  z-index: 3;
+  /* background-color: white; */
+}
+
+#headerlogo {
+  /* background-color: blue; */
+  position: relative;
+  height: 350px;
+  width: 350px;
+  top: -75px;
+  left:-125px;
+}
+
+.secondaryButton {
+  border-radius: 11px;
+  background-color: black;
+  border: none;
+  height:45px;
+  width:180px;
+  font-weight:600;
+  font-size:20px;
+  letter-spacing: 1px;
+  box-shadow: white 0px 7px 20px -8px;
+  transition: all .2s;
+}
+
+.secondaryButton:hover {
+  background-color: rgb(30, 30, 30);
+}
+.secondaryButton:active {
+  box-shadow: none;
+}
+
+.primaryButton {
+  border-radius: 11px;
+  background-color: var(--yellow-2);
+  border: none;
+  height:45px;
+  width:180px;
+  font-weight:600;
+  font-size:20px;
+  letter-spacing: 1px;
+  box-shadow: white 0px 7px 20px -8px;
+  transition: all .2s;
+}
+
+.primaryButton:hover {
+  background-color: var(--yellow-3);
+}
+.primaryButton:active {
+  box-shadow: none;
+}
+
+.loginbutton {
+  font-family: var(--font-roboto);
+  position: absolute;
+  z-index: 5;
+  top: 30px;
+  right: 200px;
+}
+
+.signupbutton {
+  font-family: var(--font-roboto);
+  position: absolute;
+  z-index: 5;
+  top: 30px;
+  right: 10px;
+}
+
+.textGradient {
+	background-image: linear-gradient(135deg,#A87A17, #745209);
+	color: transparent;
+	background-clip: text;
+}
+.secondarytextGradient {
+	background-image: linear-gradient(90deg,#F5F5F5, #E6DD5E);
+	color: transparent;
+	background-clip: text;
+}
+
+.mainHeadingLargeText {
+  font-size: 2em;
+}
+#mainHeading {
+  font-family: var(--font-zalando);
+  z-index: 5;
+  position: absolute;
+  top: 220px;
+  margin-left:auto;
+  margin-right: auto;
+  left:0px;
+  font-weight:200;
+  font-size: 1.5em;
+  right:0px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+#secondaryHeading {
+  font-family: var(--font-zalando);
+  z-index: 5;
+  position: absolute;
+  top: 350px;
+  margin-left:auto;
+  margin-right: auto;
+  left:0px;
+  font-weight:200;
+  font-size: 3em;
+  right:0px;
+  text-align: center;
+  letter-spacing: 1px; 
+}

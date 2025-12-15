@@ -13,6 +13,11 @@
 	--success-hover: #238636;
 	--danger: #f85149;
 	--bs-heading-color: white;
+	--yellow-2: #DBC826;
+	--yellow-1:#E6DD5E;
+	--yellow-3:#CDB425;
+	--yellow-4:#B18F1D;
+	--yellow-5: #8D691B;
 }
 
 html, body { color: var(--text); }

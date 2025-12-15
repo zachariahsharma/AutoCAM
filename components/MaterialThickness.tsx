@@ -1,5 +1,6 @@
 "use client";
 
+import { number } from "better-auth";
 import { ChangeEvent, useState } from "react";
 
 type Plate = {
@@ -14,19 +15,16 @@ type Assignment = {
   parts: { id: string; quantity: number }[];
 }
 
+type Part = {
+  id: string;
+  name: string;
+  available: number;
+  quantity: number;
+}
+
 type Parts = {
-  boxTubes: {
-    quantity: number;
-    available: number;
-    id: string;
-    name: string;
-  }[];
-  epics: Record<string, {
-    id: string;
-    name: string;
-    quantity: number;
-    available: number;
-  }[]>
+  boxTubes: Part[];
+  epics: Record<string, Part[]>
 }
 
 export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: string, parts: Parts }) {
@@ -58,7 +56,7 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
 
   function toggleEpic(name: string) {
     setQuantities(prev => {
-      const next = { ...prev };
+      const next = {...prev};
       const atRecommended = epicAtRecommended(name);
       for (const part of parts.epics[name])
         next[part.id] = atRecommended ? 0 : part.quantity;
@@ -72,10 +70,17 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
   }
 
   function selectAllQuantities() {
-    let quantities: Record<string, number> = {}
+    const quantities: Record<string, number> = {}
     for (const part of Object.values(parts.epics).flat())
       quantities[part.id] = part.quantity;
     return quantities;
+  }
+
+  function updateQuantity(part: Part, value: number) {
+    setQuantities(prev => ({
+      ...prev,
+      [part.id]: Math.min(part.quantity, Math.max(0, value))
+    }))
   }
 
   const session = JSON.parse(sessionDoc);
@@ -90,13 +95,13 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
           <h5>Material · Thickness</h5>
           <div className="text-white-50"><strong>Material:</strong> {session.material}</div>
           <div className="text-white-50"><strong>Thickness:</strong> {session.thickness}</div>
-          <form id="breakdownForm" method="post" action={`/mt/${encodeURIComponent(session.material)}/${encodeURIComponent(session.thickness)}/auto_breakdown`} className="mt-3">
-            <input type="hidden" name="selected_parts_json" id="selected_parts_json" />
-            <input type="hidden" name="plates_json" id="plates_json" />
-            <input type="hidden" name="plate_parts_json" id="plate_parts_json" />
-            <button id="submitBtn" className="btn btn-primary" disabled>Request Auto Breakdown</button>
+          <form method="post" action={`/mt/${encodeURIComponent(session.material)}/${encodeURIComponent(session.thickness)}/auto_breakdown`} className="mt-3">
+            <input type="hidden" name="selected_parts_json" />
+            <input type="hidden" name="plates_json" />
+            <input type="hidden" name="plate_parts_json" />
+            <button className="btn btn-primary" disabled>Request Auto Breakdown</button>
             <div className="form-text mt-2 text-danger">Select at least one part and add at least one plate to proceed.</div>
-            <div className="form-text small text-white-50">Last updated: <span id="updatedAt">{session.updatedAt}</span></div>
+            <div className="form-text small text-white-50">Last updated: <span>{session.updatedAt}</span></div>
           </form>
         </div>
       </div>
@@ -114,15 +119,15 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
                   <div className="row g-2">
                     <div className="col-4">
                       <label className="form-label small">Width</label>
-                      <input type="number" step="0.01" min="0" className="form-control text-white form-control-sm gh-input" value={plate.Width} onChange={e => updatePlate(plate.id, "Width", +e.target.value)} />
+                      <input type="number" step="0.01" min="0" className="form-control text-white form-control-sm gh-input" value={plate.Width} onChange={e => updatePlate(plate.id, "Width", e.target.valueAsNumber)} />
                     </div>
                     <div className="col-4">
                       <label className="form-label small">Length</label>
-                      <input type="number" step="0.01" min="0" className="form-control text-white form-control-sm gh-input" value={plate.Length} onChange={e => updatePlate(plate.id, "Length", +e.target.value)} />
+                      <input type="number" step="0.01" min="0" className="form-control text-white form-control-sm gh-input" value={plate.Length} onChange={e => updatePlate(plate.id, "Length", e.target.valueAsNumber)} />
                     </div>
                     <div className="col-4">
                       <label className="form-label small">True Depth</label>
-                      <input type="number" step="0.001" min="0" className="form-control form-control-sm gh-input text-white" value={plate.trueDepth} onChange={e => updatePlate(plate.id, "trueDepth", +e.target.value)} />
+                      <input type="number" step="0.001" min="0" className="form-control form-control-sm gh-input text-white" value={plate.trueDepth} onChange={e => updatePlate(plate.id, "trueDepth", e.target.valueAsNumber)} />
                     </div>
                   </div>
                 </div>
@@ -197,9 +202,21 @@ export default function MaterialThickness({ sessionDoc, parts }: { sessionDoc: s
                         </div>
                         <div className="d-flex align-items-center gap-2">
                           <div className="input-group input-group-sm" style={{ width: "200px" }}>
-                            {/* <button className="btn btn-outline-primary" type="button" onclick="decQty('{{ p.id }}')">-</button> */}
-                            {/* <input type="number" min="0" step="1" className="form-control gh-input text-center text-white" value="0" onChange={updateQuantity(part.id)} /> */}
-                            {/* <button className="btn btn-outline-primary" type="button" onclick="incQty('{{ p.id }}')">+</button> */}
+                            <button
+                              className="btn btn-outline-primary"
+                              type="button"
+                              onClick={() => updateQuantity(part, quantities[part.id] - 1)}>-</button>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              className="form-control gh-input text-center text-white"
+                              value={quantities[part.id]}
+                              onChange={e => updateQuantity(part, e.target.valueAsNumber)} />
+                            <button
+                              className="btn btn-outline-primary"
+                              type="button"
+                              onClick={() => updateQuantity(part, quantities[part.id] + 1)}>+</button>
                           </div>
                         </div>
                       </li>

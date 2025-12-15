@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Logout from "@/components/Logout";
 
 export const metadata: Metadata = {
   title: "AutoCAM",
@@ -23,9 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
             <a className="navbar-brand gh-brand" href="/dashboard">AutoCAM</a>
             <div className="d-flex gap-3">
               <a className="nav-link gh-link" href="/settings">Settings</a>
-              <form method="post" action="/api/logout">
-                <button className="nav-link gh-link">Logout</button>
-              </form>
+              <Logout />
             </div>
           </div>
         </nav>

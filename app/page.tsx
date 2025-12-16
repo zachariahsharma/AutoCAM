@@ -4,6 +4,9 @@ import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import localFont from "next/font/local";
 import { Roboto } from "next/font/google";
+import { authClient } from "@/lib/auth-client";
+import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const zalando = localFont({
   src: "../public/index/ZalandoSansExpanded-VariableFont_wght.ttf",
@@ -43,6 +46,12 @@ export function Header({
   delay?: number;
   duration?: number;
 }) {
+  const [session, setSession] = useState<boolean | null>(null);
+  useEffect(() => {
+    authClient.getSession().then(s => setSession(s != null));
+  });
+  if (session === null) return;
+
   return (
     <div id={styles.header}>
       <motion.div
@@ -65,22 +74,28 @@ export function Header({
           />
         </button>
         <div>
-          <SecondaryButton
-            id={styles.loginbutton}
-            onclick={() => {
-              window.location.href = "/login";
-            }}
-          >
-            <span className={styles.textGradient}>LOGIN</span>
-          </SecondaryButton>
-          <PrimaryButton
-            id={styles.signupbutton}
-            onclick={() => {
-              window.location.href = "/signup";
-            }}
-          >
-            <span className={styles.textGradient}>SIGNUP</span>
-          </PrimaryButton>
+          {session ? (
+            <PrimaryButton
+              id={styles.loginbutton}
+              onClick={() => redirect("/dashboard")}
+              style={{ right: "10px" }}
+            >
+              <span className={styles.textGradient}>DASHBOARD</span>
+            </PrimaryButton>
+          ) : <>
+            <SecondaryButton
+              id={styles.loginbutton}
+              onClick={() => redirect("/login")}
+            >
+              <span className={styles.textGradient}>LOGIN</span>
+            </SecondaryButton>
+            <PrimaryButton
+              id={styles.signupbutton}
+              onClick={() => redirect("/signup")}
+            >
+              <span className={styles.textGradient}>SIGNUP</span>
+            </PrimaryButton>
+          </>}
         </div>
       </motion.div>
     </div>

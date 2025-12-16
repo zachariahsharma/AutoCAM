@@ -3,8 +3,29 @@ import styles from "./signup.module.css";
 import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
+import { FormEvent } from "react";
+import { authClient } from "@/lib/auth-client";
+import { redirect } from "next/navigation";
 
 function SignupContainer() {
+  async function signup(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+    await authClient.signUp.email(
+      {
+        username: email,
+        email,
+        password: password,
+        name: email,
+      },
+      {
+        onSuccess: () => redirect("/dashboard"),
+      }
+    );
+  };
+
   return (
     <motion.div
       initial={{ x: 100, opacity: 0 }}
@@ -17,31 +38,33 @@ function SignupContainer() {
       </h1>
       <p id={styles.welcomeText}>Welcome to AutoCAM</p>
       <hr id={styles.horizontalrule} />
-      <label className={styles.inputLabel}>Email</label>
-      <br />
-      <input
-        type="text"
-        placeholder="Enter your email"
-        className={styles.input}
-      />
-      <br />
-      <label className={styles.inputLabel}>Password</label>
-      <br />
-      <input
-        type="password"
-        placeholder="Enter your Password"
-        className={styles.input}
-      />
-      <PrimaryButton
-        id={styles.signupbutton}
-        onclick={() => {
-          window.location.href = "/dashboard";
-        }}
-      >
-        <span className={styles.signupbuttontext + " " + styles.textGradient}>
-          SIGN UP
-        </span>
-      </PrimaryButton>
+      <form onSubmit={signup}>
+        <label className={styles.inputLabel}>Email</label>
+        <br />
+        <input
+          type="text"
+          placeholder="Enter your email"
+          className={styles.input}
+        />
+        <br />
+        <label className={styles.inputLabel}>Password</label>
+        <br />
+        <input
+          type="password"
+          placeholder="Enter your Password"
+          className={styles.input}
+        />
+        <PrimaryButton
+          id={styles.signupbutton}
+          onClick={() => {
+            window.location.href = "/dashboard";
+          }}
+        >
+          <span className={styles.signupbuttontext + " " + styles.textGradient}>
+            SIGN UP
+          </span>
+        </PrimaryButton>
+      </form>
       <div>
         <span id={styles.alreadyHaveAccount}>Aleady have an account?</span>
         <a href="/login" id={styles.login}>

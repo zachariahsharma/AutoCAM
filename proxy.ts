@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "./lib/auth";
 
 export async function proxy(request: NextRequest) {
+  return NextResponse.next();
   const session = await auth.api.getSession({ headers: request.headers })
   if (["/login", "/signup"].some(p => request.nextUrl.pathname.startsWith(p))) {
     if (session)

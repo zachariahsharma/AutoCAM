@@ -4,6 +4,7 @@ import styles from "./dashboard.module.css";
 import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { Part, PartCategory } from "@/app/dashboard/page";
+import { redirect } from "next/navigation";
 
 export function Header({
   delay = 1,
@@ -21,9 +22,7 @@ export function Header({
       >
         <button
           id={styles.headerlogoButton}
-          onClick={() => {
-            window.location.href = "/";
-          }}
+          onClick={() => redirect("/")}
         >
           <img
             src="/index/Document.svg"

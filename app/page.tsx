@@ -48,9 +48,10 @@ export function Header({
 }) {
   const [session, setSession] = useState<boolean | null>(null);
   useEffect(() => {
-    authClient.getSession().then(s => setSession(s != null));
+    authClient.getSession().then(s => setSession(s.data != null));
   });
   if (session === null) return;
+  console.log(session);
 
   return (
     <div id={styles.header}>
@@ -61,9 +62,7 @@ export function Header({
       >
         <button
           id={styles.headerlogoButton}
-          onClick={() => {
-            window.location.href = "/";
-          }}
+          onClick={() => redirect("/")}
         >
           <img
             src="/index/Document.svg"

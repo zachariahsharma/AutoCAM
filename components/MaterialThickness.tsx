@@ -1,23 +1,7 @@
 "use client";
 
-import { number } from "better-auth";
-import { ChangeEvent, useState } from "react";
-
-type Plate = {
-  id: string;
-  Width: number;
-  Length: number;
-  trueDepth: number;
-  verifiedSignature?: string;
-  cam_download_url?: string;
-  cam_bundle_rel?: string;
-  screenshot_url?: string;
-}
-
-type Assignment = {
-  plateId: string;
-  parts: { id: string; quantity: number }[];
-}
+import { Assignment, Plate, Session } from "@/app/types";
+import { useState } from "react";
 
 type Part = {
   id: string;
@@ -30,15 +14,6 @@ type Parts = {
   boxTubes: Part[];
   epics: Record<string, Part[]>
 }
-
-type Session = {
-  material: string;
-  thickness: number;
-  assignments: Assignment[];
-  plates: Plate[];
-  updatedAt: string;
-  updatedBy: string;
-};
 
 export default function MaterialThickness({ session, parts }: { session: Session, parts: Parts }) {
   function addPlate() {

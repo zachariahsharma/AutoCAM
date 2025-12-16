@@ -1,9 +1,10 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import db from "./db";
+import { Db } from "mongodb";
 
 export const auth = betterAuth({
-  database: mongodbAdapter(db.connection as any),
+  database: mongodbAdapter((db.connection as unknown) as Db),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 1,
@@ -18,5 +19,5 @@ const DEFAULT_USERS = [
 for (const user of DEFAULT_USERS) {
   try {
     await auth.api.signUpEmail({ body: user });
-  } catch (err) { }
+  } catch { }
 }

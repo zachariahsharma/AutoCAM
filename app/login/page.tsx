@@ -1,18 +1,19 @@
 "use client";
 import styles from "./login.module.css";
 import { motion } from "framer-motion";
-import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
+import { SecondaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
 import { authClient } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
 import { FormEvent } from "react";
+import Image from "next/image";
 function LoginContainer() {
   const login = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
-    const { data, error } = await authClient.signIn.email(
+    await authClient.signIn.email(
       { email, password },
       {
         onSuccess: () => redirect("/dashboard"),
@@ -58,7 +59,7 @@ function LoginContainer() {
         </SecondaryButton>
       </form>
       <div>
-        <span id={styles.alreadyHaveAccount}>Don't have an account yet?</span>
+        <span id={styles.alreadyHaveAccount}>Don&apos;t have an account yet?</span>
         <a href="/signup" id={styles.signup}>
           Sign Up
         </a>
@@ -75,8 +76,8 @@ function RobotPic() {
       id={styles.robotpic}
       transition={{ type: "spring", stiffness: 50, delay: 0.2, duration: 1 }}
     >
-      <img src="/auth/Robot2025.png" alt="robot pic" width={400} height={400} />
-      <span id={styles.label}>Flatline '25</span>
+      <Image src="/auth/Robot2025.png" alt="robot pic" width={400} height={400} />
+      <span id={styles.label}>Flatline &apos;25</span>
     </motion.div>
   );
 }

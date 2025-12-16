@@ -7,6 +7,7 @@ import { Roboto } from "next/font/google";
 import { authClient } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 const zalando = localFont({
   src: "../public/index/ZalandoSansExpanded-VariableFont_wght.ttf",
@@ -64,7 +65,7 @@ export function Header({
           id={styles.headerlogoButton}
           onClick={() => redirect("/")}
         >
-          <img
+          <Image
             src="/index/Document.svg"
             width={2000}
             height={2000}
@@ -115,7 +116,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           the <span className={styles.mainHeadingLargeText}>Future</span> of{" "}
-          <span className={styles.mainHeadingLargeText}>FRC's</span>
+          <span className={styles.mainHeadingLargeText}>FRC&apos;s</span>
         </motion.div>
       </h1>
       <h1 id={styles.secondaryHeading}>

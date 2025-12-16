@@ -5,6 +5,15 @@ import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { Part, PartCategory } from "@/app/dashboard/page";
 
+function countUniquePartsByEpicArray(category: PartCategory) {
+  const map = category.parts.reduce<Map<string, number>>((acc, part) => {
+    acc.set(part.epic, (acc.get(part.epic) ?? 0) + 1);
+    return acc;
+  }, new Map());
+
+  return Array.from(map, ([epic, count]) => ({ epic, count }));
+}
+
 export function Header({
   delay = 1,
   duration = 0.5,
@@ -64,15 +73,33 @@ export function Header({
 function PartCatCard({ partcat }: { partcat: PartCategory }) {
   return (
     <div className={styles.platecard}>
-      <div>
-        <span>{partcat.material}</span> <span>{partcat.thickness}</span>
+      <div id={styles.platecardheader}>
+        <span>{partcat.material}</span>{" "}
+        <span id={styles.partcardheaderthickness}>{partcat.thickness}</span>
       </div>
-      <div>
-        <p>
+      <div id={styles.platecardinfo}>
+        <p id={styles.platecardquantity}>
           Quantity:
           {partcat.parts.reduce((sum, { quantity }) => sum + quantity, 0)}
         </p>
-        <p>Unique: {partcat.parts.length}</p>
+        <p id={styles.platecardunique}>Unique: {partcat.parts.length}</p>
+      </div>
+      <hr id={styles.horizontalrule} />
+      <div>
+        {partcat.parts.length > 0 ? (
+          <table id={styles.platecardpartstable}>
+            <tbody>
+              {countUniquePartsByEpicArray(partcat).map((part, index) => (
+                <tr key={index}>
+                  <td>{part.epic}</td>
+                  <td>{part.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p id={styles.noparts}>No parts in this category.</p>
+        )}
       </div>
     </div>
   );
@@ -80,15 +107,17 @@ function PartCatCard({ partcat }: { partcat: PartCategory }) {
 
 function PartCatList({ partcats }: { partcats: PartCategory[] }) {
   return (
-    <div className={styles.plateslist}>
+    <>
       {partcats.length === 0 ? (
         <p id={styles.nopartcats}>No Categories available.</p>
       ) : (
-        partcats.map((partcat, index) => (
-          <PartCatCard key={index} partcat={partcat} />
-        ))
+        <div className={styles.plateslist}>
+          {partcats.map((partcat, index) => (
+            <PartCatCard key={index} partcat={partcat} />
+          ))}
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -99,7 +128,7 @@ export default function DashboardPage({
 }) {
   return (
     <div id={styles.dashboardpage}>
-      <Header delay={0}/>
+      <Header delay={0} />
       <PartCatList partcats={partcats} />
     </div>
   );

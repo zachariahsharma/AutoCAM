@@ -12,7 +12,7 @@ export interface PartCategory {
   parts: Part[];
 }
 const aluminum125: PartCategory = {
-  material: "aluminum",
+  material: "Aluminum",
   thickness: 0.125,
   parts: [
     { name: "Side Plate", quantity: 2, epic: "Drivetrain" },
@@ -21,5 +21,9 @@ const aluminum125: PartCategory = {
   ],
 };
 export default function Dashboard() {
-  return <DashboardPage partcats={[]} />;
+  return (
+    <DashboardPage
+      partcats={[aluminum125, aluminum125, aluminum125, aluminum125,aluminum125,aluminum125,aluminum125,aluminum125,aluminum125,aluminum125]}
+    />
+  );
 }

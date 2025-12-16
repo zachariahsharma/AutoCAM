@@ -15,9 +15,8 @@ function SignupContainer() {
     const password = String(formData.get("password") ?? "");
     await authClient.signUp.email(
       {
-        username: email,
         email,
-        password: password,
+        password,
         name: email,
       },
       {
@@ -42,7 +41,7 @@ function SignupContainer() {
         <label className={styles.inputLabel}>Email</label>
         <br />
         <input
-          type="text"
+          type="email"
           placeholder="Enter your email"
           className={styles.input}
         />

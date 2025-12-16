@@ -12,12 +12,8 @@ function LoginContainer() {
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
-    const { data, error } = await authClient.signIn.username(
-      {
-        username: email,
-        password: password,
-        callbackURL: "/",
-      },
+    const { data, error } = await authClient.signIn.email(
+      { email, password },
       {
         onSuccess: () => redirect("/dashboard"),
       }
@@ -39,7 +35,7 @@ function LoginContainer() {
         <label className={styles.inputLabel}>Email</label>
         <br />
         <input
-          type="text"
+          type="email"
           placeholder="Enter your email"
           className={styles.input}
           name="email"

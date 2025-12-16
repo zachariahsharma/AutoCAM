@@ -1,3 +1,4 @@
+import Layout from "@/components/layout";
 import MaterialThickness from "@/components/MaterialThickness";
 import { Imported, MTSession, Task } from "@/lib/db";
 
@@ -105,5 +106,5 @@ export default async function MT(props: Props) {
     }
   ]);
   parts.epics = Object.fromEntries(parts.epics.map((epic: any) => [epic.epic, epic.parts]))
-  return <MaterialThickness session={session! as any} parts={parts} />
+  return <Layout><MaterialThickness session={session! as any} parts={parts} /></Layout>
 }

@@ -7,10 +7,9 @@ import { FormEvent } from "react";
 export default function Login() {
   const login = async (e: FormEvent) => {
     e.preventDefault();
-    const { data, error } = await authClient.signIn.username({
+    await authClient.signIn.username({
       username: e.target.username.value,
       password: e.target.password.value,
-      callbackURL: "/"
     }, {
       onSuccess: () => redirect("/"),
     })

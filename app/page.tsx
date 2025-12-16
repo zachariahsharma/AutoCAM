@@ -2,6 +2,7 @@
 import Image from "next/image";
 import styles from "./page.module.css";
 import { motion } from "framer-motion";
+import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 
 function Background() {
   return (
@@ -10,58 +11,21 @@ function Background() {
       <video
         width="320"
         height="240"
-        preload="none"
+        // preload="none"
         autoPlay
+        playsInline
         muted
         loop
         id={styles.video}
       >
-        <source src="/index/ValorReveal.mp4" type="video/mp4" />
+        <source src="/index/263121_small.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
     </div>
   );
 }
 
-function SecondaryButton({
-  children,
-  className,
-  onclick,
-}: {
-  children?: React.ReactNode;
-  className?: string;
-  onclick?: () => void;
-}) {
-  return (
-    <button
-      onClick={onclick}
-      className={styles.secondaryButton + " " + className}
-    >
-      {children}
-    </button>
-  );
-}
-
-function PrimaryButton({
-  children,
-  className,
-  onclick,
-}: {
-  children?: React.ReactNode;
-  className?: string;
-  onclick?: () => void;
-}) {
-  return (
-    <button
-      onClick={onclick}
-      className={styles.primaryButton + " " + className}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Header() {
+export function Header() {
   return (
     <div id={styles.header}>
       <motion.div
@@ -78,14 +42,19 @@ function Header() {
         />
         <div>
           <SecondaryButton
-            className={styles.loginbutton}
+            id={styles.loginbutton}
             onclick={() => {
               window.location.href = "/login";
             }}
           >
             <span className={styles.textGradient}>LOGIN</span>
           </SecondaryButton>
-          <PrimaryButton className={styles.signupbutton}>
+          <PrimaryButton
+            id={styles.signupbutton}
+            onclick={() => {
+              window.location.href = "/signup";
+            }}
+          >
             <span className={styles.textGradient}>SIGNUP</span>
           </PrimaryButton>
         </div>
@@ -115,7 +84,7 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: .5, duration: 0.5 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
         >
           <span className={styles.secondarytextGradient}>
             Computer-Aided Manufacturing

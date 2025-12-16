@@ -1,8 +1,7 @@
 :root {
-	--bs-body-bg: #0d1117 !important;
-	--bg-elev: #161b22;
-	--header: #010409;
-	--bs-border-color: #3d444d !important;
+	--bs-body-bg: #000000 !important;
+	--bg-elev: #000000;
+	--header: #000000;
 	--bs-body-font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji" !important;
 	--text: #c9d1d9;
 	--muted: #9aa1a9; /* improved contrast */
@@ -65,7 +64,7 @@ card-body {
 
 /* Tables and misc */
 .navbar-brand { letter-spacing: 0.3px; }
-hr, .border-bottom { border-color: var(--bs-border-color) !important; }
+.border-bottom { border-color: var(--bs-border-color) !important; }
 
 /* Drag area min-height */
 .min-vh-25 { min-height: 25vh; } 

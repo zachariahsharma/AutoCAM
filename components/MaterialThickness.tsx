@@ -269,27 +269,29 @@ export default function MaterialThickness({ session, parts }: { session: Session
             </div>
             <div className="col-lg-8" id="assignPlates">
               {plates.map((plate, idx) => (
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <div className="small text-white-50">Plate {idx + 1}</div>
-                    <div className="d-flex gap-2">
-                      {/* <button type="button" className="btn btn-sm btn-outline-primary" onclick="moveAllUnassignedToPlate('${p.id}')">Fill with Unassigned</button> */}
-                      <button type="button" className="btn btn-sm btn-outline-primary">Fill with Unassigned</button>
-                    </div>
-                  </div>
-                  <ul id="assign-${p.id}" className="list-group list-group-flush min-vh-25" style={{minHeight: "220px"}}></ul>
-                  <div id="cam-controls-${p.id}" className="mt-2" style={{display: "none"}}>
-                    {/* <form onsubmit="return sendCam('${p.id}', this)"> */}
-                    <form>
-                      <div className="d-flex align-items-center gap-2">
-                        <select name="machine" className="form-select form-select-sm text-white gh-input d-inline w-auto">
-                          <option value="IQ">IQ</option>
-                          <option value="Swift">Swift</option>
-                        </select>
-                        <button className="btn btn-sm btn-primary" type="submit">CAM</button>
-                        <span id="cam-status-${p.id}" className="cam-status"></span>
+                <div key={plate.id} className="mb-3">
+                  <div className="gh-box p-2">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <div className="small text-white-50">Plate {idx + 1}</div>
+                      <div className="d-flex gap-2">
+                        {/* <button type="button" className="btn btn-sm btn-outline-primary" onclick="moveAllUnassignedToPlate('${p.id}')">Fill with Unassigned</button> */}
+                        <button type="button" className="btn btn-sm btn-outline-primary">Fill with Unassigned</button>
                       </div>
-                    </form>
+                    </div>
+                    <ul id="assign-${p.id}" className="list-group list-group-flush min-vh-25" style={{ minHeight: "220px" }}></ul>
+                    <div id="cam-controls-${p.id}" className="mt-2" style={{ display: "none" }}>
+                      {/* <form onsubmit="return sendCam('${p.id}', this)"> */}
+                      <form>
+                        <div className="d-flex align-items-center gap-2">
+                          <select name="machine" className="form-select form-select-sm text-white gh-input d-inline w-auto">
+                            <option value="IQ">IQ</option>
+                            <option value="Swift">Swift</option>
+                          </select>
+                          <button className="btn btn-sm btn-primary" type="submit">CAM</button>
+                          <span id="cam-status-${p.id}" className="cam-status"></span>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 </div>
               ))}

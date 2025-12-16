@@ -3,6 +3,7 @@
 import styles from "./dashboard.module.css";
 import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
+import { Part, PartCategory } from "@/app/dashboard/page";
 
 export function Header({
   delay = 1,
@@ -32,12 +33,18 @@ export function Header({
             id={styles.headerlogo}
           />
         </button>
+        <h1 id={styles.headertext}>
+          <span className={styles.secondarytextGradient}>AutoCAM</span>
+        </h1>
         <div>
           <SecondaryButton id={styles.finishedcambutton}>
             <span className={styles.textGradient}>Finished CAM</span>
           </SecondaryButton>
           <PrimaryButton id={styles.boxtubesbutton}>
             <span className={styles.textGradient}>Box Tubes</span>
+          </PrimaryButton>
+          <PrimaryButton id={styles.adjustquantitiesbutton}>
+            <span className={styles.textGradient}>Adjust Quantities</span>
           </PrimaryButton>
           <div id={styles.usericoncontainer}>
             <img
@@ -54,10 +61,46 @@ export function Header({
   );
 }
 
-export default function DashboardPage() {
+function PartCatCard({ partcat }: { partcat: PartCategory }) {
+  return (
+    <div className={styles.platecard}>
+      <div>
+        <span>{partcat.material}</span> <span>{partcat.thickness}</span>
+      </div>
+      <div>
+        <p>
+          Quantity:
+          {partcat.parts.reduce((sum, { quantity }) => sum + quantity, 0)}
+        </p>
+        <p>Unique: {partcat.parts.length}</p>
+      </div>
+    </div>
+  );
+}
+
+function PartCatList({ partcats }: { partcats: PartCategory[] }) {
+  return (
+    <div className={styles.plateslist}>
+      {partcats.length === 0 ? (
+        <p id={styles.nopartcats}>No Categories available.</p>
+      ) : (
+        partcats.map((partcat, index) => (
+          <PartCatCard key={index} partcat={partcat} />
+        ))
+      )}
+    </div>
+  );
+}
+
+export default function DashboardPage({
+  partcats,
+}: {
+  partcats: PartCategory[];
+}) {
   return (
     <div id={styles.dashboardpage}>
-      <Header />
+      <Header delay={0}/>
+      <PartCatList partcats={partcats} />
     </div>
   );
 }

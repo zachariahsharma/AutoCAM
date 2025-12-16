@@ -30,7 +30,7 @@
 	background-clip: text;
 }
 
-#signupcontainer {
+#logincontainer {
     background-color: black;
     width: 30%;
     border-radius: 20px;
@@ -43,7 +43,7 @@
     z-index: 10;
 }
 
-#signupheader {
+#loginheader {
     font-family: var(--font-zalando);
     font-weight: 200;
 }
@@ -86,10 +86,13 @@
     outline: 1px solid #949393;
 }
 
-#signupbutton {
+#loginbutton {
     margin-top:20px;
     width:100%;
     margin-bottom:40px;
+     background: linear-gradient(rgb(0, 0, 0), rgb(0, 0, 0)) padding-box,
+              linear-gradient(to bottom, #B57C02, #332405) border-box;
+  border: 1px solid transparent;
 }
 
 .textGradient {
@@ -98,7 +101,7 @@
 	background-clip: text;
 }
 
-.signupbuttontext {
+.loginbuttontext {
     font-family: var(--font-zalando);
     letter-spacing: 2px;
     font-weight: 200;
@@ -110,10 +113,11 @@
     font-family: var(--font-zalando);
     margin-right: 10px;
     font-weight: 100;
-    font-size:15px;
+    font-size:13px;
 }
-#login {
+#signup {
     text-decoration: none;
     color:white;
+    font-size:13px;
     font-family: var(--font-zalando);
 }

@@ -19,7 +19,7 @@
   position: relative;
   height: 70px;
   width: 70px;
-  top: 13px;
+  top: 18px;
   left:13px;
 }
 
@@ -39,17 +39,35 @@
   right: 110px;
 }
 
+#adjustquantitiesbutton {
+  font-family: var(--font-roboto);
+  position: fixed;
+  z-index: 5;
+  bottom: 30px;
+  right: 10px;
+  background:white;
+  width: 220px;
+}
 #usericon {
-    position: absolute;
-  height: 40px;
-  width: 40px;
-  top: 30px;
-  right:30px;
+    height: 30px;
+  width: 30px;
 }
 #usericoncontainer {
-    height:100px;
-    width:100px;
+    padding:15px;
+    border: 1px solid #DBC826;
     border-radius: 50%;
+    position: absolute;
+  top: 20px;
+  right:25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#headertext {
+    position: absolute;
+    top: 30px;
+    left:100px;
 }
 
 .textGradient {
@@ -61,4 +79,14 @@
 	background-image: linear-gradient(90deg,#F5F5F5, #E6DD5E);
 	color: transparent;
 	background-clip: text;
+}
+
+#nopartcats {
+    text-align: center;
+    display: flex;
+    width:100vw;
+    height:100vh;
+    z-index: 0;
+    justify-content: center;
+    align-items: center;
 }

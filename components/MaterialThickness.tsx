@@ -1,7 +1,7 @@
 "use client";
 
-import { number } from "better-auth";
-import { ChangeEvent, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ReactSortable } from "react-sortablejs";
 
 type Plate = {
   id: string;
@@ -83,10 +83,10 @@ export default function MaterialThickness({ session, parts }: { session: Session
   }
 
   function selectAllQuantities() {
-    const quantities: Record<string, number> = {}
+    const quant: Record<string, number> = {}
     for (const part of Object.values(parts.epics).flat())
-      quantities[part.id] = part.quantity;
-    return quantities;
+      quant[part.id] = part.quantity;
+    return quant;
   }
 
   function updateQuantity(part: Part, value: number) {
@@ -101,9 +101,30 @@ export default function MaterialThickness({ session, parts }: { session: Session
       Object.values(quantities).some(quant => quant > 0);
   }
 
-  const [plates, setPlates] = useState<Plate[]>(session.plates);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  function expandParts(parts: any[]) {
+    const partsExpanded = [];
+    for (const part of parts) {
+      for (let i = 0; i < part.quantity; i++)
+        partsExpanded.push(part)
+    }
+    return partsExpanded;
+  }
+
+  const [plates, setPlates] = useState(session.plates);
+  const [assignments, setAssignments] = useState(session.assignments);
   const [quantities, setQuantities] = useState(selectAllQuantities);
+  const unassigned = useMemo(() => {
+    const partsCopy = Object.values(parts.epics)
+      .flat()
+      .map(p => ({ ...p }));
+
+    for (const assignment of assignments) {
+      for (const part of assignment.parts) {
+        partsCopy.find(p => p.id === part.id)!.quantity -= part.quantity;
+      }
+    }
+    return partsCopy;
+  }, [assignments, parts.epics]);
 
   return <div className="row">
     <div className="col-md-4">
@@ -264,7 +285,15 @@ export default function MaterialThickness({ session, parts }: { session: Session
             <div className="col-lg-4">
               <div className="gh-box p-2">
                 <div className="small text-white-50 mb-2">Unassigned</div>
-                <ul id="assign-unassigned" className="list-group list-group-flush min-vh-25" style={{ minHeight: "220px" }}></ul>
+                <ul id="assign-unassigned" className="list-group list-group-flush min-vh-25" style={{ minHeight: "220px" }}>
+                  <ReactSortable list={expandParts(unassigned)} setList={() => { }}>
+                    {expandParts(unassigned).map((part, i) => (
+                      <li key={`${part.id}-${i}`} className="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{Object.values(parts.epics).flat().find(p => p.id == part.id)?.name}</span><span className="badge bg-primary">1</span>
+                      </li>
+                    ))}
+                  </ReactSortable>
+                </ul>
               </div>
             </div>
             <div className="col-lg-8" id="assignPlates">
@@ -278,7 +307,24 @@ export default function MaterialThickness({ session, parts }: { session: Session
                         <button type="button" className="btn btn-sm btn-outline-primary">Fill with Unassigned</button>
                       </div>
                     </div>
-                    <ul id="assign-${p.id}" className="list-group list-group-flush min-vh-25" style={{ minHeight: "220px" }}></ul>
+                    <ul className="list-group list-group-flush min-vh-25" style={{ minHeight: "220px" }}>
+                      <ReactSortable
+                        list={expandParts(assignments.find(a => a.plateId === plate.id)!.parts)}
+                        setList={() => { }}>
+                        {expandParts(assignments.find(a => a.plateId === plate.id)!.parts).map((part, i) => {
+                          return <li key={`${part.id}-${i}`} className="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{Object.values(parts.epics).flat().find(p => p.id == part.id)?.name}</span><span className="badge bg-primary">1</span>
+                          </li>
+                        })}
+                      </ReactSortable>
+                      {/* {assignments.find(a => a.plateId === plate.id)?.parts.map(part => (
+                        Array.from(Array(part.quantity).keys()).map(i => (
+                          <li key={`${part.id}-${i}`} className="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{Object.values(parts.epics).flat().find(p => p.id == part.id)?.name}</span><span className="badge bg-primary">1</span>
+                          </li>
+                        ))
+                      ))} */}
+                    </ul>
                     <div id="cam-controls-${p.id}" className="mt-2" style={{ display: "none" }}>
                       {/* <form onsubmit="return sendCam('${p.id}', this)"> */}
                       <form>

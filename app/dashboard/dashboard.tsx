@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { Part, PartCategory } from "@/app/dashboard/page";
 import { redirect } from "next/navigation";
+import { button } from "framer-motion/client";
 
 function countUniquePartsByEpicArray(category: PartCategory) {
   const map = category.parts.reduce<Map<string, number>>((acc, part) => {
@@ -29,10 +30,7 @@ export function Header({
         animate={{ opacity: 1 }}
         transition={{ delay: delay, duration: duration }}
       >
-        <button
-          id={styles.headerlogoButton}
-          onClick={() => redirect("/")}
-        >
+        <button id={styles.headerlogoButton} onClick={() => redirect("/")}>
           <img
             src="/index/Document.svg"
             width={2000}
@@ -69,9 +67,23 @@ export function Header({
   );
 }
 
-function PartCatCard({ partcat }: { partcat: PartCategory }) {
+function PartCatCard({
+  partcat,
+  delay,
+}: {
+  partcat: PartCategory;
+  delay: number;
+}) {
   return (
-    <div className={styles.platecard}>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: delay, duration: 0.3 }}
+      className={styles.platecard}
+      onClick={() =>
+        redirect(`/mt/${partcat.material.toLowerCase()}/${partcat.thickness}`)
+      }
+    >
       <div id={styles.platecardheader}>
         <span>{partcat.material}</span>{" "}
         <span id={styles.partcardheaderthickness}>{partcat.thickness}</span>
@@ -100,7 +112,16 @@ function PartCatCard({ partcat }: { partcat: PartCategory }) {
           <p id={styles.noparts}>No parts in this category.</p>
         )}
       </div>
-    </div>
+      <div id={styles.openiconcontainer}>
+        <img
+          src="/dashboard/Open.svg"
+          width={2000}
+          height={2000}
+          alt="user icon"
+          id={styles.openicon}
+        />
+      </div>
+    </motion.div>
   );
 }
 
@@ -112,7 +133,7 @@ function PartCatList({ partcats }: { partcats: PartCategory[] }) {
       ) : (
         <div className={styles.plateslist}>
           {partcats.map((partcat, index) => (
-            <PartCatCard key={index} partcat={partcat} />
+            <PartCatCard key={index} partcat={partcat} delay={index * 0.2+.3} />
           ))}
         </div>
       )}

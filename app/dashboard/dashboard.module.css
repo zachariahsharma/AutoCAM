@@ -116,9 +116,16 @@
   min-width: 300px;
   background-color: black;
   height:300px;
+  position: relative;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.31);
+  transition: all .1s;
 }
+
+.platecard:hover {
+  box-shadow:rgba(255,255,255,.2) 0px 0px 3px 3px;
+}
+
 #platecardheader {
   display: flex;
   width: 100%;
@@ -172,4 +179,14 @@
   display: flex;
   width:100%;
   justify-content: space-between;
+}
+
+#openiconcontainer {
+  position:absolute;
+  bottom:8px;
+  right:8px;
+}
+#openicon { 
+  width:15px;
+  height:15px;
 }

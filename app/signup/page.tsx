@@ -54,7 +54,9 @@ function SignupContainer() {
           placeholder="Enter your Password"
           className={styles.input}
         />
-        <PrimaryButton id={styles.signupbutton}>
+        <PrimaryButton id={styles.signupbutton}
+          onClick={() => redirect("/dashboard")}
+        >
           <span className={styles.signupbuttontext + " " + styles.textGradient}>
             SIGN UP
           </span>

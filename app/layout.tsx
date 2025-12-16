@@ -1,17 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Logout from "@/components/Logout";
-import localFont from "next/font/local";
-import { Roboto } from "next/font/google";
-const zalando = localFont({
-  src: "../public/index/ZalandoSansExpanded-VariableFont_wght.ttf",
-  variable: "--font-zalando",
-});
-const roboto = Roboto({
-  subsets: ["latin"],
-  variable: "--font-roboto",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "AutoCAM",
@@ -40,9 +28,7 @@ export default function RootLayout({
         />
       </head>
       <body className="text-foreground">
-        <div className={zalando.variable + " " + roboto.variable}>
           {children}
-        </div>
       </body>
     </html>
   );

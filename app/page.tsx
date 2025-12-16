@@ -1,8 +1,19 @@
 "use client";
-import Image from "next/image";
 import styles from "./page.module.css";
 import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
+import localFont from "next/font/local";
+import { Roboto } from "next/font/google";
+
+const zalando = localFont({
+  src: "../public/index/ZalandoSansExpanded-VariableFont_wght.ttf",
+  variable: "--font-zalando",
+});
+const roboto = Roboto({
+  subsets: ["latin"],
+  variable: "--font-roboto",
+  display: "swap",
+});
 
 function Background() {
   return (
@@ -78,7 +89,7 @@ export function Header({
 
 export default function Home() {
   return (
-    <div>
+    <div className={zalando.variable + " " + roboto.variable}>
       <Background />
 
       <Header />

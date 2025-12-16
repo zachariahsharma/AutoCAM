@@ -25,21 +25,34 @@ function Background() {
   );
 }
 
-export function Header() {
+export function Header({
+  delay = 1,
+  duration = 0.5,
+}: {
+  delay?: number;
+  duration?: number;
+}) {
   return (
     <div id={styles.header}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.5 }}
+        transition={{ delay: delay, duration: duration }}
       >
-        <img
-          src="/index/Document.svg"
-          width={2000}
-          height={2000}
-          alt="logo"
-          id={styles.headerlogo}
-        />
+        <button
+          id={styles.headerlogoButton}
+          onClick={() => {
+            window.location.href = "/";
+          }}
+        >
+          <img
+            src="/index/Document.svg"
+            width={2000}
+            height={2000}
+            alt="logo"
+            id={styles.headerlogo}
+          />
+        </button>
         <div>
           <SecondaryButton
             id={styles.loginbutton}

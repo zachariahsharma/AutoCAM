@@ -2,7 +2,7 @@
 
 #video {
   width: 100%;
-  height: auto;
+  height: 100vh;
   z-index: 2;
 }
 #blur {
@@ -30,13 +30,19 @@
   /* background-color: white; */
 }
 
+#headerlogoButton {
+  background-color: rgba(0,0,0,0);
+  outline:none;
+  border:none;
+}
+
 #headerlogo {
   /* background-color: blue; */
   position: relative;
-  height: 350px;
-  width: 350px;
-  top: -75px;
-  left:-125px;
+  height: 70px;
+  width: 70px;
+  top: 13px;
+  left:13px;
 }
 
 #loginbutton {

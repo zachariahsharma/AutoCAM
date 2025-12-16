@@ -1,0 +1,64 @@
+#header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  z-index: 3;
+  /* background-color: white; */
+}
+
+#headerlogoButton {
+  background-color: rgba(0,0,0,0);
+  outline:none;
+  border:none;
+}
+
+#headerlogo {
+  /* background-color: blue; */
+  position: relative;
+  height: 70px;
+  width: 70px;
+  top: 13px;
+  left:13px;
+}
+
+#finishedcambutton {
+  font-family: var(--font-roboto);
+  position: absolute;
+  z-index: 5;
+  top: 30px;
+  right: 300px;
+}
+
+#boxtubesbutton {
+  font-family: var(--font-roboto);
+  position: absolute;
+  z-index: 5;
+  top: 30px;
+  right: 110px;
+}
+
+#usericon {
+    position: absolute;
+  height: 40px;
+  width: 40px;
+  top: 30px;
+  right:30px;
+}
+#usericoncontainer {
+    height:100px;
+    width:100px;
+    border-radius: 50%;
+}
+
+.textGradient {
+	background-image: linear-gradient(135deg,#A87A17, #745209);
+	color: transparent;
+	background-clip: text;
+}
+.secondarytextGradient {
+	background-image: linear-gradient(90deg,#F5F5F5, #E6DD5E);
+	color: transparent;
+	background-clip: text;
+}

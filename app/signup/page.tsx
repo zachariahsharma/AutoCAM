@@ -6,7 +6,12 @@ import { Header } from "@/app/page";
 
 function SignupContainer() {
   return (
-    <div id={styles.signupcontainer}>
+    <motion.div
+      initial={{ x: 100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 50, delay: 0.2, duration: 1 }}
+      id={styles.signupcontainer}
+    >
       <h1 id={styles.signupheader}>
         <span className={styles.secondarytextGradient}>Sign Up</span>
       </h1>
@@ -27,30 +32,44 @@ function SignupContainer() {
         placeholder="Enter your Password"
         className={styles.input}
       />
-      <PrimaryButton id={styles.signupbutton}>
-        <span className={styles.signupbuttontext + " " + styles.textGradient}>SIGN UP</span>
+      <PrimaryButton
+        id={styles.signupbutton}
+        onclick={() => {
+          window.location.href = "/dashboard";
+        }}
+      >
+        <span className={styles.signupbuttontext + " " + styles.textGradient}>
+          SIGN UP
+        </span>
       </PrimaryButton>
       <div>
         <span id={styles.alreadyHaveAccount}>Aleady have an account?</span>
-        <a href="/login" id={styles.login}>Log In</a>
+        <a href="/login" id={styles.login}>
+          Log In
+        </a>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 function RobotPic() {
   return (
-    <div id={styles.robotpic}>
+    <motion.div
+      initial={{ x: -100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      id={styles.robotpic}
+      transition={{ type: "spring", stiffness: 50, delay: 0.2, duration: 1 }}
+    >
       <img src="/auth/Robot2025.png" alt="robot pic" width={400} height={400} />
       <span id={styles.label}>Flatline '25</span>
-    </div>
+    </motion.div>
   );
 }
 
 export default function SignupPage() {
   return (
     <div>
-      <Header />
+      <Header delay={0.5} duration={0.5} />
       <RobotPic />
       <SignupContainer />
     </div>

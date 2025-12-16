@@ -1,11 +1,12 @@
 "use client";
+import Marquee from "react-fast-marquee";
 
 import styles from "./dashboard.module.css";
 import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
-import { Part, PartCategory } from "@/app/dashboard/page";
+import { Part, PartCategory, BoxTube } from "@/app/types";
 import { redirect } from "next/navigation";
-import { button } from "framer-motion/client";
+import { button, div } from "framer-motion/client";
 
 function countUniquePartsByEpicArray(category: PartCategory) {
   const map = category.parts.reduce<Map<string, number>>((acc, part) => {
@@ -133,7 +134,11 @@ function PartCatList({ partcats }: { partcats: PartCategory[] }) {
       ) : (
         <div className={styles.plateslist}>
           {partcats.map((partcat, index) => (
-            <PartCatCard key={index} partcat={partcat} delay={index * 0.2+.3} />
+            <PartCatCard
+              key={index}
+              partcat={partcat}
+              delay={index * 0.2 + 0.3}
+            />
           ))}
         </div>
       )}
@@ -141,15 +146,65 @@ function PartCatList({ partcats }: { partcats: PartCategory[] }) {
   );
 }
 
+function BoxTubeCard({ boxtube }: { boxtube: BoxTube }) {
+  return (
+    <div className={styles.boxtubecard}>
+      <div className={styles.boxtubecardheader}>
+        <h1 className={styles.boxtubecardname}><Marquee>{boxtube.name}</Marquee></h1>
+        <div className={styles.boxtubecardcamdropdown}>
+          <div>CAM</div>
+          <div className={styles.dropdownicon}>
+            <img
+              src="/dashboard/dropdown.svg"
+              alt="dropdown"
+              width={2000}
+              height={2000}
+            />
+          </div>
+        </div>
+      </div>
+      <div className={styles.boxtubecardquantity}>
+        Quantity: {boxtube.quantity}
+      </div>
+      <div className={styles.boxtubecardepic}>Epic: {boxtube.epic}</div>
+    </div>
+  );
+}
+
+function BoxTubes({ boxtubes }: { boxtubes: BoxTube[] }) {
+  return (
+    <div id={styles.boxtubesblur}>
+      <div id={styles.boxtubes}>
+        <h1 id={styles.boxtubeheader} className="secondarytextGradient">
+          Box Tubes
+        </h1>
+        <hr id={styles.horizontalrule} />
+        {boxtubes.length === 0 ? (
+          <p id={styles.noboxtubes}>No Box Tubes available.</p>
+        ) : (
+          <div id={styles.boxtubestable}>
+            {boxtubes.map((boxtube, index) => (
+              <BoxTubeCard key={index} boxtube={boxtube} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage({
   partcats,
+  boxtubes,
 }: {
   partcats: PartCategory[];
+  boxtubes: BoxTube[];
 }) {
   return (
     <div id={styles.dashboardpage}>
       <Header delay={0} />
       <PartCatList partcats={partcats} />
+      {/* <BoxTubes boxtubes={boxtubes} /> */}
     </div>
   );
 }

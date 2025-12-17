@@ -1,5 +1,7 @@
 import DashboardPage from "./dashboard";
 import { PartCategory, BoxTube } from "../types";
+import db from "@/lib/db";
+import { PartCategories, Parts } from "@/lib/schema";
 
 const aluminum125: PartCategory = {
   material: "Aluminum",
@@ -49,7 +51,10 @@ const boxTubes: BoxTube[] = [
     cammed: true,
   },
 ];
-export default function Dashboard() {
+export default async function Dashboard() {
+  const partCategories = await db.query.PartCategories.findMany({ with: { parts: true } });
+  console.log(partCategories);
+
   return (
     <DashboardPage
       partcats={[

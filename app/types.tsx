@@ -1,4 +1,3 @@
-import db from "@/lib/db";
 import { PartCategories, Parts, PartsToPlates, Plates } from "@/lib/schema";
 import { InferSelectModel } from "drizzle-orm";
 

@@ -63,7 +63,7 @@ export const PartCategoriesRelations = relations(PartCategories, ({ many }) => (
 
 export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
   part: one(Parts, {
-    fields: [PartsToPlates.plate_id],
+    fields: [PartsToPlates.part_id],
     references: [Parts.id]
   }),
   plate: one(Plates, {

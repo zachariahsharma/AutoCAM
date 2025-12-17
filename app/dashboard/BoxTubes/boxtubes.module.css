@@ -1,0 +1,96 @@
+#horizontalrule {
+  opacity: 1;
+  border-width: 1px;
+  border-image-slice: 1;
+  border-image-source: linear-gradient(90deg, #D0C9B1, #6A675A);
+  z-index: 10;
+  margin-left: 10%;
+  margin-right:10%;
+  margin-top:0px;
+}
+
+#boxtubesblur {
+  width: 100vw;
+  height:100vh;
+  position: fixed;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+#boxtubes {
+  width: 400px;
+  height: 100vh;
+  position: fixed;
+  background-color: black;
+  right:0;
+  top:0;
+  z-index: 10;
+  border-left:1px #E6DD5E solid;
+  box-shadow: rgba(255,255,255,.2) -5px 0px 5px 1px;
+}
+
+.boxtubecard {
+  width:90%;
+  margin-left:auto;
+  margin-right: auto;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background-color: #393939;
+  padding:10px;
+}
+
+.dropdownicon {
+  width: 20px;
+  height:20px;
+}
+.dropdownicon > img {
+  width: 15px;
+  height:15px;
+}
+#boxtubeheader {
+  text-align: center;
+  width:100%;
+  margin-top:20px;
+  font-family: var(--font-zalando);
+  font-weight: 200;
+}
+.boxtubecardheader > h1 {
+  font-size: 18px;
+  width:200px;
+  /* overflow-x: auto;
+    -ms-overflow-style: none; 
+    scrollbar-width: none;*/
+  text-wrap-mode:nowrap; 
+}
+.boxtubecardheader {
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0px 10px;
+  margin-top:5px;
+}
+
+.boxtubecardcamdropdown {
+  background-color: var(--yellow-2);
+  display: flex;
+  gap: 5px;
+  padding: 8px;
+  border-radius: 10px;
+  font-family: var(--font-zalando);
+  font-weight: 200;
+  font-size: 15px;
+  box-shadow: rgba(255,255,255,.4) 0px 2px 9px 2px;
+}
+
+.boxtubecardquantity {
+  color:#BCBCBC;
+}
+
+.boxtubecardinfo {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-roboto);
+  color:#BCBCBC;
+  font-weight: 450;
+  margin-top:5px;
+}

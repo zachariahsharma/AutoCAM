@@ -9,7 +9,7 @@
   margin-top:0px;
 }
 
-#boxtubesblur {
+#finishedcamblur {
   width: 100vw;
   height:100vh;
   position: fixed;
@@ -17,7 +17,7 @@
   z-index: 10;
 }
 
-#boxtubes {
+#finishedcam {
   width: 400px;
   height: 100vh;
   position: fixed;
@@ -29,7 +29,7 @@
   box-shadow: rgba(255,255,255,.2) -5px 0px 5px 1px;
 }
 
-.boxtubecard {
+.finishedcamcard {
   width:90%;
   margin-left:auto;
   margin-right: auto;
@@ -37,4 +37,12 @@
   border-radius: 10px;
   background-color: #393939;
   padding:10px;
+}
+
+#finishedcamheader {
+  text-align: center;
+  width:100%;
+  margin-top:20px;
+  font-family: var(--font-zalando);
+  font-weight: 200;
 }

@@ -21,27 +21,27 @@ export function FinishedCAM({
 }) {
   return (
     <motion.div
-      id={styles.boxtubesblur}
+      id={styles.finishedcamblur}
       initial={{ opacity: 0 }}
       animate={{ opacity: finishedcamOpen ? 1 : 0 }}
       style={{ pointerEvents: finishedcamOpen ? "auto" : "none" }}
       onClick={() => setFinishedcamOpen(false)}
     >
       <motion.div
-        id={styles.boxtubes}
+        id={styles.finishedcam}
         initial={{ x: 500 }}
         animate={{ x: finishedcamOpen ? 0 : 500 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h1 id={styles.boxtubeheader} className="secondarytextGradient">
+        <h1 id={styles.finishedcamheader} className="secondarytextGradient">
           Box Tubes
         </h1>
         <hr className={styles.horizontalrule} />
         {finishedcam.length === 0 ? (
           <p id={styles.noboxtubes}>No Box Tubes available.</p>
         ) : (
-          <div id={styles.boxtubestable}>
+          <div id={styles.finishedcamstable}>
             {finishedcam.map((finishedcam, index) => (
               <FinishedCAMCard key={index} finishedcam={finishedcam} />
             ))}

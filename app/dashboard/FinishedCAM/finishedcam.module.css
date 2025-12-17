@@ -1,0 +1,40 @@
+.horizontalrule {
+  opacity: 1;
+  border-width: 1px;
+  border-image-slice: 1;
+  border-image-source: linear-gradient(90deg, #D0C9B1, #6A675A);
+  z-index: 10;
+  margin-left: 10%;
+  margin-right:10%;
+  margin-top:0px;
+}
+
+#boxtubesblur {
+  width: 100vw;
+  height:100vh;
+  position: fixed;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+#boxtubes {
+  width: 400px;
+  height: 100vh;
+  position: fixed;
+  background-color: black;
+  right:0;
+  top:0;
+  z-index: 10;
+  border-left:1px #E6DD5E solid;
+  box-shadow: rgba(255,255,255,.2) -5px 0px 5px 1px;
+}
+
+.boxtubecard {
+  width:90%;
+  margin-left:auto;
+  margin-right: auto;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background-color: #393939;
+  padding:10px;
+}

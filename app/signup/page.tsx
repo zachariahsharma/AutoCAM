@@ -24,7 +24,7 @@ function SignupContainer() {
         onSuccess: () => redirect("/dashboard"),
       }
     );
-  };
+  }
 
   return (
     <motion.div
@@ -54,12 +54,7 @@ function SignupContainer() {
           placeholder="Enter your Password"
           className={styles.input}
         />
-        <PrimaryButton
-          id={styles.signupbutton}
-          onClick={() => {
-            window.location.href = "/dashboard";
-          }}
-        >
+        <PrimaryButton id={styles.signupbutton}>
           <span className={styles.signupbuttontext + " " + styles.textGradient}>
             SIGN UP
           </span>
@@ -83,7 +78,12 @@ function RobotPic() {
       id={styles.robotpic}
       transition={{ type: "spring", stiffness: 50, delay: 0.2, duration: 1 }}
     >
-      <Image src="/auth/Robot2025.png" alt="robot pic" width={400} height={400} />
+      <Image
+        src="/auth/Robot2025.png"
+        alt="robot pic"
+        width={400}
+        height={400}
+      />
       <span id={styles.label}>Flatline &apos;25</span>
     </motion.div>
   );

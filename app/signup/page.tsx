@@ -44,6 +44,7 @@ function SignupContainer() {
         <input
           type="email"
           placeholder="Enter your email"
+          name="email"
           className={styles.input}
         />
         <br />
@@ -52,6 +53,7 @@ function SignupContainer() {
         <input
           type="password"
           placeholder="Enter your Password"
+          name="password"
           className={styles.input}
         />
         <PrimaryButton id={styles.signupbutton}

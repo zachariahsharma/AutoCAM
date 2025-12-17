@@ -28,11 +28,11 @@ export default function DashboardPage({
         boxtubeOpen={boxtubeOpen}
         setBoxtubeOpen={setBoxtubeOpen}
       />
-      <FinishedCAM
+      {/* <FinishedCAM
         finishedcam={finishedcam}
         finishedcamOpen={finishedcamOpen}
         setFinishedcamOpen={setFinishedcamOpen}
-      />
+      /> */}
     </div>
   );
 }

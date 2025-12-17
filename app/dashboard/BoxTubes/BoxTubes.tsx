@@ -14,7 +14,7 @@ function BoxTubeCard({ boxtube }: { boxtube: BoxTube }) {
           <Marquee>{boxtube.name}</Marquee>
         </h1>
         <div>
-          {boxtube.cammed === true && (
+          {boxtube.status === "completed" && (
             <div
               className={
                 styles.boxtubecardcamdropdown +
@@ -34,12 +34,12 @@ function BoxTubeCard({ boxtube }: { boxtube: BoxTube }) {
               </div>
             </div>
           )}
-          {!boxtube.cammed && (
+          {boxtube.status === "pending" && (
             <div className={styles.boxtubecardcamdisabled}>
               <span className="textGradient">CAM</span>
             </div>
           )}
-          {boxtube.cammed === "in progress" && (
+          {boxtube.status === "in progress" && (
             <div className={styles.boxtubecardcamdisabled}>
               <span className={styles.ellipsis1}>.</span>
               <span className={styles.ellipsis2}>.</span>

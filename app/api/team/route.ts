@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
 import { TeamMembers, Teams } from "@/lib/schema";
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -30,10 +31,18 @@ export async function POST(req: NextRequest) {
       name,
       number: Number(teamNumber),
     }).returning({ id: Teams.id });
+    // Assign current user to this team
     await tx.insert(TeamMembers).values({
       user_id: userId,
       team_id: team.id,
     })
   });
   return new NextResponse(null, { status: 201 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const teamId = req.nextUrl.searchParams.get("id");
+  if (!teamId) return new NextResponse(null, { status: 422 });
+  await db.delete(Teams).where(eq(Teams.id, Number(teamId)));
+  return new NextResponse(null, { status: 204 });
 }

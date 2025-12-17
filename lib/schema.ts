@@ -9,9 +9,9 @@ export const Teams = pgTable("teams", {
 });
 
 export const TeamMembers = pgTable("users", {
-  team_id: integer().notNull(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   // Needs to match what's in auth-schema.ts
-  user_id: text().notNull(),
+  user_id: text().notNull().references(() => user.id, { onDelete: "cascade" }),
   admin: boolean().notNull().default(false),
 });
 

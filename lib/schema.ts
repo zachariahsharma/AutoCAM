@@ -21,7 +21,10 @@ export const Plates = pgTable("plates", {
   width: decimal().notNull(),
   length: decimal().notNull(),
   true_depth: decimal().notNull(),
-  category_id: integer().notNull().references(() => PartCategories.id)
+  category_id: integer().notNull().references(() => PartCategories.id),
+  status: text({ enum: ["pending", "in progress", "completed"] }).default("pending"),
+  cam_download_url: text(),
+  screenshot_url: text(),
 });
 
 export const PartsToPlates = pgTable("parts_to_plates", {

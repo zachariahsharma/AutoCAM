@@ -8,17 +8,10 @@ export type PartCategory = Omit<InferSelectModel<typeof PartCategories>, 'thickn
   parts?: Part[];
 };
 export type Part = InferSelectModel<typeof Parts> & { category?: PartCategory };
-export type Plate = InferSelectModel<typeof Plates> & {
-  category?: PartCategory;
-  status?: "pending" | "in progress" | "completed";
-  verifiedSignature?: string;
-  cam_download_url?: string;
-  cam_bundle_rel?: string;
-  screenshot_url?: string;
-};
+export type Plate = InferSelectModel<typeof Plates> & { category?: PartCategory; };
 export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
-  plate: Plate;
-  part: Part;
+  plate?: Plate;
+  part?: Part;
 };
 
 export interface BoxTube {

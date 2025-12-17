@@ -4,7 +4,7 @@ import { PartCategory } from "@/app/types";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 function countUniquePartsByEpicArray(category: PartCategory) {
-  const map = category.parts.reduce<Map<string, number>>((acc, part) => {
+  const map = category.parts!.reduce<Map<string, number>>((acc, part) => {
     acc.set(part.epic, (acc.get(part.epic) ?? 0) + 1);
     return acc;
   }, new Map());
@@ -25,9 +25,7 @@ function PartCatCard({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: delay, duration: 0.3 }}
       className={styles.platecard}
-      onClick={() =>
-        redirect(`/mt/${partcat.material.toLowerCase()}/${partcat.thickness}`)
-      }
+      onClick={() => redirect(`/pc/${partcat.id}`)}
     >
       <div id={styles.platecardheader}>
         <span>{partcat.material}</span>{" "}
@@ -36,13 +34,13 @@ function PartCatCard({
       <div id={styles.platecardinfo}>
         <p id={styles.platecardquantity}>
           Quantity:
-          {partcat.parts.reduce((sum, { quantity }) => sum + quantity, 0)}
+          {partcat.parts!.reduce((sum, { quantity }) => sum + quantity, 0)}
         </p>
-        <p id={styles.platecardunique}>Unique: {partcat.parts.length}</p>
+        <p id={styles.platecardunique}>Unique: {partcat.parts!.length}</p>
       </div>
       <hr id={styles.horizontalrule} />
       <div>
-        {partcat.parts.length > 0 ? (
+        {partcat.parts!.length > 0 ? (
           <table id={styles.platecardpartstable}>
             <tbody>
               {countUniquePartsByEpicArray(partcat).map((part, index) => (

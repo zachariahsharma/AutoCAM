@@ -1,15 +1,6 @@
 import DashboardPage from "./dashboard";
-import { PartCategory, BoxTube } from "../types";
-
-const aluminum125: PartCategory = {
-  material: "Aluminum",
-  thickness: 0.125,
-  parts: [
-    { name: "Side Plate", quantity: 2, epic: "Drivetrain" },
-    { name: "Bearing Block", quantity: 4, epic: "Drivetrain" },
-    { name: "Gusset", quantity: 8, epic: "Structure" },
-  ],
-};
+import { BoxTube } from "../types";
+import db from "@/lib/db";
 
 const boxTubes: BoxTube[] = [
   {
@@ -49,21 +40,15 @@ const boxTubes: BoxTube[] = [
     cammed: true,
   },
 ];
-export default function Dashboard() {
+export default async function Dashboard() {
+  const partCategories = (await db.query.PartCategories.findMany({ with: { parts: true } })).map(cat => ({
+    ...cat,
+    thickness: Number(cat.thickness),
+  }));
+
   return (
     <DashboardPage
-      partcats={[
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-      ]}
+      partcats={partCategories}
       boxtubes={boxTubes}
     />
   );

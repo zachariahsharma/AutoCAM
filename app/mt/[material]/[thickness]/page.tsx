@@ -1,7 +1,7 @@
 import { Part, Session } from "@/app/types";
 import Layout from "@/components/layout";
 import MaterialThickness from "@/components/MaterialThickness";
-import { Imported, MTSession } from "@/lib/db";
+// import { Imported, MTSession } from "@/lib/db";
 
 type Props = {
   params: Promise<{

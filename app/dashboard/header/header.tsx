@@ -2,6 +2,7 @@ import styles from "./header.module.css";
 import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 
 export function Header({
   delay = 1,
@@ -20,7 +21,7 @@ export function Header({
         transition={{ delay: delay, duration: duration }}
       >
         <button id={styles.headerlogoButton} onClick={() => redirect("/")}>
-          <img
+          <Image
             src="/index/Document.svg"
             width={2000}
             height={2000}
@@ -45,7 +46,7 @@ export function Header({
             <span className="textGradient">Adjust Quantities</span>
           </PrimaryButton>
           <div id={styles.usericoncontainer}>
-            <img
+            <Image
               src="/dashboard/UserIcon.svg"
               width={2000}
               height={2000}

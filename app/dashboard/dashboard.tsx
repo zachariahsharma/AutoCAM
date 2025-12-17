@@ -7,7 +7,6 @@ import { PartCatList } from "@/app/dashboard/PartCatCards/PartCat";
 import { BoxTubes } from "@/app/dashboard/BoxTubes/BoxTubes";
 import { useState } from "react";
 import { FinishedCAM } from "./FinishedCAM/FinishedCAM";
-import { motion } from "framer-motion";
 
 export default function DashboardPage({
   partcats,

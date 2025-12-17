@@ -1,15 +1,7 @@
 import DashboardPage from "./dashboard";
-import { PartCategory, BoxTube, Plate } from "../types";
+import { BoxTube, Plate } from "../types";
 
-const aluminum125: PartCategory = {
-  material: "Aluminum",
-  thickness: 0.125,
-  parts: [
-    { name: "Side Plate", quantity: 2, epic: "Drivetrain" },
-    { name: "Bearing Block", quantity: 4, epic: "Drivetrain" },
-    { name: "Gusset", quantity: 8, epic: "Structure" },
-  ],
-};
+import db from "@/lib/db";
 
 const boxTubes: BoxTube[] = [
   {
@@ -52,46 +44,48 @@ const boxTubes: BoxTube[] = [
 
 const plates: Plate[] = [
   {
-    id: "PLT-001",
-    Width: 12,
-    Length: 24,
-    trueDepth: 0.125,
+    id: 1,
+    width: "12",
+    length: "24",
+    true_depth: "0.125",
+    category_id: 1,
     status: "pending",
+    cam_download_url: null,
+    screenshot_url: null,
   },
   {
-    id: "PLT-002",
-    Width: 18,
-    Length: 30,
-    trueDepth: 0.25,
+    id: 2,
+    width: "18",
+    length: "30",
+    true_depth: "0.25",
+    category_id: 2,
     status: "in progress",
     cam_download_url: "https://example.com/cam/PLT-002.nc",
+    screenshot_url: null,
   },
   {
-    id: "PLT-003",
-    Width: 24,
-    Length: 36,
-    trueDepth: 0.125,
+    id: 3,
+    width: "24",
+    length: "36",
+    true_depth: "0.125",
+    category_id: 3,
     status: "completed",
     cam_download_url: "https://example.com/cam/PLT-003.nc",
     screenshot_url: "https://example.com/screenshots/PLT-003.png",
   },
 ];
 
-export default function Dashboard() {
+export default async function Dashboard() {
+  const partCategories = (
+    await db.query.PartCategories.findMany({ with: { parts: true } })
+  ).map((cat) => ({
+    ...cat,
+    thickness: Number(cat.thickness),
+  }));
+
   return (
     <DashboardPage
-      partcats={[
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-        aluminum125,
-      ]}
+      partcats={partCategories}
       boxtubes={boxTubes}
       finishedcam={plates}
     />

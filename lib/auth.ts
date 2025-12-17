@@ -1,10 +1,13 @@
 import { betterAuth } from "better-auth";
-import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import db from "./db";
-import { Db } from "mongodb";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import * as schema from '../auth-schema';
 
 export const auth = betterAuth({
-  database: mongodbAdapter((db.connection as unknown) as Db),
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: { ...schema }
+  }),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 1,

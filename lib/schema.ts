@@ -13,7 +13,7 @@ export const Parts = pgTable("parts", {
   epic: text().notNull(),
   ticket: text().notNull(),
   quantity: integer().default(1).notNull(),
-  category_id: integer().notNull().references(() => PartCategories.id)
+  category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 });
 
 export const Plates = pgTable("plates", {
@@ -21,7 +21,7 @@ export const Plates = pgTable("plates", {
   width: decimal().notNull(),
   length: decimal().notNull(),
   true_depth: decimal().notNull(),
-  category_id: integer().notNull().references(() => PartCategories.id),
+  category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
   status: text({ enum: ["pending", "in progress", "completed"] }).default("pending").notNull(),
   cam_download_url: text(),
   screenshot_url: text(),
@@ -37,8 +37,8 @@ export const BoxTubes = pgTable("box_tubes", {
 });
 
 export const PartsToPlates = pgTable("parts_to_plates", {
-  plate_id: integer().notNull().references(() => Plates.id),
-  part_id: integer().notNull().references(() => Parts.id),
+  plate_id: integer().notNull().references(() => Plates.id, { onDelete: "cascade" }),
+  part_id: integer().notNull().references(() => Parts.id, { onDelete: "cascade" }),
   quantity: integer().notNull()
 });
 

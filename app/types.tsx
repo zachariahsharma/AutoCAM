@@ -29,9 +29,7 @@ export interface Plate {
   Length: number;
   trueDepth: number;
   status: "pending" | "in progress" | "completed";
-  verifiedSignature?: string;
   cam_download_url?: string;
-  cam_bundle_rel?: string;
   screenshot_url?: string;
 }
 

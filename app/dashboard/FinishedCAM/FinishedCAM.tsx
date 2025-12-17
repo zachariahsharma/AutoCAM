@@ -1,14 +1,14 @@
-import styles from "./boxtubes.module.css";
-import { BoxTube } from "@/app/types";
+import styles from "./finishedcam.module.css";
+import { Plate } from "@/app/types";
 import Marquee from "react-fast-marquee";
 import Image from "next/image";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-function FinishedCAMCard({ finishedcam }: { finishedcam: BoxTube }) {
+function FinishedCAMCard({ finishedcam }: { finishedcam: Plate }) {
   return (
     <div className={styles.finishedcamcard}>
-      
+      <span className={styles.label}>{finishedcam.id}</span>
     </div>
   );
 }
@@ -18,7 +18,7 @@ export function FinishedCAM({
   finishedcamOpen,
   setFinishedcamOpen,
 }: {
-  finishedcam: BoxTube[];
+  finishedcam: Plate[];
   finishedcamOpen: boolean;
   setFinishedcamOpen: (open: boolean) => void;
 }) {

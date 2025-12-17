@@ -7,10 +7,14 @@ export function Header({
   delay = 1,
   duration = 0.5,
   setBoxtubeOpen,
+  setFinishedcamOpen,
+  finishedcamOpen,
 }: {
   delay?: number;
   duration?: number;
   setBoxtubeOpen: (open: boolean) => void;
+  setFinishedcamOpen: (open: boolean) => void;
+  finishedcamOpen: boolean;
 }) {
   return (
     <div id={styles.header}>
@@ -32,7 +36,7 @@ export function Header({
           <span className="secondarytextGradient">AutoCAM</span>
         </h1>
         <div>
-          <SecondaryButton id={styles.finishedcambutton}>
+          <SecondaryButton id={styles.finishedcambutton} onClick={() => setFinishedcamOpen(!finishedcamOpen)}>
             <span className="textGradient">Finished CAM</span>
           </SecondaryButton>
           <PrimaryButton

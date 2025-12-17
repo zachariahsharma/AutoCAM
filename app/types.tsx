@@ -1,14 +1,23 @@
-export interface Part {
-  name: string;
-  quantity: number;
-  epic: string;
-}
+import db from "@/lib/db";
+import { PartCategories, Parts, PartsToPlates, Plates } from "@/lib/schema";
+import { InferSelectModel } from "drizzle-orm";
 
-export interface PartCategory {
-  material: string;
-  thickness: number;
-  parts: Part[];
-}
+export type PartCategory = Omit<InferSelectModel<typeof PartCategories>, 'thickness'> & {
+  thickness: number
+};
+export type Part = InferSelectModel<typeof Parts> & { category: PartCategory };
+export type Plate = InferSelectModel<typeof Plates> & {
+  category: PartCategory;
+  status?: "pending" | "in progress" | "completed";
+  verifiedSignature?: string;
+  cam_download_url?: string;
+  cam_bundle_rel?: string;
+  screenshot_url?: string;
+};
+export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
+  plate: Plate;
+  part: Part;
+};
 
 export interface BoxTube {
   name: string;
@@ -21,18 +30,6 @@ export interface BoxTube {
 export interface Assignment {
   plateId: string;
   parts: { id: string; quantity: number }[];
-}
-
-export interface Plate {
-  id: string;
-  Width: number;
-  Length: number;
-  trueDepth: number;
-  status: "pending" | "in progress" | "completed";
-  verifiedSignature?: string;
-  cam_download_url?: string;
-  cam_bundle_rel?: string;
-  screenshot_url?: string;
 }
 
 export interface Session {

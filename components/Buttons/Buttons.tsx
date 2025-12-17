@@ -1,6 +1,7 @@
+import { ComponentProps } from "react";
 import styles from "./button.module.css";
 
-export function SecondaryButton(props: any) {
+export function SecondaryButton(props: ComponentProps<"button">) {
   return (
     <button {...props} className={styles.secondaryButton}>
       {props.children}
@@ -8,7 +9,7 @@ export function SecondaryButton(props: any) {
   );
 }
 
-export function PrimaryButton(props: any) {
+export function PrimaryButton(props: ComponentProps<"button">) {
   return (
     <button {...props} className={styles.primaryButton}>
       {props.children}

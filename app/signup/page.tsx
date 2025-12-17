@@ -1,11 +1,12 @@
 "use client";
 import styles from "./signup.module.css";
 import { motion } from "framer-motion";
-import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
+import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
 import { FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 
 function SignupContainer() {
   async function signup(e: FormEvent<HTMLFormElement>) {
@@ -15,9 +16,8 @@ function SignupContainer() {
     const password = String(formData.get("password") ?? "");
     await authClient.signUp.email(
       {
-        username: email,
         email,
-        password: password,
+        password,
         name: email,
       },
       {
@@ -42,7 +42,7 @@ function SignupContainer() {
         <label className={styles.inputLabel}>Email</label>
         <br />
         <input
-          type="text"
+          type="email"
           placeholder="Enter your email"
           className={styles.input}
         />
@@ -83,8 +83,8 @@ function RobotPic() {
       id={styles.robotpic}
       transition={{ type: "spring", stiffness: 50, delay: 0.2, duration: 1 }}
     >
-      <img src="/auth/Robot2025.png" alt="robot pic" width={400} height={400} />
-      <span id={styles.label}>Flatline '25</span>
+      <Image src="/auth/Robot2025.png" alt="robot pic" width={400} height={400} />
+      <span id={styles.label}>Flatline &apos;25</span>
     </motion.div>
   );
 }

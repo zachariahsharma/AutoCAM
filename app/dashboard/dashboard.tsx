@@ -4,9 +4,10 @@ import Marquee from "react-fast-marquee";
 import styles from "./dashboard.module.css";
 import { motion } from "framer-motion";
 
-import { Part, PartCategory, BoxTube } from "@/app/types";
+import {  PartCategory, BoxTube } from "@/app/types";
 import { redirect } from "next/navigation";
 import { Header } from "./header/header";
+import Image from "next/image";
 
 function countUniquePartsByEpicArray(category: PartCategory) {
   const map = category.parts.reduce<Map<string, number>>((acc, part) => {
@@ -63,7 +64,7 @@ function PartCatCard({
         )}
       </div>
       <div id={styles.openiconcontainer}>
-        <img
+        <Image
           src="/dashboard/Open.svg"
           width={2000}
           height={2000}
@@ -105,7 +106,7 @@ function BoxTubeCard({ boxtube }: { boxtube: BoxTube }) {
         <div className={styles.boxtubecardcamdropdown}>
           <div>CAM</div>
           <div className={styles.dropdownicon}>
-            <img
+            <Image
               src="/dashboard/dropdown.svg"
               alt="dropdown"
               width={2000}

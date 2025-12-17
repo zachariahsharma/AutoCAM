@@ -2,6 +2,7 @@
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import Link from "next/link";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const logout = async () => await authClient.signOut({
@@ -12,9 +13,9 @@ export default function Layout({ children }: { children: ReactNode }) {
   return <>
     <nav className="navbar navbar-expand-lg navbar-dark gh-header border-bottom">
       <div className="container-fluid">
-        <a className="navbar-brand gh-brand" href="/">AutoCAM</a>
+        <Link className="navbar-brand gh-brand" href="/">AutoCAM</Link>
         <div className="d-flex gap-3">
-          <a className="nav-link gh-link" href="/settings">Settings</a>
+          <Link className="nav-link gh-link" href="/settings">Settings</Link>
           <button className="nav-link gh-link" onClick={logout}>Logout</button>
         </div>
       </div>

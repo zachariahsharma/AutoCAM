@@ -1,5 +1,11 @@
-import { PartCategories, Parts, PartsToPlates, Plates, BoxTubes } from "@/lib/schema";
-import { InferSelectModel } from "drizzle-orm";
+import {
+  PartCategories,
+  Parts,
+  PartsToPlates,
+  Plates,
+  BoxTubes,
+} from "@/lib/schema";
+import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 export type PartCategory = Omit<
   InferSelectModel<typeof PartCategories>,
@@ -23,7 +29,7 @@ export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
   plate?: Plate;
   part?: Part;
 };
-export type BoxTube = InferSelectModel<typeof BoxTubes>;
+export type BoxTube = InferInsertModel<typeof BoxTubes>;
 
 export interface Assignment {
   plateId: string;

@@ -8,37 +8,37 @@ const boxTubes: BoxTube[] = [
     name: '1x1 Aluminum Box Tube - 1/16"',
     quantity: 6,
     epic: "Drivetrain",
-    cammed: false,
+    status: "pending",
   },
   {
     name: '1x1 Aluminum Box Tube - 1/8"',
     quantity: 4,
     epic: "Drivetrain",
-    cammed: false,
+    status: "pending",
   },
   {
     name: '1x2 Aluminum Box Tube - 1/16"',
     quantity: 8,
     epic: "Structure",
-    cammed: false,
+    status: "pending",
   },
   {
     name: '1x2 Aluminum Box Tube - 1/8"',
     quantity: 3,
     epic: "Structure",
-    cammed: false,
+    status: "pending",
   },
   {
     name: '2x2 Aluminum Box Tube - 1/8"',
     quantity: 2,
     epic: "Manipulator",
-    cammed: "in progress",
+    status: "in progress",
   },
   {
     name: '1x3 Aluminum Box Tube - 1/8"',
     quantity: 1,
     epic: "Superstructure",
-    cammed: true,
+    status: "completed",
   },
 ];
 

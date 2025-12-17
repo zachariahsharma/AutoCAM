@@ -2,8 +2,8 @@ import styles from "./finishedcam.module.css";
 import { Plate } from "@/app/types";
 import { motion } from "framer-motion";
 function getThicknessFromId(category_id: string): string {
-  
-
+   
+}
 function FinishedCAMCard({ finishedcam }: { finishedcam: Plate }) {
   return (
     <div className={styles.finishedcamcard}>

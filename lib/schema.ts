@@ -22,9 +22,18 @@ export const Plates = pgTable("plates", {
   length: decimal().notNull(),
   true_depth: decimal().notNull(),
   category_id: integer().notNull().references(() => PartCategories.id),
-  status: text({ enum: ["pending", "in progress", "completed"] }).default("pending"),
+  status: text({ enum: ["pending", "in progress", "completed"] }).default("pending").notNull(),
   cam_download_url: text(),
   screenshot_url: text(),
+});
+
+export const BoxTubes = pgTable("box_tubes", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull(),
+  epic: text().notNull(),
+  quantity: integer().default(1).notNull(),
+  status: text({ enum: ["pending", "in progress", "completed"] }).default("pending").notNull(),
+  cam_download_url: text(),
 });
 
 export const PartsToPlates = pgTable("parts_to_plates", {

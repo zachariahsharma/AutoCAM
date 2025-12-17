@@ -14,6 +14,8 @@ export interface BoxTube {
   name: string;
   quantity: number;
   epic: string;
+  cammed: false | "in progress" | true;
+  cam_download_url?: string;
 }
 
 export interface Assignment {
@@ -39,4 +41,4 @@ export interface Session {
   plates: Plate[];
   updatedAt: string;
   updatedBy: string;
-};
+}

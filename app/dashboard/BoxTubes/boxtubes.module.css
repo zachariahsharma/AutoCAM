@@ -1,4 +1,4 @@
-#horizontalrule {
+.horizontalrule {
   opacity: 1;
   border-width: 1px;
   border-image-slice: 1;
@@ -58,8 +58,8 @@
   font-size: 18px;
   width:200px;
   /* overflow-x: auto;
-    -ms-overflow-style: none; 
-    scrollbar-width: none;*/
+  -ms-overflow-style: none; 
+  scrollbar-width: none;*/
   text-wrap-mode:nowrap; 
 }
 .boxtubecardheader {
@@ -69,7 +69,12 @@
   padding: 0px 10px;
   margin-top:5px;
 }
-
+.horizontalruledropdown{
+  margin: 0px 10px;
+  background-color: #6A675A;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
 .boxtubecardcamdropdown {
   background-color: var(--yellow-2);
   display: flex;
@@ -80,6 +85,55 @@
   font-weight: 200;
   font-size: 15px;
   box-shadow: rgba(255,255,255,.4) 0px 2px 9px 2px;
+  width: 100px;
+  justify-content: center;
+  transition: border-radius .5s .5s, background-color .5s 0s;
+}
+
+.boxtubecardcamdisabled {
+  background-color: black;
+  display: flex;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-family: var(--font-roboto);
+  font-weight: 600;
+  font-size: 18px;
+  box-shadow: rgba(255,255,255,.4) 0px 2px 9px 2px;
+  width: 100px;
+  justify-content: center;
+  background: linear-gradient(rgb(0, 0, 0), rgb(0, 0, 0)) padding-box,
+              linear-gradient(to bottom, #B57C02, #332405) border-box;
+  border: 1.5px solid transparent;
+  align-items: center;
+  vertical-align: center;
+}
+
+ .ellipsis1,
+.ellipsis2,
+.ellipsis3 {
+  position: relative;
+  display: inline-block;
+  animation: ellipsis 1s ease-in-out infinite;
+  color:white;
+  line-height: 19px;
+  height:25px;
+}
+
+.ellipsis1 { animation-delay: 0s; }
+.ellipsis2 { animation-delay: 0.33s; }
+.ellipsis3 { animation-delay: .66s; }
+
+@keyframes ellipsis {
+  0%   { transform: translateY(0); color:white;}
+  50%  { transform: translateY(-3px); color:var(--yellow-1) }
+  100% { transform: translateY(0); color:white;}
+}
+.boxtubecardcamdropdown.active {
+  transition: border-radius .5s 0s, background-color .5s 0s;
+}
+.boxtubecardcamdropdown:hover {
+  background-color: #a89a1d;
 }
 
 .boxtubecardquantity {
@@ -93,4 +147,60 @@
   color:#BCBCBC;
   font-weight: 450;
   margin-top:5px;
+}
+.boxtubecardcamdropdowncontent {
+  width: 100px;
+  position: absolute;
+  background-color: black;
+  border-radius: 0px 0px 10px 10px;
+  font-family: var(--font-roboto);
+  transition: all .5s;
+}
+
+.firstdropdownitem {
+  color: #09B74E;
+  background-color: black;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0px 7px;
+  height: 35px;
+  transition: all .2s;
+}
+
+.firstdropdownitem:hover, .seconddropdownitem:hover {
+  background-color: rgb(44, 44, 44);
+}
+.firstdropdownitem:hover + .horizontalruledropdown {
+  opacity: 0;
+}
+.boxtubecardcamdropdowncontent:has(.seconddropdownitem:hover) .horizontalruledropdown {
+  opacity: 0;
+}
+
+.seconddropdownitem {
+  color: #FF2F00;
+  background-color: black;
+  display: flex;
+  align-items: center;
+  gap:5px;
+  justify-content: space-between;
+  padding: 0px 7px;
+  height: 35px;
+  border-radius: 0px 0px 10px 10px;
+  transition: all .2s;
+}
+
+.active {
+  border-radius: 10px 10px 0px 0px;
+}
+
+.firstdropdownitem > img {
+  height: 10px;
+  width: 10px;
+}
+
+.seconddropdownitem > img  {
+  height:10px;
+  width: 10px;
 }

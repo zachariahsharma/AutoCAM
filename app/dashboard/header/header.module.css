@@ -29,7 +29,11 @@
   z-index: 5;
   top: 30px;
   right: 300px;
+  background: linear-gradient(rgb(0, 0, 0), rgb(0, 0, 0)) padding-box,
+              linear-gradient(to bottom, #B57C02, #332405) border-box;
+  border: 1.5px solid transparent;
 }
+
 
 #boxtubesbutton {
   font-family: var(--font-roboto);

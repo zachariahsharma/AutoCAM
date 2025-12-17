@@ -6,9 +6,11 @@ import { redirect } from "next/navigation";
 export function Header({
   delay = 1,
   duration = 0.5,
+  setBoxtubeOpen,
 }: {
   delay?: number;
   duration?: number;
+  setBoxtubeOpen: (open: boolean) => void;
 }) {
   return (
     <div id={styles.header}>
@@ -33,7 +35,10 @@ export function Header({
           <SecondaryButton id={styles.finishedcambutton}>
             <span className="textGradient">Finished CAM</span>
           </SecondaryButton>
-          <PrimaryButton id={styles.boxtubesbutton}>
+          <PrimaryButton
+            id={styles.boxtubesbutton}
+            onClick={() => setBoxtubeOpen(true)}
+          >
             <span className="textGradient">Box Tubes</span>
           </PrimaryButton>
           <PrimaryButton id={styles.adjustquantitiesbutton}>

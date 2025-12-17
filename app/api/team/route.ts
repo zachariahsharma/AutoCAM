@@ -3,7 +3,15 @@ import db from "@/lib/db";
 import { TeamMembers, Teams } from "@/lib/schema";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {}
+export async function GET(req: NextRequest) {
+  const teamId = req.nextUrl.searchParams.get("id");
+  if (!teamId) return new NextResponse(null, { status: 422 });
+  const team = await db.query.Teams.findFirst({
+    where: (table, { eq }) => eq(table.id, Number(teamId)),
+  });
+  if (!team) return new NextResponse(null, { status: 404 });
+  return NextResponse.json(team);
+}
 
 // Create team
 export async function POST(req: NextRequest) {

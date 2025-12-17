@@ -1,4 +1,4 @@
-import { PartCategories, Parts, PartsToPlates, Plates } from "@/lib/schema";
+import { PartCategories, Parts, PartsToPlates, Plates, BoxTubes } from "@/lib/schema";
 import { InferSelectModel } from "drizzle-orm";
 
 export type PartCategory = Omit<
@@ -23,14 +23,7 @@ export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
   plate?: Plate;
   part?: Part;
 };
-
-export interface BoxTube {
-  name: string;
-  quantity: number;
-  epic: string;
-  cammed: false | "in progress" | true;
-  cam_download_url?: string;
-}
+export type BoxTube = InferSelectModel<typeof BoxTubes>;
 
 export interface Assignment {
   plateId: string;

@@ -3,11 +3,13 @@ import { PartCategories, Parts, PartsToPlates, Plates } from "@/lib/schema";
 import { InferSelectModel } from "drizzle-orm";
 
 export type PartCategory = Omit<InferSelectModel<typeof PartCategories>, 'thickness'> & {
-  thickness: number
+  thickness: number;
+  plates?: Plate[];
+  parts?: Part[];
 };
-export type Part = InferSelectModel<typeof Parts> & { category: PartCategory };
+export type Part = InferSelectModel<typeof Parts> & { category?: PartCategory };
 export type Plate = InferSelectModel<typeof Plates> & {
-  category: PartCategory;
+  category?: PartCategory;
   status?: "pending" | "in progress" | "completed";
   verifiedSignature?: string;
   cam_download_url?: string;

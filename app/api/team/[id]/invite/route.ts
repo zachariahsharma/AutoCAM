@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: Props) {
         from: '"AutoCAM" <ishan.karmakar24@gmail.com>',
         to: email,
         subject: `Join ${teamMember.team.name}`,
-        text: `Join the ${teamMember.team.name} Team with this link: http://localhost:3000/api/team/accept/${invite.id}`
+        text: `Join the ${teamMember.team.name} Team with this link: http://${process.env.BASE_URL}/api/team/accept/${invite.id}`
     });
 
     return new NextResponse(null, { status: 200 });

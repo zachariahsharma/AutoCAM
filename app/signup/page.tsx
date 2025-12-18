@@ -19,6 +19,7 @@ function SignupContainer() {
         email,
         password,
         name: email,
+        callbackURL: "/dashboard"
       },
       {
         onSuccess: () => redirect("/dashboard"),

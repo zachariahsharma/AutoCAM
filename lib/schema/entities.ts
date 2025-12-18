@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations } from "drizzle-orm";
 
@@ -14,12 +14,14 @@ export const TeamInvites = pgTable("team_invites", {
   email: text().notNull(),
 });
 
-export const TeamMembers = pgTable("users", {
+export const TeamMembers = pgTable("team_members", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   // Needs to match what's in auth-schema.ts
   user_id: text().notNull().references(() => user.id, { onDelete: "cascade" }),
   admin: boolean().notNull().default(false),
-});
+}, table => [
+  primaryKey({ columns: [table.team_id, table.user_id] })
+]);
 
 export const TeamMembersRelations = relations(TeamMembers, ({ one }) => ({
   team: one(Teams, {

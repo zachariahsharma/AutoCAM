@@ -1,5 +1,6 @@
+import { user } from "@/lib/schema/auth";
 import { relations } from "drizzle-orm";
-import { decimal, foreignKey, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
+import { boolean, decimal, foreignKey, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

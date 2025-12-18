@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { Teams } from "./entities";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -12,8 +13,6 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-  username: text("username").unique(),
-  displayUsername: text("display_username"),
 });
 
 export const session = pgTable(
@@ -78,6 +77,7 @@ export const verification = pgTable(
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  team: many(Teams),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({

@@ -29,7 +29,8 @@ export async function PUT(req: NextRequest) {
 // Create team
 export async function POST(req: NextRequest) {
   // Comfortable doing assert here because middleware should take care of not signed in users
-  const userId = (await auth.api.getSession())!.user.id;
+  const session = (await auth.api.getSession())!;
+  if (!session.user.emailVerified) return new NextResponse(null, { status: 403 });
   const formData = await req.formData();
   
   const name = formData.get("name")?.toString();
@@ -45,8 +46,9 @@ export async function POST(req: NextRequest) {
     }).returning({ id: Teams.id });
     // Assign current user to this team
     await tx.insert(TeamMembers).values({
-      user_id: userId,
+      user_id: session.user.id,
       team_id: team.id,
+      admin: true,
     })
   });
   return new NextResponse(null, { status: 201 });

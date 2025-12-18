@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations } from "drizzle-orm";
 
@@ -6,6 +6,12 @@ export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   number: integer().notNull(),
+});
+
+export const TeamInvites = pgTable("team_invites", {
+  id: uuid().primaryKey().defaultRandom(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
+  email: text().notNull(),
 });
 
 export const TeamMembers = pgTable("users", {
@@ -28,4 +34,12 @@ export const TeamMembersRelations = relations(TeamMembers, ({ one }) => ({
 
 export const TeamsRelations = relations(Teams, ({ many }) => ({
   users: many(user),
+  teamInvites: many(TeamInvites),
+}));
+
+export const TeamInvitesRelations = relations(TeamInvites, ({ one }) => ({
+  team: one(Teams, {
+    fields: [TeamInvites.team_id],
+    references: [Teams.id],
+  }),
 }));

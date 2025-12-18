@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
-import { TeamMembers, Teams } from "@/lib/schema";
+import { TeamMembers, Teams } from "@/lib/schema/entities";
 import { NextRequest, NextResponse } from "next/server";
 
 // Create team

@@ -1,12 +1,12 @@
 import db from "@/lib/db";
-import { Teams } from "@/lib/schema";
-import { eq, getTableColumns } from "drizzle-orm";
+import { Teams } from "@/lib/schema/entities";
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-export interface Props { params: Promise<{ id: number }> };
+export interface Props { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: Props) {
-  const teamId = (await params).id;
+  const teamId = Number((await params).id);
   const team = await db.query.Teams.findFirst({
     where: (table, { eq }) => eq(table.id, teamId),
   });
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: Props) {
 export async function PATCH(req: NextRequest, { params }: Props) {
   const formData = await req.formData();
 
-  const teamId = (await params).id;
+  const teamId = Number((await params).id);
   const teamNumber = formData.get("number")?.toString();
   await db.update(Teams).set({
     name: formData.get("name")?.toString(),
@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
-  const teamId = (await params).id;
+  const teamId = Number((await params).id);
   await db.delete(Teams).where(eq(Teams.id, teamId));
   return new NextResponse(null, { status: 204 });
 }

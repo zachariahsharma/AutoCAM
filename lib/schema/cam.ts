@@ -1,19 +1,6 @@
-import { user } from "@/lib/auth-schema";
+import { user } from "@/lib/schema/auth";
 import { relations } from "drizzle-orm";
 import { boolean, decimal, foreignKey, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
-
-export const Teams = pgTable("teams", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  name: text().notNull(),
-  number: integer().notNull(),
-});
-
-export const TeamMembers = pgTable("users", {
-  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
-  // Needs to match what's in auth-schema.ts
-  user_id: text().notNull().references(() => user.id, { onDelete: "cascade" }),
-  admin: boolean().notNull().default(false),
-});
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -103,19 +90,4 @@ export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
     fields: [PartsToPlates.category_id],
     references: [PartCategories.id],
   }),
-}));
-
-export const TeamMembersRelations = relations(TeamMembers, ({ one }) => ({
-  team: one(Teams, {
-    fields: [TeamMembers.team_id],
-    references: [Teams.id],
-  }),
-  user: one(user, {
-    fields: [TeamMembers.user_id],
-    references: [user.id],
-  })
-}));
-
-export const TeamsRelations = relations(Teams, ({ many }) => ({
-  users: many(user),
 }));

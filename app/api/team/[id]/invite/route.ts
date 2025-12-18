@@ -4,7 +4,7 @@ import { Props } from "../route";
 import db from "@/lib/db";
 
 export async function POST(req: NextRequest, { params }: Props) {
-    const teamId = (await params).id;
+    const teamId = Number((await params).id);
     const session = (await auth.api.getSession({ headers: req.headers }))!;
     if (!session.user.emailVerified) return new NextResponse(null, { status: 403 });
 

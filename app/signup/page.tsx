@@ -14,7 +14,7 @@ function SignupContainer() {
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
-    await authClient.signUp.email(
+    const { error } = await authClient.signUp.email(
       {
         email,
         password,
@@ -25,6 +25,7 @@ function SignupContainer() {
         onSuccess: () => redirect("/dashboard"),
       }
     );
+    console.log(error);
   }
 
   return (

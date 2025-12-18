@@ -14,6 +14,18 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(team);
 }
 
+export async function PUT(req: NextRequest) {
+  const teamId = req.nextUrl.searchParams.get("id");
+  if (!teamId) return new NextResponse(null, { status: 422 });
+  const formData = await req.formData();
+
+  const name = formData.get("name")?.toString();
+  if (!name) return new NextResponse(null, { status: 422 });
+
+  await db.update(Teams).set({ name: name }).where(eq(Teams.id, Number(teamId)));
+  return new NextResponse(null, { status: 204 });
+}
+
 // Create team
 export async function POST(req: NextRequest) {
   // Comfortable doing assert here because middleware should take care of not signed in users

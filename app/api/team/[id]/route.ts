@@ -1,29 +1,33 @@
 import db from "@/lib/db";
 import { Teams } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { eq, getTableColumns } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-interface Props { params: { id: number } };
+export interface Props { params: Promise<{ id: number }> };
 
 export async function GET(req: NextRequest, { params }: Props) {
+  const teamId = (await params).id;
   const team = await db.query.Teams.findFirst({
-    where: (table, { eq }) => eq(table.id, params.id),
+    where: (table, { eq }) => eq(table.id, teamId),
   });
   if (!team) return new NextResponse(null, { status: 404 });
   return NextResponse.json(team);
 }
 
-export async function PUT(req: NextRequest, { params }: Props) {
+export async function PATCH(req: NextRequest, { params }: Props) {
   const formData = await req.formData();
 
-  const name = formData.get("name")?.toString();
-  if (!name) return new NextResponse(null, { status: 422 });
-
-  await db.update(Teams).set({ name: name }).where(eq(Teams.id, params.id));
+  const teamId = (await params).id;
+  const teamNumber = formData.get("number")?.toString();
+  await db.update(Teams).set({
+    name: formData.get("name")?.toString(),
+    number: teamNumber ? Number(teamNumber) : undefined,
+  }).where(eq(Teams.id, teamId));
   return new NextResponse(null, { status: 204 });
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
-  await db.delete(Teams).where(eq(Teams.id, Number(params.id)));
+  const teamId = (await params).id;
+  await db.delete(Teams).where(eq(Teams.id, teamId));
   return new NextResponse(null, { status: 204 });
 }

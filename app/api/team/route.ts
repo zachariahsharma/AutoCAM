@@ -9,14 +9,14 @@ export async function POST(req: NextRequest) {
   const session = (await auth.api.getSession({ headers: req.headers }))!;
   if (!session.user.emailVerified) return new NextResponse(null, { status: 403 });
   const formData = await req.formData();
-  
+
   const name = formData.get("name")?.toString();
   const teamNumber = formData.get("number")?.toString();
-  
+
   if (!name || !teamNumber)
     return new NextResponse(null, { status: 422 });
-  
-  await db.transaction(async tx => {
+
+  const teamId = await db.transaction(async tx => {
     const [team] = await tx.insert(Teams).values({
       name,
       number: Number(teamNumber),
@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
       user_id: session.user.id,
       team_id: team.id,
       admin: true,
-    })
+    });
+    return team.id;
   });
-  return new NextResponse(null, { status: 201 });
+  return NextResponse.json({ id: teamId }, { status: 201 });
 }

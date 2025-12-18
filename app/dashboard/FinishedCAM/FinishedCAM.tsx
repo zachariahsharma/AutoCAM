@@ -37,11 +37,11 @@ export function FinishedCAM({
         onClick={(e) => e.stopPropagation()}
       >
         <h1 id={styles.finishedcamheader} className="secondarytextGradient">
-          Box Tubes
+          Finished CAM
         </h1>
         <hr className={styles.horizontalrule} />
         {finishedcam.length === 0 ? (
-          <p id={styles.noboxtubes}>No Box Tubes available.</p>
+          <p id={styles.nofinishedcam}>No Finished CAM available.</p>
         ) : (
           <div id={styles.finishedcamstable}>
             {finishedcam.map((finishedcam, index) => (

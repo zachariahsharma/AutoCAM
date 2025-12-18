@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { decimal, integer, pgTable, text } from "drizzle-orm/pg-core";
+import { decimal, foreignKey, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -8,16 +8,18 @@ export const PartCategories = pgTable("part_categories", {
 });
 
 export const Parts = pgTable("parts", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   epic: text().notNull(),
   ticket: text().notNull(),
   quantity: integer().default(1).notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
-});
+}, table => [
+  primaryKey({ columns: [table.id, table.category_id]})
+]);
 
 export const Plates = pgTable("plates", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer().generatedAlwaysAsIdentity(),
   width: decimal().notNull(),
   length: decimal().notNull(),
   true_depth: decimal().notNull(),
@@ -25,7 +27,9 @@ export const Plates = pgTable("plates", {
   status: text({ enum: ["pending", "in progress", "completed"] }).default("pending").notNull(),
   cam_download_url: text(),
   screenshot_url: text(),
-});
+}, table => [
+  primaryKey({ columns: [table.id, table.category_id] })
+]);
 
 export const BoxTubes = pgTable("box_tubes", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -37,10 +41,20 @@ export const BoxTubes = pgTable("box_tubes", {
 });
 
 export const PartsToPlates = pgTable("parts_to_plates", {
-  plate_id: integer().notNull().references(() => Plates.id, { onDelete: "cascade" }),
-  part_id: integer().notNull().references(() => Parts.id, { onDelete: "cascade" }),
+  category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
+  plate_id: integer().notNull(),
+  part_id: integer().notNull(),
   quantity: integer().notNull()
-});
+}, table => [
+  foreignKey({
+    columns: [table.part_id, table.category_id],
+    foreignColumns: [Parts.id, Parts.category_id],
+  }).onDelete("cascade"),
+  foreignKey({
+    columns: [table.plate_id, table.category_id],
+    foreignColumns: [Plates.id, Plates.category_id],
+  }).onDelete("cascade"),
+]);
 
 export const PartsRelations = relations(Parts, ({ one }) => ({
   category: one(PartCategories, {
@@ -59,15 +73,20 @@ export const PlatesRelations = relations(Plates, ({ one }) => ({
 export const PartCategoriesRelations = relations(PartCategories, ({ many }) => ({
   parts: many(Parts),
   plates: many(Plates),
+  partsToPlates: many(PartsToPlates),
 }));
 
 export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
   part: one(Parts, {
-    fields: [PartsToPlates.part_id],
-    references: [Parts.id]
+    fields: [PartsToPlates.part_id, PartsToPlates.category_id],
+    references: [Parts.id, Parts.category_id]
   }),
   plate: one(Plates, {
-    fields: [PartsToPlates.plate_id],
-    references: [Plates.id]
+    fields: [PartsToPlates.plate_id, PartsToPlates.category_id],
+    references: [Plates.id, Plates.category_id]
+  }),
+  category: one(PartCategories, {
+    fields: [PartsToPlates.category_id],
+    references: [PartCategories.id],
   }),
 }));

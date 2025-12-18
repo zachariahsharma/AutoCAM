@@ -22,5 +22,5 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
   },
-  baseURL: "http://localhost:3000"
+  baseURL: process.env.BASE_URL,
 })

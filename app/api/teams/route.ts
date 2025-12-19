@@ -45,3 +45,12 @@ export async function POST(req: NextRequest) {
   });
   return NextResponse.json({ id: teamId }, { status: 201 });
 }
+
+export async function GET(req: NextRequest) {
+  const session = (await auth.api.getSession())!;
+  const teamsMembers = await db.query.TeamMembers.findMany({
+    with: { team: true },
+    where: (table, { eq }) => eq(table.user_id, session.user.id)
+  });
+  return NextResponse.json(teamsMembers.map(m => m.team), { status: 200 });
+}

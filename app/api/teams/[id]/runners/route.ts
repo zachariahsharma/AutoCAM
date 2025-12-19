@@ -37,7 +37,7 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   if (!token) return RunnerTokenInvalid;
   const numDeleted = await db.delete(TeamRunners)
     .where(and(eq(TeamRunners.token, token), eq(TeamRunners.team_id, teamId)))
-    .returning({ count: count() });
-  if (numDeleted[0].count == 0) return RunnerTokenInvalid;
+    .returning({ token: TeamRunners.token });
+  if (numDeleted.length === 0) return RunnerTokenInvalid;
   return new NextResponse(null, { status: 204 });
 }

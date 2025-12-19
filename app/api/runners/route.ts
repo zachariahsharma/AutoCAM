@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (!token) return RunnerTokenInvalid;
   const runner = await db.query.TeamRunners.findFirst({
     with: { team: true },
-    where: (table, {eq}) => eq(table.token, token)
+    where: (table, { eq }) => eq(table.token, token)
   });
   // Query jobs from team
 

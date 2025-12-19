@@ -31,3 +31,11 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({}, { status: 200 });
 }
+
+export async function POST(req: NextRequest) {
+  const token = getRunnerToken(req);
+  if (!token) return RunnerTokenInvalid;
+  const data = await req.json();
+  // Put this data back into the table and mark it as completed
+  return new NextResponse(null, { status: 204 });
+}

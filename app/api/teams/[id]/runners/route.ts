@@ -4,13 +4,15 @@ import db from "@/lib/db";
 import { EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
 import { getTeamMember, TeamMemberNotAdmin } from "../../route";
 import { TeamRunners } from "@/lib/schema/entities";
-import { getRunnerToken, RunnerTokenInvalid } from "@/app/api/runners/route";
-import { and, count, eq } from "drizzle-orm";
+import { getRunnerDigest, RunnerTokenInvalid } from "@/app/api/runners/route";
+import { and, eq } from "drizzle-orm";
+import crypto from "crypto";
 
 export async function GET(req: NextRequest, { params }: Props) {
   const teamId = Number((await params).id);
   const runners = await db.query.TeamRunners.findMany({
-    where: (table, { eq }) => eq(table.team_id, teamId)
+    where: (table, { eq }) => eq(table.team_id, teamId),
+    columns: { name: true }
   });
   return NextResponse.json(runners, { status: 200 });
 }
@@ -24,8 +26,11 @@ export async function POST(req: NextRequest, { params }: Props) {
   const name = (await req.formData()).get("name")?.toString();
   if (!name) return new NextResponse(null, { status: 422 });
 
-  const runner = await db.insert(TeamRunners).values({ team_id, name }).returning({ token: TeamRunners.token });
-  return NextResponse.json(runner[0], { status: 201 });
+  const token = crypto.randomUUID();
+  const digest = crypto.createHmac("sha256", "key").update(token).digest("hex");
+
+  await db.insert(TeamRunners).values({ team_id, digest, name });
+  return NextResponse.json({ token }, { status: 201 });
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
@@ -33,11 +38,11 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified(req)) return EmailNotVerifiedResponse;
   const teamMember = await getTeamMember(req, teamId);
   if (!teamMember || !teamMember.admin) return TeamMemberNotAdmin;
-  const token = getRunnerToken(req);
-  if (!token) return RunnerTokenInvalid;
+  const digest = getRunnerDigest(req);
+  if (!digest) return RunnerTokenInvalid;
   const numDeleted = await db.delete(TeamRunners)
-    .where(and(eq(TeamRunners.token, token), eq(TeamRunners.team_id, teamId)))
-    .returning({ token: TeamRunners.token });
+    .where(and(eq(TeamRunners.digest, digest), eq(TeamRunners.team_id, teamId)))
+    .returning({ token: TeamRunners.digest });
   if (numDeleted.length === 0) return RunnerTokenInvalid;
   return new NextResponse(null, { status: 204 });
 }

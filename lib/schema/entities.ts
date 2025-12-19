@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, char, integer, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations } from "drizzle-orm";
 
@@ -25,7 +25,7 @@ export const TeamMembers = pgTable("team_members", {
 
 export const TeamRunners = pgTable("team_runners", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
-  token: uuid().notNull().primaryKey().defaultRandom(),
+  digest: char({ length: 64 }).notNull(),
   name: text().notNull(),
 });
 

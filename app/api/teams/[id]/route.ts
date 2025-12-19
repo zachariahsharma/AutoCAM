@@ -1,7 +1,9 @@
+import { EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
 import db from "@/lib/db";
 import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { getTeamMember, TeamMemberNotAdmin } from "../route";
 
 export interface Props { params: Promise<{ id: string }> };
 
@@ -15,9 +17,12 @@ export async function GET(req: NextRequest, { params }: Props) {
 }
 
 export async function PATCH(req: NextRequest, { params }: Props) {
+  const teamId = Number((await params).id);
+  if (!isEmailVerified(req)) return EmailNotVerifiedResponse;
+  const teamMember = await getTeamMember(req, teamId);
+  if (!teamMember || !teamMember.admin) return TeamMemberNotAdmin;
   const formData = await req.formData();
 
-  const teamId = Number((await params).id);
   const teamNumber = formData.get("number")?.toString();
   await db.update(Teams).set({
     name: formData.get("name")?.toString(),
@@ -28,6 +33,9 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
 export async function DELETE(req: NextRequest, { params }: Props) {
   const teamId = Number((await params).id);
+  if (!isEmailVerified(req)) return EmailNotVerifiedResponse;
+  const teamMember = await getTeamMember(req, teamId);
+  if (!teamMember || !teamMember.admin) return TeamMemberNotAdmin;
   await db.delete(Teams).where(eq(Teams.id, teamId));
   return new NextResponse(null, { status: 204 });
 }

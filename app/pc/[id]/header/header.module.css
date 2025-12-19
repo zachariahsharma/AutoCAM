@@ -1,0 +1,75 @@
+#header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  z-index: 3;
+  /* background-color: white; */
+}
+
+#headerlogoButton {
+  background-color: rgba(0,0,0,0);
+  outline:none;
+  border:none;
+}
+
+#headerlogo {
+  /* background-color: blue; */
+  position: relative;
+  height: 70px;
+  width: 70px;
+  top: 18px;
+  left:13px;
+}
+
+#finishedcambutton {
+  font-family: var(--font-roboto);
+  position: absolute;
+  z-index: 5;
+  top: 30px;
+  right: 300px;
+  background: linear-gradient(rgb(0, 0, 0), rgb(0, 0, 0)) padding-box,
+              linear-gradient(to bottom, #B57C02, #332405) border-box;
+  border: 1.5px solid transparent;
+}
+
+
+#boxtubesbutton {
+  font-family: var(--font-roboto);
+  position: absolute;
+  z-index: 5;
+  top: 30px;
+  right: 110px;
+}
+
+#adjustquantitiesbutton {
+  font-family: var(--font-roboto);
+  position: fixed;
+  z-index: 5;
+  bottom: 30px;
+  right: 10px;
+  background:white;
+  width: 220px;
+}
+#usericon {
+    height: 30px;
+  width: 30px;
+}
+#usericoncontainer {
+    padding:15px;
+    border: 1px solid #DBC826;
+    border-radius: 50%;
+    position: absolute;
+  top: 20px;
+  right:25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#headertext {
+    position: absolute;
+    top: 30px;
+    left:100px;
+}

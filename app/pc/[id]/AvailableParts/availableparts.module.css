@@ -1,0 +1,107 @@
+.container {
+    position: absolute;
+    width: calc(50% - 20px);
+    left: 10px;
+    top: 100px;
+    background-color:rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.65);
+    height: calc(50% - 100px);
+    padding: 10px;
+    border-radius: 7px;
+    scroll-behavior: auto;
+    overflow-y: scroll;
+}
+
+#title {
+    font-size: 22px;
+    margin-top: 5px;
+    margin-left: 2px;
+    font-weight: 400;
+    font-family: var(--font-roboto);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+}
+.header > button {
+    outline: none;
+    border: none;
+    border-radius: 10px;
+    padding : 0px 40px;
+    color: #D6D6D6;
+    border: 1px solid #D6D6D6;
+    background-color: #3E3E3E;
+    font-family: var(--font-roboto);
+    font-weight: 500;
+    letter-spacing: 1px;
+    box-shadow: rgba(255,255,255,.16) 0px 4px 10px 0px;
+}
+.epicTitle {
+    font-size: 18px;
+    color:rgba(255,255,255,.45);
+    margin-bottom: 8px;
+
+}
+.partDetails {
+    display: flex;
+    flex-direction: column;
+    margin-left: 30px;
+}
+.partNumber {
+    line-height:12px;
+    color:white;
+    font-size: 18px;
+}
+.recommendedQuantity {
+    color: rgba(255,255,255,.49);
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+.partRow {
+    display: flex;
+    justify-content: space-between;
+}
+.counterValue {
+    text-align:center;
+    width: 70px;
+    list-style-type: none; 
+    height: 30px;
+    border: None;
+    color:white;
+    background-color: black;
+    border-top: 1px #757575 solid;
+    border-bottom: 1px #757575 solid;
+}
+.counterValue:focus {
+    outline: None;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.counterValue {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.counterButtonMinus {
+    border-radius: 5px 0px 0px 5px;
+    width: 30px;
+    outline: 0;
+    background-color: #3E3E3E;
+    color:white;
+    border: #D6D6D6 solid 1px;
+    height: 30px;
+}
+.counterButtonPlus {
+    border-radius: 0px 5px 5px 0px;
+    width: 30px;
+    outline: 0;
+    background-color: #3E3E3E;
+    color:white;
+    border: #D6D6D6 solid 1px;
+    height: 30px;
+}

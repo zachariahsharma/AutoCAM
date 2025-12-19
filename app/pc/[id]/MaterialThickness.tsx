@@ -1,10 +1,23 @@
+"use client";
 import styles from "./materialthickness.module.css";
+import { PartCategory, Part } from "@/app/types";
+import AvailableParts from "./AvailableParts/AvailableParts";
+import { Header } from "./header/header";
 
-export default function MaterialThickness({ id }: { id: string }) {
+export default function MaterialThickness({
+  partcategory,
+  epicsMap,
+}: {
+  partcategory: PartCategory | null;
+  epicsMap: { [key: string]: Part[] };
+}) {
   return (
     <div className={styles.container}>
-      <h1 className={styles.header}>Material Thickness Page</h1>
-      {/* Additional content and functionality can be added here */}
+      <Header
+        material={partcategory?.material}
+        thickness={partcategory?.thickness}
+      />
+      <AvailableParts epicsMap={epicsMap} />
     </div>
   );
 }

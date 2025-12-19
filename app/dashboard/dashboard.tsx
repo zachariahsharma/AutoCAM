@@ -7,6 +7,46 @@ import { PartCatList } from "@/app/dashboard/PartCatCards/PartCat";
 import { BoxTubes } from "@/app/dashboard/BoxTubes/BoxTubes";
 import { useState } from "react";
 import { FinishedCAM } from "./FinishedCAM/FinishedCAM";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+
+export function AccountDropdown({ scope }: { scope: any }) {
+  const router = useRouter();
+
+  return (
+    <div className={styles.accountdropdown} ref={scope}>
+      <div
+        className={styles.settingscategory}
+        onClick={() => router.push("/settings")}
+      >
+        <Image
+          src="/account/Settings.svg"
+          width={2000}
+          height={2000}
+          alt="settings icon"
+          id={styles.settingsicon}
+          onClick={() => router.push("/settings")}
+        />
+        <span onClick={() => router.push("/settings")}>Settings</span>
+      </div>
+      <hr />
+      <div
+        className={styles.logoutcategory}
+        onClick={() => router.push("/logout")}
+      >
+        <Image
+          src="/account/Logout.svg"
+          width={2000}
+          height={2000}
+          alt="logout icon"
+          id={styles.logouticon}
+        />
+        <span>Logout</span>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage({
   partcats,
@@ -21,7 +61,12 @@ export default function DashboardPage({
   const [finishedcamOpen, setFinishedcamOpen] = useState(false);
   return (
     <div id={styles.dashboardpage}>
-      <Header delay={0} setBoxtubeOpen={setBoxtubeOpen} setFinishedcamOpen={setFinishedcamOpen} finishedcamOpen={finishedcamOpen} />
+      <Header
+        delay={0}
+        setBoxtubeOpen={setBoxtubeOpen}
+        setFinishedcamOpen={setFinishedcamOpen}
+        finishedcamOpen={finishedcamOpen}
+      />
       <PartCatList partcats={partcats} />
       <BoxTubes
         boxtubes={boxtubes}

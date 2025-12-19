@@ -1,8 +1,10 @@
 import styles from "./header.module.css";
-import { motion } from "framer-motion";
+import { motion, useAnimate } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { redirect } from "next/navigation";
 import Image from "next/image";
+import { AccountDropdown } from "../dashboard";
+import { useEffect, useState } from "react";
 
 export function Header({
   delay = 1,
@@ -17,6 +19,23 @@ export function Header({
   setFinishedcamOpen: (open: boolean) => void;
   finishedcamOpen: boolean;
 }) {
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const [scope, animate] = useAnimate();
+  useEffect(() => {
+    if (accountDropdownOpen) {
+      animate(
+        scope.current,
+        { opacity: 1, pointerEvents: "auto", y: 0 },
+        { duration: 0.2 }
+      );
+    } else {
+      animate(
+        scope.current,
+        { opacity: 0, pointerEvents: "none", y: -20 },
+        { duration: 0.2 }
+      );
+    }
+  }, [accountDropdownOpen]);
   return (
     <div id={styles.header}>
       <motion.div
@@ -37,7 +56,10 @@ export function Header({
           <span className="secondarytextGradient">AutoCAM</span>
         </h1>
         <div>
-          <SecondaryButton id={styles.finishedcambutton} onClick={() => setFinishedcamOpen(!finishedcamOpen)}>
+          <SecondaryButton
+            id={styles.finishedcambutton}
+            onClick={() => setFinishedcamOpen(!finishedcamOpen)}
+          >
             <span className="textGradient">Finished CAM</span>
           </SecondaryButton>
           <PrimaryButton
@@ -49,15 +71,21 @@ export function Header({
           <PrimaryButton id={styles.adjustquantitiesbutton}>
             <span className="textGradient">Adjust Quantities</span>
           </PrimaryButton>
-          <div id={styles.usericoncontainer}>
+          <div
+            id={styles.usericoncontainer}
+            onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
+          >
             <Image
               src="/dashboard/UserIcon.svg"
               width={2000}
               height={2000}
               alt="user icon"
+              onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
               id={styles.usericon}
             />
           </div>
+
+          <AccountDropdown scope={scope} />
         </div>
       </motion.div>
     </div>

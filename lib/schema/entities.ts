@@ -26,6 +26,7 @@ export const TeamMembers = pgTable("team_members", {
 export const TeamRunners = pgTable("team_runners", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   token: uuid().notNull().primaryKey().defaultRandom(),
+  name: text().notNull(),
 });
 
 export const TeamMembersRelations = relations(TeamMembers, ({ one }) => ({

@@ -2,6 +2,8 @@ import DashboardPage from "./dashboard";
 import { BoxTube, Plate } from "../types";
 
 import db from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 const boxTubes: BoxTube[] = [
   {
@@ -76,9 +78,16 @@ const plates: Plate[] = [
 ];
 
 export default async function Dashboard() {
-  const partCategories = (
-    await db.query.PartCategories.findMany({ with: { parts: true } })
-  ).map((cat) => ({
+  const userId = (await auth.api.getSession({ headers: await headers() }))!.user.id;
+  // Get all teams that the user is part of
+  const teamIds = (await db.query.TeamMembers.findMany({
+    where: (table, { eq }) => eq(table.user_id, userId),
+    columns: { team_id: true },
+  })).map(t => t.team_id);
+  const partCategories = (await db.query.PartCategories.findMany({
+    with: { parts: true },
+    where: (table, { inArray }) => inArray(table.team_id, teamIds)
+  })).map((cat) => ({
     ...cat,
     thickness: Number(cat.thickness),
   }));

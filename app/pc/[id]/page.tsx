@@ -3,13 +3,14 @@ import db from "@/lib/db";
 import { PartCategory, Part } from "@/app/types";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export default async function PC({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const userId = (await auth.api.getSession())!.user.id;
+  const userId = (await auth.api.getSession({ headers: await headers() }))!.user.id;
   const id = Number((await params).id);
   const partcategory = await db.query.PartCategories.findFirst({
     where: (table, { eq }) => eq(table.id, id),

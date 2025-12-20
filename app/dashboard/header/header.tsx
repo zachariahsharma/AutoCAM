@@ -1,7 +1,7 @@
 import styles from "./header.module.css";
 import { motion, useAnimate } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import Image from "next/image";
 import { AccountDropdown } from "../dashboard";
 import { useEffect, useState } from "react";
@@ -19,6 +19,7 @@ export function Header({
   setFinishedcamOpen: (open: boolean) => void;
   finishedcamOpen: boolean;
 }) {
+  const router = useRouter();
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
   const [scope, animate] = useAnimate();
   useEffect(() => {
@@ -43,7 +44,7 @@ export function Header({
         animate={{ opacity: 1 }}
         transition={{ delay: delay, duration: duration }}
       >
-        <button id={styles.headerlogoButton} onClick={() => redirect("/")}>
+        <button id={styles.headerlogoButton} onClick={() => router.push("/")}>
           <Image
             src="/index/Document.svg"
             width={2000}

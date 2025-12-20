@@ -8,6 +8,7 @@ import { authClient } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 const zalando = localFont({
   src: "../public/index/ZalandoSansExpanded-VariableFont_wght.ttf",
@@ -47,6 +48,7 @@ export function Header({
   delay?: number;
   duration?: number;
 }) {
+  const router = useRouter();
   const [session, setSession] = useState<boolean | null>(null);
   useEffect(() => {
     authClient.getSession().then(s => setSession(s.data != null));
@@ -63,7 +65,7 @@ export function Header({
       >
         <button
           id={styles.headerlogoButton}
-          onClick={() => redirect("/")}
+          onClick={() => router.push("/")}
         >
           <Image
             src="/index/Document.svg"
@@ -77,7 +79,7 @@ export function Header({
           {session ? (
             <PrimaryButton
               id={styles.loginbutton}
-              onClick={() => redirect("/dashboard")}
+              onClick={() => router.push("/dashboard")}
               style={{ right: "10px" }}
             >
               <span className={styles.textGradient}>DASHBOARD</span>
@@ -85,13 +87,13 @@ export function Header({
           ) : <>
             <SecondaryButton
               id={styles.loginbutton}
-              onClick={() => redirect("/login")}
+              onClick={() => router.push("/login")}
             >
               <span className={styles.textGradient}>LOGIN</span>
             </SecondaryButton>
             <PrimaryButton
               id={styles.signupbutton}
-              onClick={() => redirect("/signup")}
+              onClick={() => router.push("/signup")}
             >
               <span className={styles.textGradient}>SIGNUP</span>
             </PrimaryButton>

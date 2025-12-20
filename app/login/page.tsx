@@ -4,10 +4,11 @@ import { motion } from "framer-motion";
 import { SecondaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
 import { authClient } from "@/lib/auth-client";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { FormEvent } from "react";
 import Image from "next/image";
 function LoginContainer() {
+  const router = useRouter();
   const login = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -16,7 +17,7 @@ function LoginContainer() {
     await authClient.signIn.email(
       { email, password },
       {
-        onSuccess: () => redirect("/dashboard"),
+        onSuccess: () => router.push("/dashboard"),
       }
     );
   };

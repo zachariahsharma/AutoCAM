@@ -5,10 +5,11 @@ import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
 import { FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import Image from "next/image";
 
 function SignupContainer() {
+  const router = useRouter();
   async function signup(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -22,7 +23,7 @@ function SignupContainer() {
         callbackURL: "/dashboard"
       },
       {
-        onSuccess: () => redirect("/dashboard"),
+        onSuccess: () => router.push("/dashboard"),
       }
     );
     console.log(error);
@@ -59,7 +60,7 @@ function SignupContainer() {
           className={styles.input}
         />
         <PrimaryButton id={styles.signupbutton}
-          onClick={() => redirect("/dashboard")}
+          onClick={() => router.push("/dashboard")}
         >
           <span className={styles.signupbuttontext + " " + styles.textGradient}>
             SIGN UP

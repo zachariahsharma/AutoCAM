@@ -1,5 +1,6 @@
 -- Custom SQL migration file, put your code below! --
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teams FORCE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION is_in_team(team_id INTEGER) RETURNS BOOLEAN AS $$
 BEGIN

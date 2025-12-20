@@ -1,5 +1,6 @@
 -- Custom SQL migration file, put your code below! --
 ALTER TABLE part_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE part_categories FORCE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION can_access_category(category_id INTEGER) RETURNS BOOLEAN AS $$
 BEGIN

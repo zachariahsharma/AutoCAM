@@ -1,5 +1,6 @@
 -- Custom SQL migration file, put your code below! --
 ALTER TABLE parts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE parts FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY parts_access
 ON parts

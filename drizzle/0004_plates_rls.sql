@@ -1,5 +1,6 @@
 -- Custom SQL migration file, put your code below! --
 ALTER TABLE plates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE plates FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY plates_access
 ON plates

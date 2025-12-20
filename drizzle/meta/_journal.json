@@ -15,6 +15,13 @@
       "when": 1766250909679,
       "tag": "0001_teams_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766252195337,
+      "tag": "0002_part_categories_rls",
+      "breakpoints": true
     }
   ]
 }

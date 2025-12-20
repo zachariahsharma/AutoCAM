@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import db, { withUser } from "@/lib/db";
+import { withUser } from "@/lib/db";
 import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
@@ -16,10 +16,11 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   const teamNumber = formData.get("number")?.toString();
   return await withUser(session.user.id, async tx => {
     try {
-      tx.update(Teams).set({
+      const updated = await tx.update(Teams).set({
         name: formData.get("name")?.toString(),
         number: teamNumber ? Number(teamNumber) : undefined
-      }).where(eq(Teams.id, teamId));
+      }).where(eq(Teams.id, teamId)).returning({ id: Teams.id });
+      if (updated.length === 0) return new NextResponse(null, { status: 404 })
       return new NextResponse(null, { status: 204 });
     } catch (err) {
       if (err instanceof DatabaseError && err.code === "42501")

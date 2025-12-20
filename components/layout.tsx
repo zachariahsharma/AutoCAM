@@ -1,13 +1,14 @@
 "use client";
 import { ReactNode } from "react";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
 export default function Layout({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const logout = async () => await authClient.signOut({
     fetchOptions: {
-      onSuccess: () => redirect("/login")
+      onSuccess: () => router.push("/login")
     }
   })
   return <>

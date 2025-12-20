@@ -10,9 +10,14 @@ import { FinishedCAM } from "./FinishedCAM/FinishedCAM";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
 export function AccountDropdown({ scope }: { scope: any }) {
   const router = useRouter();
+  async function signOut() {
+    await authClient.signOut();
+    router.push("/login");
+  }
 
   return (
     <div className={styles.accountdropdown} ref={scope}>
@@ -33,7 +38,7 @@ export function AccountDropdown({ scope }: { scope: any }) {
       <hr />
       <div
         className={styles.logoutcategory}
-        onClick={() => router.push("/logout")}
+        onClick={signOut}
       >
         <Image
           src="/account/Logout.svg"

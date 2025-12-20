@@ -1,7 +1,7 @@
 import styles from "./header.module.css";
 import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import Image from "next/image";
 
 export function Header({
@@ -15,6 +15,7 @@ export function Header({
   material: string | undefined;
   thickness: number | undefined;
 }) {
+  const router = useRouter();
   return (
     <div id={styles.header}>
       <motion.div
@@ -24,7 +25,7 @@ export function Header({
       >
         <button
           id={styles.headerlogoButton}
-          onClick={() => redirect("/dashboard")}
+          onClick={() => router.push("/dashboard")}
         >
           <Image
             src="/index/Document.svg"

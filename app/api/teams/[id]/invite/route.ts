@@ -8,7 +8,7 @@ import { getTeamMember, TeamMemberNotAdmin } from "../../route";
 
 export async function POST(req: NextRequest, { params }: Props) {
   const team_id = Number((await params).id);
-  if (!isEmailVerified(req)) return EmailNotVerifiedResponse;
+  if (!await isEmailVerified(req)) return EmailNotVerifiedResponse;
   const teamMember = await getTeamMember(req, team_id);
   if (!teamMember || !teamMember.admin) return TeamMemberNotAdmin;
 

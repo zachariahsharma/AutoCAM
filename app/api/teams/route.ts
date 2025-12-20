@@ -18,7 +18,7 @@ export async function getTeamMember(req: NextRequest, id: number) {
 
 // Create team
 export async function POST(req: NextRequest) {
-  if (!isEmailVerified(req)) return EmailNotVerifiedResponse;
+  if (!await isEmailVerified(req)) return EmailNotVerifiedResponse;
 
   // Comfortable doing assert here because middleware should take care of not signed in users
   const session = (await auth.api.getSession({ headers: req.headers }))!;

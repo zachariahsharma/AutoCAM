@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import styles from "./partcat.module.css";
 import { PartCategory } from "@/app/types";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import Image from "next/image";
 function countUniquePartsByEpicArray(category: PartCategory) {
   const map = category.parts!.reduce<Map<string, number>>((acc, part) => {
@@ -19,13 +19,14 @@ function PartCatCard({
   partcat: PartCategory;
   delay: number;
 }) {
+  const router = useRouter();
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: delay, duration: 0.3 }}
       className={styles.platecard}
-      onClick={() => redirect(`/pc/${partcat.id}`)}
+      onClick={() => router.push(`/pc/${partcat.id}`)}
     >
       <div id={styles.platecardheader}>
         <span>{partcat.material}</span>{" "}

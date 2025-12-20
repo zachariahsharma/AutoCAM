@@ -29,6 +29,13 @@
       "when": 1766252787811,
       "tag": "0003_parts_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1766253196884,
+      "tag": "0004_plates_rls",
+      "breakpoints": true
     }
   ]
 }

@@ -5,8 +5,9 @@ import { EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
 import { getTeamMember, TeamMemberNotAdmin } from "../../route";
 import { TeamRunners } from "@/lib/schema/entities";
 import { getRunnerDigest, RunnerTokenInvalid } from "@/app/api/runners/route";
-import { and, eq } from "drizzle-orm";
+import { and, DrizzleError, eq } from "drizzle-orm";
 import crypto from "crypto";
+import { DatabaseError } from "pg";
 
 export async function GET(req: NextRequest, { params }: Props) {
   const teamId = Number((await params).id);
@@ -29,7 +30,13 @@ export async function POST(req: NextRequest, { params }: Props) {
   const token = crypto.randomUUID();
   const digest = crypto.createHmac("sha256", "key").update(token).digest("hex");
 
-  await db.insert(TeamRunners).values({ team_id, digest, name });
+  try {
+    await db.insert(TeamRunners).values({ team_id, digest, name });
+  } catch (err) {
+    if (err instanceof DatabaseError && err.code === "23505") {
+      return new NextResponse(null, { status: 409 });
+    } else throw err;
+  }
   return NextResponse.json({ token }, { status: 201 });
 }
 

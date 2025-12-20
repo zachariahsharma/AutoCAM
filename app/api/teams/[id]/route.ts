@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: Props) {
 
 export async function PATCH(req: NextRequest, { params }: Props) {
   const teamId = Number((await params).id);
-  if (!isEmailVerified(req)) return EmailNotVerifiedResponse;
+  if (!await isEmailVerified(req)) return EmailNotVerifiedResponse;
   const teamMember = await getTeamMember(req, teamId);
   if (!teamMember || !teamMember.admin) return TeamMemberNotAdmin;
   const formData = await req.formData();
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
 export async function DELETE(req: NextRequest, { params }: Props) {
   const teamId = Number((await params).id);
-  if (!isEmailVerified(req)) return EmailNotVerifiedResponse;
+  if (!await isEmailVerified(req)) return EmailNotVerifiedResponse;
   const teamMember = await getTeamMember(req, teamId);
   if (!teamMember || !teamMember.admin) return TeamMemberNotAdmin;
   await db.delete(Teams).where(eq(Teams.id, teamId));

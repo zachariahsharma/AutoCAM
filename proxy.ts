@@ -14,6 +14,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!$|_next/|index/|(?:api/)?auth|dashboard/.+).*)"
+    "/((?!$|_next/|index/|(?:api/)?auth|dashboard/.+|api/runners).*)"
   ]
 }

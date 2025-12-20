@@ -1,17 +1,19 @@
 .container {
-    position: absolute;
-    width: calc(50% - 20px);
-    left: 10px;
-    top: 100px;
+    position: relative;
     background-color:rgba(255,255,255,.16);
     border: 1px solid rgba(255,255,255,.65);
-    height: calc(50% - 100px);
+    height: 100%;
     padding: 10px;
     border-radius: 7px;
     scroll-behavior: auto;
     overflow-y: scroll;
+    width: calc(50% - 5px);
 }
-
+@media screen and (max-width: 994px) {
+    .container {
+        width: 100%;
+    }
+}
 #title {
     font-size: 22px;
     margin-top: 5px;
@@ -52,6 +54,8 @@
     line-height:12px;
     color:white;
     font-size: 18px;
+    width: 300px;
+    white-space:nowrap;
 }
 .recommendedQuantity {
     color: rgba(255,255,255,.49);
@@ -61,6 +65,7 @@
 .partRow {
     display: flex;
     justify-content: space-between;
+    margin-bottom: 5px;
 }
 .counterValue {
     text-align:center;

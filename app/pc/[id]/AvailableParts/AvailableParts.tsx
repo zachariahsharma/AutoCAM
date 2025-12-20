@@ -22,7 +22,28 @@ export default function AvailableParts({
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 id={styles.title}>Available Parts</h1>
-        <button>Select All</button>
+        <button
+          onClick={() =>
+            setSelectedParts((obj) => {
+              const newObj = { ...obj };
+              Object.keys(newObj).forEach((key) => {
+                const partId = Number(key);
+                let recommendedQuantity = 0;
+                Object.values(epicsMap).forEach((parts) => {
+                  parts.forEach((part) => {
+                    if (part.id === partId) {
+                      recommendedQuantity = part.quantity;
+                    }
+                  });
+                });
+                newObj[partId] = recommendedQuantity;
+              });
+              return newObj;
+            })
+          }
+        >
+          Select All
+        </button>
       </div>
       {Object.entries(epicsMap).map(([epic, parts]) => (
         <div key={epic}>

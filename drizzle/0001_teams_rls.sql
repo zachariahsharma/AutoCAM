@@ -23,16 +23,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
-CREATE OR REPLACE FUNCTION is_email_verified() RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM "user"
-    WHERE id = current_setting('app.user_id')
-      AND email_verified = true
-  );
-END;
-$$ LANGUAGE plpgsql STABLE;
-
 -- Policy that allows all users to SELECT teams they are a part of
 CREATE POLICY teams_query
 ON teams
@@ -50,9 +40,3 @@ CREATE POLICY teams_update
 ON teams
 FOR UPDATE
 USING (is_team_admin(id));
-
--- Policy that allows users that have their email verified to INSERT a team
-CREATE POLICY teams_insert
-ON teams
-FOR INSERT
-WITH CHECK (is_email_verified());

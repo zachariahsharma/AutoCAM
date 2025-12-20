@@ -1,24 +1,23 @@
-import { auth } from "@/lib/auth";
+import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
 import { withUser } from "@/lib/db";
 import { TeamMembers, Teams } from "@/lib/schema/entities";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 
-export const TeamMemberNotAdmin = new Response(null, { status: 403 });
-
 // Create team
 export async function POST(req: NextRequest) {
   // Comfortable doing assert here because middleware should take care of not signed in users
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const formData = await req.formData();
-
+  
   const name = formData.get("name")?.toString();
   const teamNumber = formData.get("number")?.toString();
-
+  
   if (!name || !teamNumber)
     return new NextResponse(null, { status: 422 });
-
+  
+  const session = (await auth.api.getSession({ headers: await headers() }))!;
   return await withUser(session.user.id, async tx => {
     try {
       const [team] = await tx.insert(Teams).values({
@@ -35,7 +34,6 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json({ id: team.id }, { status: 201 });
     } catch (err) {
-      console.log(err);
       if (err instanceof DatabaseError && err.code === "42501")
         return new NextResponse(null, { status: 403 });
       throw err;

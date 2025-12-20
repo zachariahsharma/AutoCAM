@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
 import { withUser } from "@/lib/db";
 import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
@@ -9,6 +9,7 @@ import { DatabaseError } from "pg";
 export interface Props { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Props) {
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const session = (await auth.api.getSession({ headers: await headers() }))!;
   const teamId = Number((await params).id);
   const formData = await req.formData();
@@ -31,6 +32,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const session = (await auth.api.getSession({ headers: await headers() }))!;
   const teamId = Number((await params).id);
   return await withUser(session.user.id, async tx => {

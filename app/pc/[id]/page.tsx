@@ -4,6 +4,9 @@ import { PartCategory, Part } from "@/app/types";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { eq } from "drizzle-orm";
+import { PartCategories } from "@/lib/schema/cam";
+import { TeamMembers } from "@/lib/schema/entities";
 
 export default async function PC({
   params,
@@ -13,16 +16,18 @@ export default async function PC({
   const userId = (await auth.api.getSession({ headers: await headers() }))!.user.id;
   const id = Number((await params).id);
   const partcategory = await db.query.PartCategories.findFirst({
-    where: (table, { eq }) => eq(table.id, id),
+    where: eq(PartCategories.id, id),
+    with: {
+      team: {
+        with: {
+          teamMembers: {
+            where: eq(TeamMembers.user_id, userId)
+          }
+        }
+      }
+    }
   });
-  if (!partcategory) notFound();
-
-  // Now check if the user is authorized to access the part category from this team
-  const team = await db.query.TeamMembers.findFirst({
-    where: (table, { and, eq }) => and(eq(table.team_id, partcategory.team_id), eq(table.user_id, userId))
-  });
-  if (!team) notFound();
-
+  if (!partcategory || partcategory.team.teamMembers.length === 0) notFound();
   const mappedPartcategory = {
     ...partcategory,
     thickness: Number(partcategory.thickness),

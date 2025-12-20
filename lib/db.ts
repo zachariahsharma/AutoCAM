@@ -11,7 +11,7 @@ const db = drizzle(process.env.DATABASE_URL!, {
 // Wrapper to ensure RLS functions correctly
 export async function withUser<T>(id: string, fn: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<T>) {
   return await db.transaction(async tx => {
-    await tx.execute(sql`SET LOCAL app.user_id = ${id}`);
+    await tx.execute(`SET LOCAL app.user_id = '${id}';`);
     return fn(tx);
   })
 }

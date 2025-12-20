@@ -1,8 +1,9 @@
 import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
-import db from "@/lib/db";
+import db, { withUser } from "@/lib/db";
 import { TeamMembers, Teams } from "@/lib/schema/entities";
 import { and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { DatabaseError } from "pg";
 
 export const TeamMemberNotAdmin = new Response(null, { status: 403 });
 
@@ -18,8 +19,6 @@ export async function getTeamMember(req: NextRequest, id: number) {
 
 // Create team
 export async function POST(req: NextRequest) {
-  if (!await isEmailVerified(req)) return EmailNotVerifiedResponse;
-
   // Comfortable doing assert here because middleware should take care of not signed in users
   const session = (await auth.api.getSession({ headers: req.headers }))!;
   const formData = await req.formData();
@@ -30,20 +29,26 @@ export async function POST(req: NextRequest) {
   if (!name || !teamNumber)
     return new NextResponse(null, { status: 422 });
 
-  const teamId = await db.transaction(async tx => {
-    const [team] = await tx.insert(Teams).values({
-      name,
-      number: Number(teamNumber),
-    }).returning({ id: Teams.id });
-    // Assign current user to this team
-    await tx.insert(TeamMembers).values({
-      user_id: session.user.id,
-      team_id: team.id,
-      admin: true,
-    });
-    return team.id;
+  return withUser(session.user.id, async tx => {
+    try {
+      const [team] = await tx.insert(Teams).values({
+        name,
+        number: Number(teamNumber),
+      }).returning({ id: Teams.id });
+
+      // Assign current user to this team
+      await tx.insert(TeamMembers).values({
+        user_id: session.user.id,
+        team_id: team.id,
+        admin: true,
+      });
+      return NextResponse.json({ id: team.id }, { status: 201 });
+    } catch (err) {
+      if (err instanceof DatabaseError && err.code === "42501")
+        return new NextResponse(null, { status: 403 });
+      throw err;
+    }
   });
-  return NextResponse.json({ id: teamId }, { status: 201 });
 }
 
 export async function GET(req: NextRequest) {

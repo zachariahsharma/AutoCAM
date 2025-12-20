@@ -3,22 +3,9 @@ ALTER TABLE plates ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY plates_access
 ON plates
-USING (
-  EXISTS (
-    SELECT 1
-    FROM part_categories pc
-    WHERE pc.id = category_id
-      AND is_in_team(pc.team_id)
-  )
-);
+USING (can_access_category(category_id));
 
 CREATE POLICY plates_insert
 ON plates
-WITH CHECK (
-  EXISTS (
-    SELECT 1
-    FROM part_categories pc
-    WHERE pc.id = category_id
-      AND is_in_team(pc.team_id)
-  )
-);
+FOR INSERT
+WITH CHECK (can_access_category(category_id));

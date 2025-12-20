@@ -1,6 +1,7 @@
 import { boolean, char, integer, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations } from "drizzle-orm";
+import { PartCategories } from "./cam";
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -46,6 +47,7 @@ export const TeamsRelations = relations(Teams, ({ many }) => ({
   users: many(user),
   teamInvites: many(TeamInvites),
   runners: many(TeamRunners),
+  partCategories: many(PartCategories),
 }));
 
 export const TeamInvitesRelations = relations(TeamInvites, ({ one }) => ({

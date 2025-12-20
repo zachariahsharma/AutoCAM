@@ -1,10 +1,12 @@
 import { relations } from "drizzle-orm";
 import { decimal, foreignKey, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
+import { Teams } from "./entities";
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   material: text().notNull(),
-  thickness: decimal({ scale: 3 }).notNull()
+  thickness: decimal({ scale: 3 }).notNull(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
 });
 
 export const Parts = pgTable("parts", {

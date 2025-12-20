@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   if (!name || !teamNumber)
     return new NextResponse(null, { status: 422 });
 
-  return withUser(session.user.id, async tx => {
+  return await withUser(session.user.id, async tx => {
     try {
       const [team] = await tx.insert(Teams).values({
         name,
@@ -53,9 +53,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const session = (await auth.api.getSession())!;
-  const teamsMembers = await db.query.TeamMembers.findMany({
-    with: { team: true },
-    where: (table, { eq }) => eq(table.user_id, session.user.id)
+  return await withUser(session.user.id, async tx => {
+    return NextResponse.json(await tx.query.Teams.findMany(), { status: 200 });
   });
-  return NextResponse.json(teamsMembers.map(m => m.team), { status: 200 });
 }

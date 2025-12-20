@@ -35,7 +35,7 @@ export function Header({
         { duration: 0.2 }
       );
     }
-  }, [accountDropdownOpen]);
+  }, [accountDropdownOpen, animate, scope]);
   return (
     <div id={styles.header}>
       <motion.div

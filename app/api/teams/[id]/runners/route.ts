@@ -5,7 +5,7 @@ import { EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
 import { getTeamMember, TeamMemberNotAdmin } from "../../route";
 import { TeamRunners } from "@/lib/schema/entities";
 import { getRunnerDigest, RunnerTokenInvalid } from "@/app/api/runners/route";
-import { and, DrizzleError, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import crypto from "crypto";
 import { DatabaseError } from "pg";
 

@@ -12,12 +12,12 @@ export default function AvailableParts({
     [key: number]: number;
   }>({});
   useEffect(() => {
-    Object.entries(epicsMap).forEach(([epic, parts]) =>
+    Object.values(epicsMap).forEach(parts =>
       parts.forEach((part) => {
         setSelectedParts((obj) => ({ ...obj, [part.id]: 0 }));
       })
     );
-  }, []);
+  }, [epicsMap]);
   return (
     <div className={styles.container}>
       <div className={styles.header}>

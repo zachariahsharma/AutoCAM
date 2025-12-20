@@ -8,10 +8,10 @@ import { BoxTubes } from "@/app/dashboard/BoxTubes/BoxTubes";
 import { useState } from "react";
 import { FinishedCAM } from "./FinishedCAM/FinishedCAM";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { AnimationScope } from "framer-motion";
 
-export function AccountDropdown({ scope }: { scope: any }) {
+export function AccountDropdown({ scope }: { scope: AnimationScope }) {
   const router = useRouter();
 
   return (

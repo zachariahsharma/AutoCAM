@@ -30,7 +30,7 @@ export default function MaterialThickness({
         { duration: 0.5 }
       );
     }
-  }, [plates]);
+  }, [plates, animate, scope]);
   return (
     <div className={styles.container}>
       <Header

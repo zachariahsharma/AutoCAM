@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ id: teamId }, { status: 201 });
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = (await auth.api.getSession())!;
   const teamsMembers = await db.query.TeamMembers.findMany({
     with: { team: true },

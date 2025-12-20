@@ -1,6 +1,5 @@
 import styles from "./header.module.css";
 import { motion } from "framer-motion";
-import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 

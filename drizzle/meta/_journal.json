@@ -22,6 +22,13 @@
       "when": 1766252195337,
       "tag": "0002_part_categories_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1766252787811,
+      "tag": "0003_parts_rls",
+      "breakpoints": true
     }
   ]
 }

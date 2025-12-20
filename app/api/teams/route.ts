@@ -1,26 +1,16 @@
-import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
-import db, { withUser } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { withUser } from "@/lib/db";
 import { TeamMembers, Teams } from "@/lib/schema/entities";
-import { and } from "drizzle-orm";
+import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 
 export const TeamMemberNotAdmin = new Response(null, { status: 403 });
 
-export async function getTeamMember(req: NextRequest, id: number) {
-  const session = (await auth.api.getSession({ headers: req.headers }));
-  if (!session) return null;
-  const teamMember = await db.query.TeamMembers.findFirst({
-    with: { team: true },
-    where: (table, { eq }) => and(eq(table.team_id, id), eq(table.user_id, session.user.id))
-  });
-  return teamMember;
-}
-
 // Create team
 export async function POST(req: NextRequest) {
   // Comfortable doing assert here because middleware should take care of not signed in users
-  const session = (await auth.api.getSession({ headers: req.headers }))!;
+  const session = (await auth.api.getSession({ headers: await headers() }))!;
   const formData = await req.formData();
 
   const name = formData.get("name")?.toString();
@@ -51,8 +41,8 @@ export async function POST(req: NextRequest) {
   });
 }
 
-export async function GET(req: NextRequest) {
-  const session = (await auth.api.getSession())!;
+export async function GET() {
+  const session = (await auth.api.getSession({ headers: await headers() }))!;
   return await withUser(session.user.id, async tx => {
     return NextResponse.json(await tx.query.Teams.findMany(), { status: 200 });
   });

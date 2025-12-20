@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 export async function DELETE(req: NextRequest, { params }: Props) {
   const session = (await auth.api.getSession({ headers: await headers() }))!;
   const teamId = Number((await params).id);
-  await withUser(session.user.id, async tx => {
+  return await withUser(session.user.id, async tx => {
     try {
       await tx.delete(Teams).where(eq(Teams.id, teamId));
       return new NextResponse(null, { status: 204 });

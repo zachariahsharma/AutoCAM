@@ -2,21 +2,21 @@
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE teams FORCE ROW LEVEL SECURITY;
 
-CREATE OR REPLACE FUNCTION is_in_team(team_id INTEGER) RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION is_in_team(tid INTEGER) RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM team_members
-    WHERE id = team_id
+    WHERE team_id = tid
       AND user_id = current_setting('app.user_id')
   );
 END;
 $$ LANGUAGE plpgsql STABLE;
 
-CREATE OR REPLACE FUNCTION is_team_admin(team_id INTEGER) RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION is_team_admin(tid INTEGER) RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM team_members
-    WHERE id = team_id
+    WHERE team_id = tid
       AND admin = true
       AND user_id = current_setting('app.user_id')
   );
@@ -37,7 +37,7 @@ $$ LANGUAGE plpgsql STABLE;
 CREATE POLICY teams_query
 ON teams
 FOR SELECT
-USING (is_in_team(id));
+USING (is_in_team(id) OR created_by = current_setting('app.user_id'));
 
 -- Policy that allows users that are admin to DELETE teams they are a part of
 CREATE POLICY teams_delete

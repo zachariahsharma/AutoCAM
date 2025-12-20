@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       const [team] = await tx.insert(Teams).values({
         name,
         number: Number(teamNumber),
+        created_by: session.user.id,
       }).returning({ id: Teams.id });
 
       // Assign current user to this team
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json({ id: team.id }, { status: 201 });
     } catch (err) {
+      console.log(err);
       if (err instanceof DatabaseError && err.code === "42501")
         return new NextResponse(null, { status: 403 });
       throw err;

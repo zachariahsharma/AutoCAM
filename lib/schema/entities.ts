@@ -7,6 +7,9 @@ export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   number: integer().notNull(),
+  // This will need to change
+  // Do we really want to delete team if the owner deletes their account?
+  created_by: text().notNull().references(() => user.id, { onDelete: "cascade" })
 });
 
 export const TeamInvites = pgTable("team_invites", {
@@ -43,11 +46,15 @@ export const TeamMembersRelations = relations(TeamMembers, ({ one }) => ({
   })
 }));
 
-export const TeamsRelations = relations(Teams, ({ many }) => ({
+export const TeamsRelations = relations(Teams, ({ many, one }) => ({
   teamMembers: many(TeamMembers),
   teamInvites: many(TeamInvites),
   runners: many(TeamRunners),
   partCategories: many(PartCategories),
+  creator: one(user, {
+    fields: [Teams.created_by],
+    references: [user.id],
+  })
 }));
 
 export const TeamInvitesRelations = relations(TeamInvites, ({ one }) => ({

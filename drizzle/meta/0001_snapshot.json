@@ -1,6 +1,6 @@
 {
-  "id": "85e4bd2a-2266-4d53-95b7-03846749e306",
-  "prevId": "c8c2c1d8-5f43-44e7-a208-c094862a62d4",
+  "id": "89a2e167-22a2-4fa2-b576-539a52c4f1c6",
+  "prevId": "e3d44e75-ecdb-4f71-be3a-3d596b982dec",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -950,10 +950,30 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "teams_created_by_user_id_fk": {
+          "name": "teams_created_by_user_id_fk",
+          "tableFrom": "teams",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "tableTo": "user",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

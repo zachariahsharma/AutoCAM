@@ -36,7 +36,7 @@ export async function isEmailVerified() {
 }
 export const EmailNotVerifiedResponse = new NextResponse(null, { status: 403 });
 
-export async function getAPIKey() {
+export async function getKeyDigest() {
   const authHeader = (await headers()).get("authorization");
   if (!authHeader) return;
   const token = authHeader.split("Bearer ")[1];

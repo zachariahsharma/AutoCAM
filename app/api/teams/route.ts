@@ -1,4 +1,4 @@
-import { APIKeyInvalidResponse, auth, AuthType, EmailNotVerifiedResponse, getAPIKey, isEmailVerified } from "@/lib/auth";
+import { APIKeyInvalidResponse, auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { TeamKeys, TeamMembers, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
@@ -42,10 +42,19 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
-  return await withAuth({ userId: session.user.id }, async tx => {
-    return NextResponse.json(await tx.query.Teams.findMany(), { status: 200 });
-  });
+  const authType: AuthType = {
+    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
+    keyDigest: await getKeyDigest()
+  };
+  if (authType.userId) {
+    return await withAuth(authType, async tx => {
+      return NextResponse.json(await tx.query.Teams.findMany(), { status: 200 });
+    });
+  } else if (authType.keyDigest) {
+    return await withAuth(authType, async tx => {
+      return NextResponse.json(await tx.query.Teams.findFirst(), { status: 200 });
+    });
+  } else return new NextResponse(null, { status: 401 });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -55,7 +64,7 @@ export async function PATCH(req: NextRequest) {
 export async function updateTeam(data: FormData, teamId?: number) {
   const authType: AuthType = {
     userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
-    keyDigest: await getAPIKey(),
+    keyDigest: await getKeyDigest(),
   };
   if (authType.userId) {
     if (!await isEmailVerified()) return EmailNotVerifiedResponse;

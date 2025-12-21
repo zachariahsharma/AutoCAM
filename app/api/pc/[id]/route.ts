@@ -7,21 +7,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  return await updatePartCategory(await req.formData(), Number((await params).id));
-}
-
-export async function updatePartCategory(formData: FormData, categoryId: number, teamId?: number) {
   const authType: AuthType = {
     userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
     keyDigest: await getKeyDigest()
   };
-  if (authType.userId) {
-    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  } else if (authType.keyDigest) {
-    teamId = await teamIdFromDigest(authType.keyDigest);
-  } else return new NextResponse(null, { status: 401 });
-  if (!teamId) return new NextResponse(null, { status: 401 });
+  if (authType.userId && !await isEmailVerified())
+    return EmailNotVerifiedResponse;
 
+  const formData = await req.formData();
+  const categoryId = Number((await params).id);
   return withAuth(authType, async tx => {
     try {
       const categories = await tx.update(PartCategories).set({
@@ -31,6 +25,31 @@ export async function updatePartCategory(formData: FormData, categoryId: number,
       if (categories.length === 0)
         return new NextResponse(null, { status: 404 });
       return new NextResponse(null, { status: 204 });
+    } catch (err) {
+      if (err instanceof DatabaseError && err.code === "42501")
+        return new NextResponse(null, { status: 403 });
+      throw err;
+    }
+  });
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authType: AuthType = {
+    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
+    keyDigest: await getKeyDigest()
+  };
+  if (authType.userId && !await isEmailVerified())
+    return EmailNotVerifiedResponse;
+
+  const categoryId = Number((await params).id);
+  return await withAuth(authType, async tx => {
+    try {
+      const categories = await tx.delete(PartCategories)
+        .where(eq(PartCategories.id, categoryId))
+        .returning({ id: PartCategories.id });
+      if (categories.length === 0)
+        return new NextResponse(null, { status: 404 });
+      return new NextResponse(null, { status: 200 });
     } catch (err) {
       if (err instanceof DatabaseError && err.code === "42501")
         return new NextResponse(null, { status: 403 });

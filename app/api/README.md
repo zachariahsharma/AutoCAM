@@ -10,8 +10,8 @@
 - /api/teams/:id/keys/:key - DELETE - Delete key (only if admin and email is verified)
 - /api/teams/:id/pc - POST - Create a part category (everybody on team)
 - /api/teams/:id/pc - GET - Get all part categories (everybody on team)
-- /api/teams/:id/pc/:pc - DELETE - Delete a part category (everybody on team)
-- /api/teams/:id/pc/:pc - PATCH - Update a part category (everybody on team)
+- /api/pc/:id - DELETE - Delete a part category (everybody on team)
+- /api/pc/:id - PATCH - Update a part category (everybody on team)
 
 ## API Key Routes
 - /api/teams - PATCH - Update team details

@@ -7,6 +7,7 @@ import { authClient } from "@/lib/auth-client";
 import { redirect, useRouter } from "next/navigation";
 import { FormEvent } from "react";
 import Image from "next/image";
+import { RobotPic } from "../signup/page";
 function LoginContainer() {
   const router = useRouter();
   const login = async (e: FormEvent<HTMLFormElement>) => {
@@ -65,20 +66,6 @@ function LoginContainer() {
           Sign Up
         </a>
       </div>
-    </motion.div>
-  );
-}
-
-function RobotPic() {
-  return (
-    <motion.div
-      initial={{ x: -100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      id={styles.robotpic}
-      transition={{ type: "spring", stiffness: 50, delay: 0.2, duration: 1 }}
-    >
-      <Image src="/auth/Robot2025.png" alt="robot pic" width={400} height={400} />
-      <span id={styles.label}>Flatline &apos;25</span>
     </motion.div>
   );
 }

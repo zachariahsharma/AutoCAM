@@ -14,7 +14,7 @@ export const auth = betterAuth({
   emailVerification: {
     async sendVerificationEmail({ user, url }) {
       await transporter.sendMail({
-        from: '"AutoCAM" <ishan.karmakar24@gmail.com>',
+        from: '"AutoCAM" <zachariah.sharma@gmail.com>',
         to: user.email,
         subject: "Verify your AutoCAM email!",
         text: `Click the link to verify your email: ${url}`

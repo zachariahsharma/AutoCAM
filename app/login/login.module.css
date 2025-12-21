@@ -1,14 +1,3 @@
-#robotpic {
-    position: absolute;
-    height: 400px;
-    top: calc(50vh - 200px);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin-left: calc(25vw - 200px)
-}
-
 #label {
     background-color: #2F2103;
     border-radius: 20px;
@@ -31,16 +20,30 @@
 }
 
 #logincontainer {
-    background-color: black;
-    width: 30%;
-    border-radius: 20px;
-    position: absolute;
-    box-shadow: rgba(255,255,255,.2) 0px 4px 21px 5px;
-    right: 10vw;
-    height: 60vh;
-    top: 20vh;
-    padding: 30px 40px;
-    z-index: 10;
+  background-color: black;
+  width: 400px;
+  border-radius: 20px;
+  position: absolute;
+  box-shadow: rgba(255,255,255,.2) 0px 4px 21px 5px;
+  right: calc(25vw - 200px);
+  height: 480px;
+  top: calc(50vh - 240px);
+  padding: 30px 40px;
+  z-index: 10;
+}
+@media (max-width: 800px) {
+  #robotpic {
+    display: none;
+  }
+  #logincontainer {
+    right: calc(50vw - 200px) !important;
+  }
+}
+@media (max-width: 400px) {
+  #logincontainer {
+    width: 90%;
+    right: 5% !important;
+  }
 }
 
 #loginheader {

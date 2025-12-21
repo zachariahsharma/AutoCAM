@@ -1,11 +1,15 @@
 import { relations } from "drizzle-orm";
-import { decimal, foreignKey, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
+import { decimal, foreignKey, integer, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
+import { Teams } from "./entities";
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   material: text().notNull(),
-  thickness: decimal({ scale: 3 }).notNull()
-});
+  thickness: decimal({ scale: 3 }).notNull(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
+}, table => [
+  unique().on(table.team_id, table.material, table.thickness)
+]);
 
 export const Parts = pgTable("parts", {
   id: integer().generatedAlwaysAsIdentity(),
@@ -70,10 +74,14 @@ export const PlatesRelations = relations(Plates, ({ one }) => ({
   })
 }));
 
-export const PartCategoriesRelations = relations(PartCategories, ({ many }) => ({
+export const PartCategoriesRelations = relations(PartCategories, ({ many, one }) => ({
   parts: many(Parts),
   plates: many(Plates),
   partsToPlates: many(PartsToPlates),
+  team: one(Teams, {
+    fields: [PartCategories.team_id],
+    references: [Teams.id]
+  })
 }));
 
 export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({

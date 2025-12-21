@@ -1,5 +1,7 @@
 import db from "@/lib/db";
+import { TeamRunners } from "@/lib/schema/entities";
 import crypto from "crypto";
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export const RunnerTokenInvalid = new NextResponse(null, { status: 401 });
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
   if (!digest) return RunnerTokenInvalid;
   const runner = await db.query.TeamRunners.findFirst({
     with: { team: true },
-    where: (table, { eq }) => eq(table.digest, digest)
+    where: eq(TeamRunners.digest, digest)
   });
   // Query jobs from team
 

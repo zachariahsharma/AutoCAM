@@ -1,7 +1,9 @@
 import DashboardPage from "./dashboard";
 import { BoxTube, Plate } from "../types";
 
-import db from "@/lib/db";
+import db, { withUser } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 const boxTubes: BoxTube[] = [
   {
@@ -76,11 +78,12 @@ const plates: Plate[] = [
 ];
 
 export default async function Dashboard() {
-  const partCategories = (
-    await db.query.PartCategories.findMany({ with: { parts: true } })
-  ).map((cat) => ({
+  const session = (await auth.api.getSession({ headers: await headers() }))!;
+  const partCategories = (await withUser(session.user.id, async tx => {
+    return await tx.query.PartCategories.findMany({ with: { parts: true } })
+  })).map(cat => ({
     ...cat,
-    thickness: Number(cat.thickness),
+    thickness: Number(cat.thickness)
   }));
 
   return (

@@ -1,18 +1,24 @@
-import { boolean, char, integer, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, char, integer, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations } from "drizzle-orm";
+import { PartCategories } from "./cam";
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   number: integer().notNull(),
+  // This will need to change
+  // Do we really want to delete team if the owner deletes their account?
+  created_by: text().notNull().references(() => user.id, { onDelete: "cascade" })
 });
 
 export const TeamInvites = pgTable("team_invites", {
   id: uuid().primaryKey().defaultRandom(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   email: text().notNull(),
-});
+}, table => [
+  unique().on(table.team_id, table.email)
+]);
 
 export const TeamMembers = pgTable("team_members", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
@@ -42,10 +48,15 @@ export const TeamMembersRelations = relations(TeamMembers, ({ one }) => ({
   })
 }));
 
-export const TeamsRelations = relations(Teams, ({ many }) => ({
-  users: many(user),
+export const TeamsRelations = relations(Teams, ({ many, one }) => ({
+  teamMembers: many(TeamMembers),
   teamInvites: many(TeamInvites),
   runners: many(TeamRunners),
+  partCategories: many(PartCategories),
+  creator: one(user, {
+    fields: [Teams.created_by],
+    references: [user.id],
+  })
 }));
 
 export const TeamInvitesRelations = relations(TeamInvites, ({ one }) => ({

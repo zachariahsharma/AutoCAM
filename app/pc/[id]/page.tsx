@@ -1,32 +1,34 @@
 import MaterialThickness from "./MaterialThickness";
-import db from "@/lib/db";
+import db, { withUser } from "@/lib/db";
 import { PartCategory, Part } from "@/app/types";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { eq } from "drizzle-orm";
+import { PartCategories } from "@/lib/schema/cam";
+import { TeamMembers } from "@/lib/schema/entities";
 
 export default async function PC({
   params,
 }: {
-  params: Promise<{ id: number }>;
+  params: Promise<{ id: string }>;
 }) {
-  const id = (await params).id;
-  console.log("paramsid", id);
-  const partcategory = await db.query.PartCategories.findFirst({
-    where: (pc, { eq }) => eq(pc.id, Number(id)),
+  const session = (await auth.api.getSession({ headers: await headers() }))!;
+  const id = Number((await params).id);
+  const partcategory = await withUser(session.user.id, async tx => {
+    return await tx.query.PartCategories.findFirst({
+      with: { parts: true },
+      where: eq(PartCategories.id, id),
+    });
   });
-  console.log(partcategory);
   if (!partcategory) notFound();
-
   const mappedPartcategory = {
     ...partcategory,
     thickness: Number(partcategory.thickness),
   } as unknown as PartCategory;
-  
-  const parts = await db.query.Parts.findMany({
-    where: (parts, { eq, and }) =>
-      and(eq(parts.category_id, mappedPartcategory?.id || 0)),
-  });
+
   const epicsMap: { [key: string]: Part[] } = {};
-  parts.forEach((part) => {
+  partcategory.parts.forEach((part) => {
     const epicKey = part.epic || "default";
     if (!epicsMap[epicKey]) {
       epicsMap[epicKey] = [];

@@ -1,41 +1,48 @@
-import { EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
-import db from "@/lib/db";
+import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
+import { withUser } from "@/lib/db";
 import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import { getTeamMember, TeamMemberNotAdmin } from "../route";
+import { headers } from "next/headers";
+import { DatabaseError } from "pg";
 
 export interface Props { params: Promise<{ id: string }> };
 
-export async function GET(req: NextRequest, { params }: Props) {
-  const teamId = Number((await params).id);
-  const team = await db.query.Teams.findFirst({
-    where: (table, { eq }) => eq(table.id, teamId),
-  });
-  if (!team) return new NextResponse(null, { status: 404 });
-  return NextResponse.json(team);
-}
-
 export async function PATCH(req: NextRequest, { params }: Props) {
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
+  const session = (await auth.api.getSession({ headers: await headers() }))!;
   const teamId = Number((await params).id);
-  if (!await isEmailVerified(req)) return EmailNotVerifiedResponse;
-  const teamMember = await getTeamMember(req, teamId);
-  if (!teamMember || !teamMember.admin) return TeamMemberNotAdmin;
   const formData = await req.formData();
 
   const teamNumber = formData.get("number")?.toString();
-  await db.update(Teams).set({
-    name: formData.get("name")?.toString(),
-    number: teamNumber ? Number(teamNumber) : undefined,
-  }).where(eq(Teams.id, teamId));
-  return new NextResponse(null, { status: 204 });
+  return await withUser(session.user.id, async tx => {
+    try {
+      const updated = await tx.update(Teams).set({
+        name: formData.get("name")?.toString(),
+        number: teamNumber ? Number(teamNumber) : undefined
+      }).where(eq(Teams.id, teamId)).returning({ id: Teams.id });
+      if (updated.length === 0) return new NextResponse(null, { status: 404 })
+      return new NextResponse(null, { status: 204 });
+    } catch (err) {
+      if (err instanceof DatabaseError && err.code === "42501")
+        return new NextResponse(null, { status: 403 });
+      throw err;
+    }
+  });
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
+  const session = (await auth.api.getSession({ headers: await headers() }))!;
   const teamId = Number((await params).id);
-  if (!await isEmailVerified(req)) return EmailNotVerifiedResponse;
-  const teamMember = await getTeamMember(req, teamId);
-  if (!teamMember || !teamMember.admin) return TeamMemberNotAdmin;
-  await db.delete(Teams).where(eq(Teams.id, teamId));
-  return new NextResponse(null, { status: 204 });
+  return await withUser(session.user.id, async tx => {
+    try {
+      await tx.delete(Teams).where(eq(Teams.id, teamId));
+      return new NextResponse(null, { status: 204 });
+    } catch (err) {
+      if (err instanceof DatabaseError && err.code === "42501")
+        return new NextResponse(null, { status: 403 });
+      throw err;
+    }
+  });
 }

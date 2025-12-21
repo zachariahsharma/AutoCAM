@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const inviteId = (await params).id;
   const invite = await db.query.TeamInvites.findFirst({
-    where: (table, { eq }) => eq(table.id, inviteId)
+    where: eq(TeamInvites.id, inviteId)
   });
   if (!invite) return new NextResponse(null, { status: 404 });
   const session = (await auth.api.getSession({ headers: req.headers }))!;

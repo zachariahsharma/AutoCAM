@@ -14,8 +14,8 @@ export async function GET(req: NextRequest, { params }: Props) {
   const keys = (await withUser(session.user.id, async tx => {
     return await tx.query.TeamKeys.findMany({
       where: eq(TeamKeys.team_id, teamId),
-      columns: { name: true }
+      columns: { name: true, id: true }
     });
-  })).map(k => k.name);
+  }));
   return NextResponse.json(keys, { status: 200 });
 }

@@ -30,8 +30,9 @@ export const TeamMembers = pgTable("team_members", {
 ]);
 
 export const TeamKeys = pgTable("team_keys", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
-  digest: char({ length: 64 }).notNull().primaryKey(),
+  digest: char({ length: 64 }).notNull(),
   name: text().notNull()
 }, table => [
   unique().on(table.team_id, table.name)

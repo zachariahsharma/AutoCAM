@@ -4,15 +4,6 @@ import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-export const RunnerTokenInvalid = new NextResponse(null, { status: 401 });
-export function getRunnerDigest(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader) return null;
-  const token = authHeader.split("Bearer ")[1];
-  // TODO: Switch to binary/bytea if better-auth supports a higher drizzle version that adds the bytea PG type
-  return crypto.createHmac("sha256", "key").update(token).digest("hex");
-}
-
 export async function GET(req: NextRequest) {
   const digest = getRunnerDigest(req);
   if (!digest) return RunnerTokenInvalid;

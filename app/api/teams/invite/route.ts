@@ -1,0 +1,57 @@
+import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified } from "@/lib/auth";
+import { withAuth } from "@/lib/db";
+import mailer from "@/lib/mailer";
+import { TeamInvites, TeamKeys, Teams } from "@/lib/schema/entities";
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+import { DatabaseError } from "pg";
+
+export async function POST(req: NextRequest) {
+  return await inviteEmail(await req.formData());
+}
+
+export async function inviteEmail(formData: FormData, team_id?: number) {
+  const authType: AuthType = {
+    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
+    keyDigest: await getKeyDigest(),
+  };
+  if (authType.userId) {
+    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
+  } else if (authType.keyDigest) {
+    team_id = await withAuth(authType, async tx => {
+      return (await tx.query.TeamKeys.findFirst({
+        where: eq(TeamKeys.digest, authType.keyDigest!)
+      }))?.team_id;
+    });
+  } else return new NextResponse(null, { status: 401 });
+  if (!team_id) return new NextResponse(null, { status: 401 });
+
+  const email = formData.get("email")?.toString();
+  if (!email) return new NextResponse(null, { status: 400 });
+
+  try {
+    const [id, teamName] = await withAuth(authType, async tx => {
+      const [invite] = await tx
+        .insert(TeamInvites)
+        .values({ team_id, email })
+        .returning({ id: TeamInvites.id });
+      // Unless there is an egregious race condition this should never return nothing
+      const team = (await tx.query.Teams.findFirst({
+        where: eq(Teams.id, team_id!)
+      }))!;
+      return [invite.id, team.name];
+    });
+    await mailer.sendMail({
+      from: '"AutoCAM" <ishan.karmakar24@gmail.com>',
+      to: email,
+      subject: `Join ${teamName}`,
+      text: `Join the ${teamName} Team with this link: ${new URL(`/api/teams/accept/${id}`, `http://${process.env.BASE_URL}`)}`
+    });
+    return new NextResponse(null, { status: 200 });
+  } catch (err) {
+    if (err instanceof DatabaseError && err.code === "42501")
+      return new NextResponse(null, { status: 403 });
+    throw err;
+  }
+}

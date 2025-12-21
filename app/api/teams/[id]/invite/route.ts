@@ -1,7 +1,7 @@
 import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { Props } from "../route";
-import db, { withUser } from "@/lib/db";
+import db, { withAuth } from "@/lib/db";
 import mailer from "@/lib/mailer";
 import { TeamInvites, Teams } from "@/lib/schema/entities";
 import { headers } from "next/headers";
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: Props) {
   if (!email) return new NextResponse(null, { status: 400 });
 
   try {
-    const [id, teamName] = await withUser(session.user.id, async tx => {
+    const [id, teamName] = await withAuth({ userId: session.user.id }, async tx => {
       const [invite] = await tx
         .insert(TeamInvites)
         .values({ team_id, email })

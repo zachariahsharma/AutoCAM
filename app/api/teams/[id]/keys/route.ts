@@ -1,5 +1,5 @@
 import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
-import { withUser } from "@/lib/db";
+import { withAuth } from "@/lib/db";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { Props } from "../route";
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: Props) {
   const teamId = Number((await params).id);
   const session = (await auth.api.getSession({ headers: await headers() }))!;
 
-  const keys = (await withUser(session.user.id, async tx => {
+  const keys = (await withAuth({ userId: session.user.id }, async tx => {
     return await tx.query.TeamKeys.findMany({
       where: eq(TeamKeys.team_id, teamId),
       columns: { name: true, id: true }
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: Props) {
 
   const token = crypto.randomBytes(32).toString("hex");
 
-  return await withUser(session.user.id, async tx => {
+  return await withAuth({ userId: session.user.id }, async tx => {
     try {
       await tx.insert(TeamKeys).values({
         digest: getDigest(token),

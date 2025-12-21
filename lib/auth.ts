@@ -3,8 +3,9 @@ import db from "./db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from './schema/auth';
 import transporter from "./mailer";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import crypto from "crypto";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -32,4 +33,17 @@ export async function isEmailVerified() {
   if (!session) return false;
   return session.user.emailVerified;
 }
-export const EmailNotVerifiedResponse = new NextResponse(null, { status: 401 });
+export const EmailNotVerifiedResponse = new NextResponse(null, { status: 403 });
+
+export async function getAPIKey() {
+  const authHeader = (await headers()).get("authorization");
+  if (!authHeader) return;
+  const token = authHeader.split("Bearer ")[1];
+  return crypto.createHmac("sha256", "key").update(token).digest("hex");
+}
+export const APIKeyInvalidResponse = new NextResponse(null, { status: 401 });
+
+export interface AuthType {
+  keyDigest?: string;
+  userId?: string;
+};

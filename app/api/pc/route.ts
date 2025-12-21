@@ -2,19 +2,20 @@ import { PartCategory } from "@/app/types";
 import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { PartCategories } from "@/lib/schema/cam";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 
-export async function GET() {
-  return await getPartCategories();
+export async function GET(req: NextRequest) {
+  return await getPartCategories(req.nextUrl.searchParams);
 }
 
 export async function POST(req: NextRequest) {
   return await createPartCategory(await req.formData());
 }
 
-export async function getPartCategories(teamId?: number) {
+export async function getPartCategories(params: URLSearchParams, teamId?: number) {
   const authType: AuthType = {
     userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
     keyDigest: await getKeyDigest()
@@ -25,8 +26,16 @@ export async function getPartCategories(teamId?: number) {
   } else return new NextResponse(null, { status: 401 });
   if (!teamId) return new NextResponse(null, { status: 401 });
 
+  const material = params.get("material")?.toString();
+  const thickness = params.get("thickness")?.toString();
   const partCategories = await withAuth(authType, async tx => {
-    return await tx.query.PartCategories.findMany();
+    return await tx.query.PartCategories.findMany({
+      where: and(
+        eq(PartCategories.team_id, teamId),
+        material !== undefined ? eq(PartCategories.material, material) : undefined,
+        thickness !== undefined ? eq(PartCategories.thickness, thickness) : undefined
+      )
+    });
   });
   return NextResponse.json(partCategories, { status: 200 });
 }

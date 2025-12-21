@@ -79,7 +79,7 @@ const plates: Plate[] = [
 
 export default async function Dashboard() {
   const session = (await auth.api.getSession({ headers: await headers() }))!;
-  const partCategories = (await withAuth(session.user.id, async tx => {
+  const partCategories = (await withAuth({ userId: session.user.id }, async tx => {
     return await tx.query.PartCategories.findMany({ with: { parts: true } })
   })).map(cat => ({
     ...cat,

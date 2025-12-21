@@ -37,7 +37,7 @@ $$ LANGUAGE plpgsql STABLE;
 CREATE POLICY teams_query
 ON teams
 FOR SELECT
-USING (user_in_team(id) OR created_by = current_setting('app.user_id'));
+USING (api_key_team() = id OR user_in_team(id) OR created_by = current_setting('app.user_id', true));
 
 -- Policy that allows users that are admin to DELETE teams they are a part of
 CREATE POLICY teams_delete
@@ -50,3 +50,9 @@ CREATE POLICY teams_update
 ON teams
 FOR UPDATE
 USING (api_key_team() = id OR user_is_team_admin(id));
+
+-- Policy that allows all users to INSERT (email verification will be handled server-side)
+CREATE POLICY teams_insert
+ON teams
+FOR INSERT
+WITH CHECK (true);

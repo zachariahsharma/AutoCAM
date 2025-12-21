@@ -6,7 +6,8 @@ import { sql } from "drizzle-orm";
 import { AuthType } from "./auth";
 
 const db = drizzle(process.env.DATABASE_URL!, {
-  schema: { ...authSchemas, ...camSchemas, ...entitiesSchemas }
+  schema: { ...authSchemas, ...camSchemas, ...entitiesSchemas },
+  logger: true,
 });
 
 // Wrapper to ensure RLS functions correctly

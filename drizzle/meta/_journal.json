@@ -36,6 +36,13 @@
       "when": 1766279754634,
       "tag": "0004_team_invites_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1766327253504,
+      "tag": "0005_parts_rls",
+      "breakpoints": true
     }
   ]
 }

@@ -136,3 +136,13 @@ ALTER TABLE "teams" ADD CONSTRAINT "teams_created_by_user_id_fk" FOREIGN KEY ("c
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");
+
+CREATE TABLE "team_keys" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "team_keys_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"team_id" integer NOT NULL,
+	"digest" char(64) NOT NULL,
+	"name" text NOT NULL,
+	CONSTRAINT "team_keys_team_id_name_unique" UNIQUE("team_id","name")
+);
+--> statement-breakpoint
+ALTER TABLE "team_keys" ADD CONSTRAINT "team_keys_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;

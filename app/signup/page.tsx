@@ -20,6 +20,8 @@ function SignupContainer() {
   const [insecure, setInsecurePassword] = useState(false);
   const [mismatch, setMismatch] = useState(false);
   const [strength, setStrength] = useState(0);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [message, setMessage] = useState("");
   useEffect(() => {
     let strengthCount = 0;
     if (password.length >= 8) strengthCount++;
@@ -83,11 +85,17 @@ function SignupContainer() {
       setUserExists(true);
     } else {
       setUserExists(false);
+      if (error) {
+        setMessage(error?.message ?? "");
+        setErrorModalOpen(true);
+      }
     }
+    
     console.log(error);
   }
 
   return (
+    <>
     <motion.div
       layout
       initial={{ x: 100, opacity: 0 }}
@@ -158,7 +166,11 @@ function SignupContainer() {
         <Alert message="Password's aren't matching!" open={mismatch} />
         <PrimaryButton
           id={styles.signupbutton}
-          type="submit"
+          // type="submit"
+          onClick={() => {
+            setMessage("Beans");
+            setErrorModalOpen(true);
+          }}
         >
           <span className={styles.signupbuttontext + " " + styles.textGradient}>
             SIGN UP
@@ -171,7 +183,9 @@ function SignupContainer() {
           Log In
         </a>
       </div>
-    </motion.div>
+      </motion.div>
+      <AlertModal message={message} open={errorModalOpen} />
+      </>
   );
 }
 
@@ -226,6 +240,41 @@ export function Alert({
     </motion.div>
   );
 }
+
+export function AlertModal({
+  message,
+  open,
+}: {
+  message: string;
+  open: boolean;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className={styles.alertmodal}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className={styles.alertmodalcontent}>
+            <h1>Error 😬</h1>
+            <span>{message}</span>
+            <span>Oops! Looks like we had an error. Try reloading and checking your internet connection and try again.</span>
+            <PrimaryButton
+              onClick={() => {
+                window.location.reload();
+              }}
+              className={styles.alertmodalbutton}
+            >Reload</PrimaryButton>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export function RobotPic() {
   return (
     <motion.div

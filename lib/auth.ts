@@ -1,11 +1,13 @@
 import { betterAuth } from "better-auth";
-import db from "./db";
+import db, { withAuth } from "./db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from './schema/auth';
 import transporter from "./mailer";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import crypto from "crypto";
+import { eq } from "drizzle-orm";
+import { TeamKeys } from "./schema/entities";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -43,6 +45,14 @@ export async function getKeyDigest() {
   return crypto.createHmac("sha256", "key").update(token).digest("hex");
 }
 export const APIKeyInvalidResponse = new NextResponse(null, { status: 401 });
+
+export async function teamIdFromDigest(digest: string) {
+  return withAuth({ keyDigest: digest }, async tx => {
+    return (await tx.query.TeamKeys.findFirst({
+      where: eq(TeamKeys.digest, digest)
+    }))?.team_id;
+  });
+}
 
 export interface AuthType {
   keyDigest?: string;

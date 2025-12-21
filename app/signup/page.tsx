@@ -79,6 +79,11 @@ function SignupContainer() {
         onSuccess: () => router.push("/dashboard"),
       }
     );
+    if (error?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+      setUserExists(true);
+    } else {
+      setUserExists(false);
+    }
     console.log(error);
   }
 

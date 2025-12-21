@@ -7,7 +7,6 @@ import { DatabaseError } from "pg";
 
 // Create team
 export async function POST(req: NextRequest) {
-  // Comfortable doing assert here because middleware should take care of not signed in users
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const formData = await req.formData();
   

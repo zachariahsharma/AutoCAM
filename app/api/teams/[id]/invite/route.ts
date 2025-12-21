@@ -9,9 +9,9 @@ import { eq } from "drizzle-orm";
 import { DatabaseError } from "pg";
 
 export async function POST(req: NextRequest, { params }: Props) {
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const team_id = Number((await params).id);
   const session = (await auth.api.getSession({ headers: await headers() }))!;
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
 
   const email = (await req.formData()).get("email")?.toString();
   if (!email) return new NextResponse(null, { status: 400 });

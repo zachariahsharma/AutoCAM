@@ -22,9 +22,9 @@ export async function GET(req: NextRequest, { params }: Props) {
 }
 
 export async function POST(req: NextRequest, { params }: Props) {
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const team_id = Number((await params).id);
   const session = (await auth.api.getSession({ headers: await headers() }))!;
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
 
   const name = (await req.formData()).get("name")?.toString();
   if (!name) return new NextResponse(null, { status: 422 });
@@ -49,9 +49,9 @@ export async function POST(req: NextRequest, { params }: Props) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const teamId = Number((await params).id);
   const session = (await auth.api.getSession({ headers: await headers() }))!;
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const digest = getRunnerDigest(req);
   if (!digest) return RunnerTokenInvalid;
   return await withUser(session.user.id, async tx => {

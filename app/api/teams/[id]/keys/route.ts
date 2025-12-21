@@ -7,9 +7,9 @@ import { eq } from "drizzle-orm";
 import { TeamKeys } from "@/lib/schema/entities";
 
 export async function GET(req: NextRequest, { params }: Props) {
+  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const teamId = Number((await params).id);
   const session = (await auth.api.getSession({ headers: await headers() }))!;
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
 
   const keys = (await withUser(session.user.id, async tx => {
     return await tx.query.TeamKeys.findMany({

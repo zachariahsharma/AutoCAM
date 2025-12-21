@@ -95,7 +95,8 @@ CREATE TABLE "plates" (
 CREATE TABLE "team_invites" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" integer NOT NULL,
-	"email" text NOT NULL
+	"email" text NOT NULL,
+	CONSTRAINT "team_invites_team_id_email_unique" UNIQUE("team_id","email")
 );
 --> statement-breakpoint
 CREATE TABLE "team_members" (

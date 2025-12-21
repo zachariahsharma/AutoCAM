@@ -1,5 +1,5 @@
 {
-  "id": "e3d44e75-ecdb-4f71-be3a-3d596b982dec",
+  "id": "4bc5e283-0d68-417e-888c-5e08ffb44596",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -793,7 +793,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "team_invites_team_id_email_unique": {
+          "name": "team_invites_team_id_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "team_id",
+            "email"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

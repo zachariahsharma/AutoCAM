@@ -29,6 +29,14 @@ export const TeamMembers = pgTable("team_members", {
   primaryKey({ columns: [table.team_id, table.user_id] })
 ]);
 
+export const TeamKeys = pgTable("team_keys", {
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
+  digest: char({ length: 64 }).notNull().primaryKey(),
+  name: text().notNull()
+}, table => [
+  unique().on(table.team_id, table.name)
+]);
+
 export const TeamRunners = pgTable("team_runners", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   digest: char({ length: 64 }).notNull(),
@@ -53,6 +61,7 @@ export const TeamsRelations = relations(Teams, ({ many, one }) => ({
   teamInvites: many(TeamInvites),
   runners: many(TeamRunners),
   partCategories: many(PartCategories),
+  keys: many(TeamKeys),
   creator: one(user, {
     fields: [Teams.created_by],
     references: [user.id],
@@ -64,6 +73,13 @@ export const TeamInvitesRelations = relations(TeamInvites, ({ one }) => ({
     fields: [TeamInvites.team_id],
     references: [Teams.id],
   }),
+}));
+
+export const TeamKeysRelations = relations(TeamKeys, ({ one }) => ({
+  team: one(Teams, {
+    fields: [TeamKeys.team_id],
+    references: [Teams.id]
+  })
 }));
 
 export const TeamRunnersRelations = relations(TeamRunners, ({ one }) => ({

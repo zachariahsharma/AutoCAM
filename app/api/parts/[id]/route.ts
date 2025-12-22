@@ -1,11 +1,18 @@
-import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { Parts } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { DatabaseError } from "pg";
+import { NextRequest } from "next/server";
 import zod from "zod";
+import {
+  getAuthType,
+  parseParamId,
+  parseJsonBody,
+  requireEmailVerified,
+  notFoundResponse,
+  noContentResponse,
+  unauthorizedResponse,
+  handleDatabaseError
+} from "@/lib/api-utils";
 
 interface Props {
   params: Promise<{ id: string }>
@@ -19,62 +26,52 @@ const UpdateInput = zod.object({
 });
 
 export async function PATCH(req: NextRequest, { params }: Props) {
-  const authType: AuthType = {
-    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
-    keyDigest: await getKeyDigest()
-  };
+  const authType = await getAuthType();
 
   if (authType.userId) {
-    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  } else if (!authType.keyDigest)
-    return new NextResponse(null, { status: 401 });
+    const emailError = await requireEmailVerified();
+    if (emailError) return emailError;
+  } else if (!authType.keyDigest) {
+    return unauthorizedResponse();
+  }
 
-  const partId = await zod.coerce.number().positive().safeParseAsync((await params).id);
-  if (!partId.success)
-    return NextResponse.json(partId.error.issues, { status: 422 });
-  const data = await UpdateInput.safeParseAsync(await req.json());
-  if (!data.success)
-    return NextResponse.json(data.error.issues, { status: 422 });
+  const partIdResult = await parseParamId((await params).id);
+  if (!partIdResult.success) return partIdResult.response;
+  
+  const bodyResult = await parseJsonBody(await req.json(), UpdateInput);
+  if (!bodyResult.success) return bodyResult.response;
 
   return await withAuth(authType, async tx => {
     try {
-      const updated = await tx.update(Parts).set(data.data).returning({ id: Parts.id });
-      if (updated.length === 0)
-        return new NextResponse(null, { status: 404 });
-      return new NextResponse(null, { status: 204 });
+      const updated = await tx.update(Parts).set(bodyResult.data).returning({ id: Parts.id });
+      if (updated.length === 0) return notFoundResponse();
+      return noContentResponse();
     } catch (err) {
-      if (err instanceof DatabaseError && err.code === "42501")
-        return new NextResponse(null, { status: 403 });
-      throw err;
+      return handleDatabaseError(err);
     }
   });
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
-  const authType: AuthType = {
-    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
-    keyDigest: await getKeyDigest()
-  };
+  const authType = await getAuthType();
 
   if (authType.userId) {
-    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  } else if (!authType.keyDigest)
-    return new NextResponse(null, { status: 401 });
+    const emailError = await requireEmailVerified();
+    if (emailError) return emailError;
+  } else if (!authType.keyDigest) {
+    return unauthorizedResponse();
+  }
 
-  const partId = await zod.coerce.number().positive().safeParseAsync((await params).id);
-  if (!partId.success)
-    return NextResponse.json(partId.error.issues, { status: 422 });
+  const partIdResult = await parseParamId((await params).id);
+  if (!partIdResult.success) return partIdResult.response;
 
   return withAuth(authType, async tx => {
     try {
-      const deleted = await tx.delete(Parts).where(eq(Parts.id, partId.data)).returning({ id: Parts.id });
-      if (deleted.length === 0)
-        return new NextResponse(null, { status: 404 });
-      return new NextResponse(null, { status: 204 });
+      const deleted = await tx.delete(Parts).where(eq(Parts.id, partIdResult.data)).returning({ id: Parts.id });
+      if (deleted.length === 0) return notFoundResponse();
+      return noContentResponse();
     } catch (err) {
-      if (err instanceof DatabaseError && err.code)
-        return new NextResponse(null, { status: 403 });
-      throw err;
+      return handleDatabaseError(err);
     }
   });
 }

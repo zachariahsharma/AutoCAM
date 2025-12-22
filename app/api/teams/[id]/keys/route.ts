@@ -6,24 +6,33 @@ import { Props } from "../route";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "@/lib/schema/entities";
 import crypto from "crypto";
-import { DatabaseError } from "pg";
 import zod from "zod";
+import {
+  checkAuthWithEmailVerification,
+  parseParamId,
+  parseJsonBody,
+  okResponse,
+  createdResponse,
+  handleDatabaseError
+} from "@/lib/api-utils";
 
 export async function GET(req: NextRequest, { params }: Props) {
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const teamId = await zod.coerce.number().positive().safeParseAsync((await params).id);
-  if (!teamId.success)
-    return NextResponse.json(teamId.error.issues, { status: 422 });
+  const authError = await checkAuthWithEmailVerification();
+  if (authError) return authError;
+  
+  const teamIdResult = await parseParamId((await params).id);
+  if (!teamIdResult.success) return teamIdResult.response;
+  
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new NextResponse(null, { status: 401 });
 
   const keys = (await withAuth({ userId: session.user.id }, async tx => {
     return await tx.query.TeamKeys.findMany({
-      where: eq(TeamKeys.team_id, teamId.data),
+      where: eq(TeamKeys.team_id, teamIdResult.data),
       columns: { name: true, id: true }
     });
   }));
-  return NextResponse.json(keys, { status: 200 });
+  return okResponse(keys);
 }
 
 const CreateInput = zod.object({
@@ -31,15 +40,16 @@ const CreateInput = zod.object({
 })
 
 export async function POST(req: NextRequest, { params }: Props) {
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const teamId = await zod.coerce.number().positive().safeParseAsync((await params).id);
-  if (!teamId.success)
-    return NextResponse.json(teamId.error.issues, { status: 422 });
+  const authError = await checkAuthWithEmailVerification();
+  if (authError) return authError;
+  
+  const teamIdResult = await parseParamId((await params).id);
+  if (!teamIdResult.success) return teamIdResult.response;
+  
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new NextResponse(null, { status: 401 });
-  const data = await CreateInput.safeParseAsync(await req.json());
-  if (!data.success)
-    return NextResponse.json(data.error.issues, { status: 422 });
+  const bodyResult = await parseJsonBody(await req.json(), CreateInput);
+  if (!bodyResult.success) return bodyResult.response;
 
   const token = crypto.randomBytes(32).toString("hex");
 
@@ -47,13 +57,11 @@ export async function POST(req: NextRequest, { params }: Props) {
     try {
       await tx.insert(TeamKeys).values({
         digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
-        ...data.data, team_id: teamId.data
+        ...bodyResult.data, team_id: teamIdResult.data
       });
-      return NextResponse.json({ token }, { status: 201 });
+      return createdResponse({ token });
     } catch (err) {
-      if (err instanceof DatabaseError && err.code === "42501")
-        return new NextResponse(null, { status: 403 });
-      throw err;
+      return handleDatabaseError(err);
     }
   });
 }

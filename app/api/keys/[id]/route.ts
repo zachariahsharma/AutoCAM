@@ -9,10 +9,8 @@ import {
   checkAuthWithEmailVerification,
   parseParamId,
   parseJsonBody,
-  notFoundResponse,
-  noContentResponse,
-  unauthorizedResponse,
-  handleDatabaseError
+  handleDatabaseError,
+  routeResponse
 } from "@/lib/api-utils";
 
 interface Props {
@@ -27,7 +25,7 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   if (!keyIdResult.success) return keyIdResult.response;
   
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return unauthorizedResponse();
+  if (!session) return routeResponse(401);
 
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
@@ -35,8 +33,8 @@ export async function DELETE(req: NextRequest, { params }: Props) {
         .delete(TeamKeys)
         .where(eq(TeamKeys.id, keyIdResult.data))
         .returning({ id: TeamKeys.id });
-      if (deleted.length === 0) return notFoundResponse();
-      return noContentResponse();
+      if (deleted.length === 0) return routeResponse(404);
+      return routeResponse(204);
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -55,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   if (!keyIdResult.success) return keyIdResult.response;
   
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return unauthorizedResponse();
+  if (!session) return routeResponse(401);
   
   const bodyResult = await parseJsonBody(await req.json(), UpdateInput);
   if (!bodyResult.success) return bodyResult.response;
@@ -66,8 +64,8 @@ export async function PATCH(req: NextRequest, { params }: Props) {
         .set(bodyResult.data)
         .where(eq(TeamKeys.id, keyIdResult.data))
         .returning({ id: TeamKeys.id });
-      if (updated.length === 0) return notFoundResponse();
-      return noContentResponse();
+      if (updated.length === 0) return routeResponse(404);
+      return routeResponse(204);
     } catch (err) {
       return handleDatabaseError(err);
     }

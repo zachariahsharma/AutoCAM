@@ -1,4 +1,4 @@
-import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -11,9 +11,8 @@ import {
   checkAuthWithEmailVerification,
   parseParamId,
   parseJsonBody,
-  okResponse,
-  createdResponse,
-  handleDatabaseError
+  handleDatabaseError,
+  routeResponse
 } from "@/lib/api-utils";
 
 export async function GET(req: NextRequest, { params }: Props) {
@@ -32,7 +31,7 @@ export async function GET(req: NextRequest, { params }: Props) {
       columns: { name: true, id: true }
     });
   }));
-  return okResponse(keys);
+  return routeResponse(200, keys);
 }
 
 const CreateInput = zod.object({
@@ -59,7 +58,7 @@ export async function POST(req: NextRequest, { params }: Props) {
         digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
         ...bodyResult.data, team_id: teamIdResult.data
       });
-      return createdResponse({ token });
+      return routeResponse(201, { token });
     } catch (err) {
       return handleDatabaseError(err);
     }

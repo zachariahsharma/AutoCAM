@@ -1,16 +1,15 @@
-import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
-import { withAuth } from "@/lib/db";
+import { auth, AuthType, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { DatabaseError } from "pg";
-import zod, { ZodError, ZodObject } from "zod";
+import zod, { ZodObject } from "zod";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
  */
-export async function getUserId(): Promise<string | null> {
+export async function getUserId(): Promise<string | undefined> {
   const session = await auth.api.getSession({ headers: await headers() });
-  return session?.user.id ?? null;
+  return session?.user.id;
 }
 
 /**
@@ -69,7 +68,7 @@ export async function parseJsonBody<T extends ZodObject>(json: unknown, schema: 
  */
 export async function requireEmailVerified(): Promise<NextResponse | null> {
   if (!await isEmailVerified()) {
-    return EmailNotVerifiedResponse;
+    return routeResponse(403);
   }
   return null;
 }
@@ -79,10 +78,8 @@ export async function requireEmailVerified(): Promise<NextResponse | null> {
  * Returns NextResponse error or null if authorized
  */
 export async function checkAuthWithEmailVerification(): Promise<NextResponse | null> {
-  const userId = await getUserId();
-  if (!userId) {
-    return new NextResponse(null, { status: 401 });
-  }
+  if (await getUserId() === undefined)
+    return routeResponse(401);
   return await requireEmailVerified();
 }
 
@@ -92,50 +89,14 @@ export async function checkAuthWithEmailVerification(): Promise<NextResponse | n
  */
 export function handleDatabaseError(err: unknown): NextResponse {
   if (err instanceof DatabaseError) {
-    if (err.code === "42501") return forbiddenResponse(); // Permission denied
-    if (err.code === "23505") return new NextResponse(null, { status: 409 }); // Unique violation
+    if (err.code === "42501") return routeResponse(403); // Permission denied
+    if (err.code === "23505") return routeResponse(409); // Unique violation
   }
   throw err;
 }
 
-/**
- * Generic handler for not found responses
- */
-export function notFoundResponse(): NextResponse {
-  return new NextResponse(null, { status: 404 });
-}
-
-/**
- * Generic handler for no content responses
- */
-export function noContentResponse(): NextResponse {
-  return new NextResponse(null, { status: 204 });
-}
-
-/**
- * Generic handler for created responses
- */
-export function createdResponse<T extends Record<string, unknown>>(data: T, status = 201): NextResponse {
+export function routeResponse(status = 200, data?: object) {
+  if (data === undefined)
+    return new NextResponse(null, { status });
   return NextResponse.json(data, { status });
-}
-
-/**
- * Generic handler for OK responses
- */
-export function okResponse<T>(data: T, status = 200): NextResponse {
-  return NextResponse.json(data, { status });
-}
-
-/**
- * Unauthorized response
- */
-export function unauthorizedResponse(): NextResponse {
-  return new NextResponse(null, { status: 401 });
-}
-
-/**
- * Forbidden response
- */
-export function forbiddenResponse(): NextResponse {
-  return new NextResponse(null, { status: 403 });
 }

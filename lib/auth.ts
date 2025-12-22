@@ -36,7 +36,6 @@ export async function isEmailVerified() {
   if (!session) return false;
   return session.user.emailVerified;
 }
-export const EmailNotVerifiedResponse = new NextResponse(null, { status: 403 });
 
 export async function getKeyDigest() {
   const authHeader = (await headers()).get("authorization");

@@ -8,9 +8,8 @@ import { updateTeam } from "../route";
 import { 
   parseParamId, 
   checkAuthWithEmailVerification, 
-  notFoundResponse, 
-  noContentResponse, 
-  handleDatabaseError
+  handleDatabaseError,
+  routeResponse
 } from "@/lib/api-utils";
 
 export interface Props { params: Promise<{ id: string }> };
@@ -32,8 +31,8 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
       const deleted = await tx.delete(Teams).where(eq(Teams.id, teamIdResult.data)).returning({ id: Teams.id });
-      if (deleted.length === 0) return notFoundResponse();
-      return noContentResponse();
+      if (deleted.length === 0) return routeResponse(404);
+      return routeResponse(204);
     } catch (err) {
       return handleDatabaseError(err);
     }

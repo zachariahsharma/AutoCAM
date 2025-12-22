@@ -8,9 +8,8 @@ import {
   requireEmailVerified,
   parseParamId,
   parseJsonBody,
-  notFoundResponse,
-  noContentResponse,
-  handleDatabaseError
+  handleDatabaseError,
+  routeResponse
 } from "@/lib/api-utils";
 
 export interface Props {
@@ -41,8 +40,8 @@ export async function PATCH(req: NextRequest, { params }: Props) {
         ...bodyResult.data,
         thickness: bodyResult.data.thickness?.toString(),
       }).where(eq(PartCategories.id, categoryIdResult.data)).returning({ id: PartCategories.id });
-      if (categories.length === 0) return notFoundResponse();
-      return noContentResponse();
+      if (categories.length === 0) return routeResponse(404);
+      return routeResponse(201);
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -64,8 +63,8 @@ export async function DELETE(req: NextRequest, { params }: Props) {
       const categories = await tx.delete(PartCategories)
         .where(eq(PartCategories.id, categoryIdResult.data))
         .returning({ id: PartCategories.id });
-      if (categories.length === 0) return notFoundResponse();
-      return noContentResponse();
+      if (categories.length === 0) return routeResponse(404);
+      return routeResponse(204);
     } catch (err) {
       return handleDatabaseError(err);
     }

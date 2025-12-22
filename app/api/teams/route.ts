@@ -10,12 +10,8 @@ import {
   parseJsonBody, 
   requireEmailVerified, 
   checkAuthWithEmailVerification,
-  createdResponse,
-  okResponse,
-  unauthorizedResponse,
-  noContentResponse,
-  notFoundResponse,
-  handleDatabaseError
+  handleDatabaseError,
+  routeResponse
 } from "@/lib/api-utils";
 
 const CreateInput = zod.object({
@@ -27,7 +23,7 @@ export async function POST(req: NextRequest) {
   const authError = await checkAuthWithEmailVerification();
   if (authError) return authError;
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return unauthorizedResponse();
+  if (!session) return routeResponse(401);
 
   const bodyResult = await parseJsonBody(await req.json(), CreateInput);
   if (!bodyResult.success) return bodyResult.response;
@@ -45,7 +41,7 @@ export async function POST(req: NextRequest) {
         team_id: team.id,
         admin: true,
       });
-      return createdResponse({ id: team.id });
+      return routeResponse(201, { id: team.id });
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -56,14 +52,14 @@ export async function GET() {
   const authType = await getAuthType();
   if (authType.userId) {
     return await withAuth(authType, async tx => {
-      return okResponse(await tx.query.Teams.findMany());
+      return routeResponse(200, await tx.query.Teams.findMany());
     });
   } else if (authType.keyDigest) {
     return await withAuth(authType, async tx => {
-      return okResponse(await tx.query.Teams.findFirst());
+      return routeResponse(200, await tx.query.Teams.findFirst());
     });
   } else {
-    return unauthorizedResponse();
+    return routeResponse(401);
   }
 }
 
@@ -85,10 +81,10 @@ export async function updateTeam(json: object, teamId?: number) {
   } else if (authType.keyDigest) {
     teamId = await teamIdFromDigest(authType.keyDigest);
   } else {
-    return unauthorizedResponse();
+    return routeResponse(401);
   }
   
-  if (!teamId) return unauthorizedResponse();
+  if (!teamId) return routeResponse(401);
 
   const bodyResult = await parseJsonBody(json, UpdateInput);
   if (!bodyResult.success) return bodyResult.response;
@@ -99,8 +95,8 @@ export async function updateTeam(json: object, teamId?: number) {
         .set(bodyResult.data)
         .where(eq(Teams.id, teamId))
         .returning({ id: Teams.id });
-      if (updated.length === 0) return notFoundResponse();
-      return noContentResponse();
+      if (updated.length === 0) return routeResponse(404);
+      return routeResponse(204);
     } catch (err) {
       return handleDatabaseError(err);
     }

@@ -8,10 +8,8 @@ import {
   parseParamId,
   parseJsonBody,
   requireEmailVerified,
-  notFoundResponse,
-  noContentResponse,
-  unauthorizedResponse,
-  handleDatabaseError
+  handleDatabaseError,
+  routeResponse
 } from "@/lib/api-utils";
 
 interface Props {
@@ -32,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
     const emailError = await requireEmailVerified();
     if (emailError) return emailError;
   } else if (!authType.keyDigest) {
-    return unauthorizedResponse();
+    return routeResponse(401);
   }
 
   const partIdResult = await parseParamId((await params).id);
@@ -44,8 +42,8 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   return await withAuth(authType, async tx => {
     try {
       const updated = await tx.update(Parts).set(bodyResult.data).returning({ id: Parts.id });
-      if (updated.length === 0) return notFoundResponse();
-      return noContentResponse();
+      if (updated.length === 0) return routeResponse(404);
+      return routeResponse(204);
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -59,7 +57,7 @@ export async function DELETE(req: NextRequest, { params }: Props) {
     const emailError = await requireEmailVerified();
     if (emailError) return emailError;
   } else if (!authType.keyDigest) {
-    return unauthorizedResponse();
+    return routeResponse(401);
   }
 
   const partIdResult = await parseParamId((await params).id);
@@ -68,8 +66,8 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   return withAuth(authType, async tx => {
     try {
       const deleted = await tx.delete(Parts).where(eq(Parts.id, partIdResult.data)).returning({ id: Parts.id });
-      if (deleted.length === 0) return notFoundResponse();
-      return noContentResponse();
+      if (deleted.length === 0) return routeResponse(404);
+      return routeResponse(204);
     } catch (err) {
       return handleDatabaseError(err);
     }

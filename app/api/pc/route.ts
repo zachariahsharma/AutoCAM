@@ -29,7 +29,7 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
   const material = params.get("material")?.toString();
   const thickness = params.get("thickness")?.toString();
   const partCategories = await withAuth(authType, async tx => {
-    return await tx.query.PartCategories.findMany({
+    return (await tx.query.PartCategories.findMany({
       where: and(
         eq(PartCategories.team_id, teamId),
         material !== undefined ? eq(PartCategories.material, material) : undefined,
@@ -40,7 +40,7 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
         material: true,
         thickness: true,
       }
-    });
+    })).map(c => ({ ...c, thickness: Number(c.thickness) }));
   });
   return NextResponse.json(partCategories, { status: 200 });
 }

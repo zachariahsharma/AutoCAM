@@ -6,12 +6,17 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
+import zod from "zod";
 
 export async function POST(req: NextRequest) {
-  return await inviteEmail(await req.formData());
+  return await inviteEmail(await req.json());
 }
 
-export async function inviteEmail(formData: FormData, team_id?: number) {
+const InviteInput = zod.object({
+  email: zod.email()
+});
+
+export async function inviteEmail(json: object, team_id?: number) {
   const authType: AuthType = {
     userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
     keyDigest: await getKeyDigest(),
@@ -23,14 +28,15 @@ export async function inviteEmail(formData: FormData, team_id?: number) {
   } else return new NextResponse(null, { status: 401 });
   if (!team_id) return new NextResponse(null, { status: 401 });
 
-  const email = formData.get("email")?.toString();
-  if (!email) return new NextResponse(null, { status: 400 });
+  const data = await InviteInput.safeParseAsync(json);
+  if (!data.success)
+    return NextResponse.json(data.error.issues, { status: 422 });
 
   try {
     const [id, teamName] = await withAuth(authType, async tx => {
       const [invite] = await tx
         .insert(TeamInvites)
-        .values({ team_id, email })
+        .values({ team_id, ...data.data })
         .returning({ id: TeamInvites.id });
       // Unless there is an egregious race condition this should never return nothing
       const team = (await tx.query.Teams.findFirst({
@@ -40,7 +46,7 @@ export async function inviteEmail(formData: FormData, team_id?: number) {
     });
     await mailer.sendMail({
       from: '"AutoCAM" <ishan.karmakar24@gmail.com>',
-      to: email,
+      to: data.data.email,
       subject: `Join ${teamName}`,
       text: `Join the ${teamName} Team with this link: ${new URL(`/api/teams/accept/${id}`, `http://${process.env.BASE_URL}`)}`
     });

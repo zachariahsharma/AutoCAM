@@ -10,7 +10,7 @@ import { updateTeam } from "../route";
 export interface Props { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Props) {
-  return await updateTeam(await req.formData(), Number((await params).id));
+  return await updateTeam(await req.json(), Number((await params).id));
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {

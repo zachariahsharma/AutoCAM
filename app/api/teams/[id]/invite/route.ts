@@ -7,5 +7,5 @@ import { headers } from "next/headers";
 export async function POST(req: NextRequest, { params }: Props) {
   if (!await auth.api.getSession({ headers: await headers() }))
     return new NextResponse(null, { status: 401 });
-  return await inviteEmail(await req.formData(), Number((await params).id));
+  return await inviteEmail(await req.json(), Number((await params).id));
 }

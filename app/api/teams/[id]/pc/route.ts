@@ -13,5 +13,5 @@ export async function GET(req: NextRequest, { params }: Props) {
 export async function POST(req: NextRequest, { params }: Props) {
   if (!await auth.api.getSession({ headers: await headers() }))
     return new NextResponse(null, { status: 401 });
-  return await createPartCategory(await req.formData(), Number((await params).id))
+  return await createPartCategory(await req.json(), Number((await params).id))
 }

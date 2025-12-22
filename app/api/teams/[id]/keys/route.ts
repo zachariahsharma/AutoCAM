@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { TeamKeys } from "@/lib/schema/entities";
 import crypto from "crypto";
 import { DatabaseError } from "pg";
+import zod from "zod";
 
 export async function GET(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
@@ -23,13 +24,18 @@ export async function GET(req: NextRequest, { params }: Props) {
   return NextResponse.json(keys, { status: 200 });
 }
 
+const CreateInput = zod.object({
+  name: zod.string(),
+})
+
 export async function POST(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const team_id = Number((await params).id);
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new NextResponse(null, { status: 401 });
-  const name = (await req.formData()).get("name")?.toString();
-  if (!name) return new NextResponse(null, { status: 422 });
+  const data = await CreateInput.safeParseAsync(await req.json());
+  if (!data.success)
+    return NextResponse.json(data.error.issues, { status: 422 });
 
   const token = crypto.randomBytes(32).toString("hex");
 
@@ -37,7 +43,7 @@ export async function POST(req: NextRequest, { params }: Props) {
     try {
       await tx.insert(TeamKeys).values({
         digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
-        name, team_id
+        ...data.data, team_id
       });
       return NextResponse.json({ token }, { status: 201 });
     } catch (err) {

@@ -5,8 +5,18 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
+import zod from "zod";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export interface Props {
+  params: Promise<{ id: string }>
+};
+
+const UpdateInput = zod.object({
+  material: zod.string().optional(),
+  thickness: zod.number().optional(),
+});
+
+export async function PATCH(req: NextRequest, { params }: Props) {
   const authType: AuthType = {
     userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
     keyDigest: await getKeyDigest()
@@ -14,13 +24,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (authType.userId && !await isEmailVerified())
     return EmailNotVerifiedResponse;
 
-  const formData = await req.formData();
   const categoryId = Number((await params).id);
+  const data = await UpdateInput.safeParseAsync(await req.json());
+  if (!data.success)
+    return NextResponse.json(data.error.issues, { status: 422 });
+
   return withAuth(authType, async tx => {
     try {
       const categories = await tx.update(PartCategories).set({
-        material: formData.get("material")?.toString(),
-        thickness: formData.get("thickness")?.toString(),
+        ...data.data,
+        thickness: data.data.thickness?.toString(),
       }).where(eq(PartCategories.id, categoryId)).returning({ id: PartCategories.id });
       if (categories.length === 0)
         return new NextResponse(null, { status: 404 });

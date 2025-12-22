@@ -6,14 +6,20 @@ import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
+import zod from "zod";
 
 export async function GET(req: NextRequest) {
   return await getPartCategories(req.nextUrl.searchParams);
 }
 
 export async function POST(req: NextRequest) {
-  return await createPartCategory(await req.formData());
+  return await createPartCategory(await req.json());
 }
+
+const SearchParams = zod.object({
+  material: zod.string().optional(),
+  thickness: zod.coerce.number().positive().optional(),
+});
 
 export async function getPartCategories(params: URLSearchParams, teamId?: number) {
   const authType: AuthType = {
@@ -26,14 +32,18 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
   } else return new NextResponse(null, { status: 401 });
   if (!teamId) return new NextResponse(null, { status: 401 });
 
-  const material = params.get("material")?.toString();
-  const thickness = params.get("thickness")?.toString();
+  const data = await SearchParams.safeParseAsync({
+    material: params.get("material")?.toString(),
+    thickness: params.get("thickness")?.toString()
+  });
+  if (!data.success)
+    return NextResponse.json(data.error.issues, { status: 422 });
   const partCategories = await withAuth(authType, async tx => {
     return (await tx.query.PartCategories.findMany({
       where: and(
         eq(PartCategories.team_id, teamId),
-        material !== undefined ? eq(PartCategories.material, material) : undefined,
-        thickness !== undefined ? eq(PartCategories.thickness, thickness) : undefined
+        data.data.material !== undefined ? eq(PartCategories.material, data.data.material) : undefined,
+        data.data.thickness !== undefined ? eq(PartCategories.thickness, data.data.thickness.toString()) : undefined
       ),
       columns: {
         id: true,
@@ -45,7 +55,13 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
   return NextResponse.json(partCategories, { status: 200 });
 }
 
-export async function createPartCategory(formData: FormData, team_id?: number) {
+const CreateInput = zod.object({
+  material: zod.string(),
+  thickness: zod.number(),
+  team_id: zod.number(),
+});
+
+export async function createPartCategory(json: any, team_id?: number) {
   const authType: AuthType = {
     userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
     keyDigest: await getKeyDigest()
@@ -57,13 +73,15 @@ export async function createPartCategory(formData: FormData, team_id?: number) {
   } else return new NextResponse(null, { status: 401 });
   if (!team_id) return new NextResponse(null, { status: 401 });
 
-  const material = formData.get("material")?.toString();
-  const thickness = formData.get("thickness")?.toString();
-  if (!material || !thickness) return new NextResponse(null, { status: 422 });
+  const data = await CreateInput.safeParseAsync({ ...json, team_id });
+  if (!data.success)
+    return NextResponse.json(data.error.issues, { status: 422 });
   return await withAuth(authType, async tx => {
     try {
-      const [id] = await tx.insert(PartCategories).values({ material, team_id, thickness }).returning({ id: PartCategories.id });
-      return NextResponse.json({ id: id.id }, { status: 200 });
+      const [id] = await tx.insert(PartCategories)
+        .values({ ...data.data, thickness: data.data.thickness.toString() })
+        .returning({ id: PartCategories.id });
+      return NextResponse.json({ id: id.id }, { status: 201 });
     } catch (err) {
       if (err instanceof DatabaseError) {
         if (err.code === "42501")

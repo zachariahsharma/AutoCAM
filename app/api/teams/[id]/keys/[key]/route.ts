@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
+import zod from "zod";
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
@@ -24,17 +25,22 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ k
   });
 }
 
+const UpdateInput = zod.object({
+  name: zod.string(),
+});
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const keyId = Number((await params).key);
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new NextResponse(null, { status: 401 });
-  const name = (await req.formData()).get("name")?.toString();
+  const data = await UpdateInput.safeParseAsync(await req.json());
+  if (!data.success) return NextResponse.json(data.error.issues, { status: 422 });
 
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
       await tx.update(TeamKeys)
-        .set({ name })
+        .set({ ...data.data })
         .where(eq(TeamKeys.id, keyId));
       return new NextResponse(null, { status: 204 });
     } catch (err) {

@@ -9,7 +9,8 @@ import {
   parseParamId,
   parseJsonBody,
   handleDatabaseError,
-  routeResponse
+  routeResponse,
+  checkAnyChanges
 } from "@/lib/api-utils";
 
 export interface Props {
@@ -36,12 +37,10 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
   return withAuth(authType, async tx => {
     try {
-      const categories = await tx.update(PartCategories).set({
+      return checkAnyChanges(await tx.update(PartCategories).set({
         ...bodyResult.data,
         thickness: bodyResult.data.thickness?.toString(),
-      }).where(eq(PartCategories.id, categoryIdResult.data)).returning({ id: PartCategories.id });
-      if (categories.length === 0) return routeResponse(404);
-      return routeResponse(201);
+      }).where(eq(PartCategories.id, categoryIdResult.data)).returning({ id: PartCategories.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -60,11 +59,9 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   
   return await withAuth(authType, async tx => {
     try {
-      const categories = await tx.delete(PartCategories)
+      return checkAnyChanges(await tx.delete(PartCategories)
         .where(eq(PartCategories.id, categoryIdResult.data))
-        .returning({ id: PartCategories.id });
-      if (categories.length === 0) return routeResponse(404);
-      return routeResponse(204);
+        .returning({ id: PartCategories.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }

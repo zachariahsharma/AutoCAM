@@ -11,7 +11,8 @@ import {
   checkAuthWithEmailVerification,
   handleDatabaseError,
   routeResponse,
-  getUserId
+  getUserId,
+  checkAnyChanges
 } from "@/lib/api-utils";
 
 const CreateInput = zod.object({
@@ -91,12 +92,10 @@ export async function updateTeam(json: object, teamId?: number) {
 
   return await withAuth(authType, async tx => {
     try {
-      const updated = await tx.update(Teams)
+      return checkAnyChanges(await tx.update(Teams)
         .set(bodyResult.data)
         .where(eq(Teams.id, teamId))
-        .returning({ id: Teams.id });
-      if (updated.length === 0) return routeResponse(404);
-      return routeResponse(204);
+        .returning({ id: Teams.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }

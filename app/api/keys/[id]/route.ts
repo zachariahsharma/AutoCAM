@@ -11,7 +11,8 @@ import {
   parseJsonBody,
   handleDatabaseError,
   routeResponse,
-  getUserId
+  getUserId,
+  checkAnyChanges
 } from "@/lib/api-utils";
 
 interface Props {
@@ -30,12 +31,10 @@ export async function DELETE(req: NextRequest, { params }: Props) {
 
   return await withAuth({ userId }, async tx => {
     try {
-      const deleted = await tx
+      return checkAnyChanges(await tx
         .delete(TeamKeys)
         .where(eq(TeamKeys.id, keyIdResult.data))
-        .returning({ id: TeamKeys.id });
-      if (deleted.length === 0) return routeResponse(404);
-      return routeResponse(204);
+        .returning({ id: TeamKeys.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -61,12 +60,10 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
   return await withAuth({ userId }, async tx => {
     try {
-      const updated = await tx.update(TeamKeys)
+      return checkAnyChanges(await tx.update(TeamKeys)
         .set(bodyResult.data)
         .where(eq(TeamKeys.id, keyIdResult.data))
-        .returning({ id: TeamKeys.id });
-      if (updated.length === 0) return routeResponse(404);
-      return routeResponse(204);
+        .returning({ id: TeamKeys.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }

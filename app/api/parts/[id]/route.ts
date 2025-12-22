@@ -9,7 +9,8 @@ import {
   parseJsonBody,
   requireEmailVerified,
   handleDatabaseError,
-  routeResponse
+  routeResponse,
+  checkAnyChanges
 } from "@/lib/api-utils";
 
 interface Props {
@@ -41,9 +42,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
   return await withAuth(authType, async tx => {
     try {
-      const updated = await tx.update(Parts).set(bodyResult.data).returning({ id: Parts.id });
-      if (updated.length === 0) return routeResponse(404);
-      return routeResponse(204);
+      return checkAnyChanges(await tx.update(Parts).set(bodyResult.data).returning({ id: Parts.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -65,9 +64,7 @@ export async function DELETE(req: NextRequest, { params }: Props) {
 
   return withAuth(authType, async tx => {
     try {
-      const deleted = await tx.delete(Parts).where(eq(Parts.id, partIdResult.data)).returning({ id: Parts.id });
-      if (deleted.length === 0) return routeResponse(404);
-      return routeResponse(204);
+      return checkAnyChanges(await tx.delete(Parts).where(eq(Parts.id, partIdResult.data)).returning({ id: Parts.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }

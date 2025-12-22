@@ -1,10 +1,9 @@
-import { getAuthType, getUserId } from "@/lib/api-utils";
-import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
+import { getAuthType, requireEmailVerified } from "@/lib/api-utils";
+import { isEmailVerified, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import mailer from "@/lib/mailer";
-import { TeamInvites, TeamKeys, Teams } from "@/lib/schema/entities";
+import { TeamInvites, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod from "zod";
@@ -20,7 +19,8 @@ const InviteInput = zod.object({
 export async function inviteEmail(json: object, team_id?: number) {
   const authType = await getAuthType();
   if (authType.userId) {
-    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
+    const err = await requireEmailVerified();
+    if (err) return err;
   } else if (authType.keyDigest) {
     team_id = await teamIdFromDigest(authType.keyDigest);
   } else return new NextResponse(null, { status: 401 });

@@ -98,3 +98,7 @@ export function routeResponse(status = 200, data?: object) {
     return new NextResponse(null, { status });
   return NextResponse.json(data, { status });
 }
+
+export function checkAnyChanges(records: any[]) {
+  return routeResponse(records.length === 0 ? 404 : 204);
+}

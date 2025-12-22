@@ -22,7 +22,7 @@ interface Props {
 export async function DELETE(req: NextRequest, { params }: Props) {
   const authError = await checkAuthWithEmailVerification();
   if (authError) return authError;
-  
+
   const keyIdResult = await parseParamId((await params).id);
   if (!keyIdResult.success) return keyIdResult.response;
   

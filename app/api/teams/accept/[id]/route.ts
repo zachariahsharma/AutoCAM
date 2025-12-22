@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const invite = await db.query.TeamInvites.findFirst({
     where: eq(TeamInvites.id, inviteId)
   });
-  if (!invite) return new NextResponse(null, { status: 404 });
+  if (!invite) return routeResponse(404);
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return routeResponse(401);
   if (session.user.email !== invite.email) return routeResponse(403);

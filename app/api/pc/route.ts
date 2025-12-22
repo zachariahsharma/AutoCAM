@@ -1,12 +1,9 @@
-import { PartCategory } from "@/app/types";
-import { getAuthType, getUserId, requireEmailVerified } from "@/lib/api-utils";
-import { auth, AuthType, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
+import { getAuthType, handleDatabaseError, parseJsonBody, requireEmailVerified, routeResponse } from "@/lib/api-utils";
+import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { PartCategories } from "@/lib/schema/cam";
 import { and, eq } from "drizzle-orm";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { DatabaseError } from "pg";
+import { NextRequest } from "next/server";
 import zod from "zod";
 
 export async function GET(req: NextRequest) {
@@ -27,15 +24,14 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
   if (authType.keyDigest) {
     teamId = await teamIdFromDigest(authType.keyDigest);
   } else if (!authType.userId)
-    return new NextResponse(null, { status: 401 });
-  if (!teamId) return new NextResponse(null, { status: 401 });
+    return routeResponse(401);
+  if (!teamId) return routeResponse(401);
 
-  const data = await SearchParams.safeParseAsync({
+  const data = await parseJsonBody({
     material: params.get("material")?.toString(),
     thickness: params.get("thickness")?.toString()
-  });
-  if (!data.success)
-    return NextResponse.json(data.error.issues, { status: 422 });
+  }, SearchParams);
+  if (!data.success) return data.response;
   const partCategories = await withAuth(authType, async tx => {
     return (await tx.query.PartCategories.findMany({
       where: and(
@@ -50,7 +46,7 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
       }
     })).map(c => ({ ...c, thickness: Number(c.thickness) }));
   });
-  return NextResponse.json(partCategories, { status: 200 });
+  return routeResponse(200, partCategories);
 }
 
 const CreateInput = zod.object({
@@ -65,26 +61,20 @@ export async function createPartCategory(json: any, team_id?: number) {
     if (err) return err;
   } else if (authType.keyDigest) {
     team_id = await teamIdFromDigest(authType.keyDigest);
-  } else return new NextResponse(null, { status: 401 });
-  if (!team_id) return new NextResponse(null, { status: 401 });
+  } else return routeResponse(401);
+  if (!team_id) return routeResponse(401);
 
-  const data = await CreateInput.safeParseAsync(json);
+  const data = await parseJsonBody(json, CreateInput);
   if (!data.success)
-    return NextResponse.json(data.error.issues, { status: 422 });
+    return data.response;
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(PartCategories)
         .values({ ...data.data, team_id, thickness: data.data.thickness.toString() })
         .returning({ id: PartCategories.id });
-      return NextResponse.json({ id: id.id }, { status: 201 });
+      return routeResponse(201, { id: id.id });
     } catch (err) {
-      if (err instanceof DatabaseError) {
-        if (err.code === "42501")
-          return new NextResponse(null, { status: 403 });
-        else if (err.code === "23505")
-          return new NextResponse(null, { status: 409 });
-      }
-      throw err;
+      return handleDatabaseError(err);
     }
   });
 }

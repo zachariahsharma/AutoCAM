@@ -4,28 +4,20 @@ import { createPartCategory, getPartCategories } from "@/app/api/pc/route";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import zod, { ZodError } from "zod";
-import { getUserId, routeResponse } from "@/lib/api-utils";
+import { getUserId, parseJsonBody, parseParamId, routeResponse } from "@/lib/api-utils";
 
 export async function GET(req: NextRequest, { params }: Props) {
   if (!await getUserId())
     return routeResponse(401);
-  try {
-    return await getPartCategories(req.nextUrl.searchParams, await zod.coerce.number().positive().parseAsync((await params).id));
-  } catch (err) {
-    if (err instanceof ZodError)
-      return NextResponse.json(err.issues, { status: 422 });
-    throw err;
-  }
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
+  return await getPartCategories(req.nextUrl.searchParams, id.data);
 }
 
 export async function POST(req: NextRequest, { params }: Props) {
   if (!await getUserId())
     return routeResponse(401);
-  try {
-    return await createPartCategory(await req.json(), await zod.coerce.number().positive().parseAsync((await params).id));
-  } catch (err) {
-    if (err instanceof ZodError)
-      return NextResponse.json(err.issues, { status: 422 });
-    throw err;
-  }
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
+  return await createPartCategory(await req.json(), id.data);
 }

@@ -1,11 +1,10 @@
-import { getAuthType, requireEmailVerified } from "@/lib/api-utils";
-import { isEmailVerified, teamIdFromDigest } from "@/lib/auth";
+import { getAuthType, handleDatabaseError, parseJsonBody, requireEmailVerified, routeResponse } from "@/lib/api-utils";
+import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import mailer from "@/lib/mailer";
 import { TeamInvites, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
-import { DatabaseError } from "pg";
+import { NextRequest } from "next/server";
 import zod from "zod";
 
 export async function POST(req: NextRequest) {
@@ -23,12 +22,12 @@ export async function inviteEmail(json: object, team_id?: number) {
     if (err) return err;
   } else if (authType.keyDigest) {
     team_id = await teamIdFromDigest(authType.keyDigest);
-  } else return new NextResponse(null, { status: 401 });
-  if (!team_id) return new NextResponse(null, { status: 401 });
+  } else return routeResponse(401);
+  if (!team_id) return routeResponse(401);
 
-  const data = await InviteInput.safeParseAsync(json);
+  const data = await parseJsonBody(json, InviteInput);
   if (!data.success)
-    return NextResponse.json(data.error.issues, { status: 422 });
+    return data.response;
 
   try {
     const [id, teamName] = await withAuth(authType, async tx => {
@@ -48,10 +47,8 @@ export async function inviteEmail(json: object, team_id?: number) {
       subject: `Join ${teamName}`,
       text: `Join the ${teamName} Team with this link: ${new URL(`/api/teams/accept/${id}`, `http://${process.env.BASE_URL}`)}`
     });
-    return new NextResponse(null, { status: 200 });
+    return routeResponse(200);
   } catch (err) {
-    if (err instanceof DatabaseError && err.code === "42501")
-      return new NextResponse(null, { status: 403 });
-    throw err;
+    return handleDatabaseError(err);
   }
 }

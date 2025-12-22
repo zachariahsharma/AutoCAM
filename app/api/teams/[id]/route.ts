@@ -1,17 +1,16 @@
-import { auth } from "@/lib/auth";
+import { auth, AuthType, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
 import { updateTeam } from "../route";
-import { 
-  parseParamId, 
-  checkAuthWithEmailVerification, 
+import {
+  parseParamId,
+  checkAuthWithEmailVerification,
   handleDatabaseError,
-  routeResponse,
   getUserId,
-  checkAnyChanges
+  checkAnyChanges,
+  getAuthType
 } from "@/lib/api-utils";
 
 export interface Props { params: Promise<{ id: string }> };
@@ -25,11 +24,11 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 export async function DELETE(req: NextRequest, { params }: Props) {
   const authError = await checkAuthWithEmailVerification();
   if (authError) return authError;
-  
+
   const userId = await getUserId();
   const teamIdResult = await parseParamId((await params).id);
   if (!teamIdResult.success) return teamIdResult.response;
-  
+
   return await withAuth({ userId }, async tx => {
     try {
       return checkAnyChanges(await tx.delete(Teams)

@@ -23,24 +23,6 @@ export async function getAuthType(): Promise<AuthType> {
 }
 
 /**
- * Get authentication context and resolve team ID
- * Returns { authType, teamId } or null if unauthorized
- */
-export async function getAuthAndTeamId(providedTeamId?: number): Promise<{ authType: AuthType; teamId: number } | null> {
-  const authType = await getAuthType();
-
-  if (authType.userId) {
-    if (!providedTeamId) return null;
-    return { authType, teamId: providedTeamId };
-  } else if (authType.keyDigest) {
-    const teamId = await teamIdFromDigest(authType.keyDigest);
-    if (!teamId) return null;
-    return { authType, teamId };
-  }
-  return null;
-}
-
-/**
  * Validate and parse a parameter ID (converts to positive number)
  */
 export async function parseParamId(paramValue: string): Promise<{ success: true; data: number } | { success: false; response: NextResponse }> {

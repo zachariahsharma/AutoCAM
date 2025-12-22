@@ -1,13 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { Props } from "../route";
-import { auth, AuthType, getKeyDigest, isEmailVerified } from "@/lib/auth";
-import { headers } from "next/headers";
 import { withAuth } from "@/lib/db";
 import { Parts } from "@/lib/schema/cam";
-import { DatabaseError } from "pg";
 import zod from "zod";
 import { eq } from "drizzle-orm";
-import { getAuthType, getUserId, requireEmailVerified } from "@/lib/api-utils";
+import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, requireEmailVerified, routeResponse } from "@/lib/api-utils";
 
 const CreateInput = zod.object({
   name: zod.string(),
@@ -22,24 +19,20 @@ export async function POST(req: NextRequest, { params }: Props) {
     const err = await requireEmailVerified();
     if (err) return err;
   } else if (!authType.keyDigest)
-    return new NextResponse(null, { status: 401 });
+    return routeResponse(401);
 
-  const categoryId = await zod.coerce.number().positive().safeParseAsync((await params).id);
-  if (!categoryId.success)
-    return NextResponse.json(categoryId.error.issues, { status: 422 });
-  const data = await CreateInput.safeParseAsync(await req.json());
-  if (!data.success)
-    return NextResponse.json(data.error.issues, { status: 422 });
+  const categoryId = await parseParamId((await params).id);
+  if (!categoryId.success) return categoryId.response;
+  const data = await parseJsonBody(await req.json(), CreateInput);
+  if (!data.success) return data.response;
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(Parts)
         .values({ ...data.data, category_id: categoryId.data })
         .returning({ id: Parts.id });
-      return NextResponse.json({ id: id.id }, { status: 201 });
+      return routeResponse(201, { id: id.id });
     } catch (err) {
-      if (err instanceof DatabaseError && err.code === "42501")
-        return new NextResponse(null, { status: 403 });
-      throw err;
+      return handleDatabaseError(err);
     }
   });
 }
@@ -51,12 +44,12 @@ export async function GET(req: NextRequest, { params }: Props) {
     const err = await requireEmailVerified();
     if (err) return err;
   } else if (!authType.keyDigest)
-    return new NextResponse(null, { status: 401 });
+    return routeResponse(401);
 
-  const categoryId = await zod.coerce.number().positive().safeParseAsync((await params).id);
+  const categoryId = await parseParamId((await params).id);
   if (!categoryId.success)
-    return NextResponse.json(categoryId.error.issues, { status: 422 });
-  return NextResponse.json(await withAuth(authType, async tx => {
+    return categoryId.response;
+  return routeResponse(200, await withAuth(authType, async tx => {
     return await tx.query.Parts.findMany({
       where: eq(Parts.category_id, categoryId.data),
       columns: {
@@ -67,5 +60,5 @@ export async function GET(req: NextRequest, { params }: Props) {
         ticket: true,
       }
     });
-  }), { status: 200 });
+  }));
 }

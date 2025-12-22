@@ -9,13 +9,15 @@ import zod from "zod";
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const keyId = Number((await params).key);
+  const keyId = await zod.number().safeParseAsync((await params).key);
+  if (!keyId.success)
+    return NextResponse.json(keyId.error.issues, { status: 422 });
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new NextResponse(null, { status: 401 });
 
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
-      await tx.delete(TeamKeys).where(eq(TeamKeys.id, keyId));
+      await tx.delete(TeamKeys).where(eq(TeamKeys.id, keyId.data));
       return new NextResponse(null, { status: 204 });
     } catch (err) {
       if (err instanceof DatabaseError && err.code === "42501")

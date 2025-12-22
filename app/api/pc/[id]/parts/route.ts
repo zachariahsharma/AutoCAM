@@ -22,16 +22,20 @@ export async function POST(req: NextRequest, { params }: Props) {
   };
   if (authType.userId) {
     if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  } else if (authType.keyDigest) { }
-  else return new NextResponse(null, { status: 401 });
+  } else if (!authType.keyDigest)
+    return new NextResponse(null, { status: 401 });
 
-  const category_id = Number((await params).id);
+  const categoryId = await zod.number().safeParseAsync((await params).id);
+  if (!categoryId.success)
+    return NextResponse.json(categoryId.error.issues, { status: 422 });
   const data = await CreateInput.safeParseAsync(await req.json());
   if (!data.success)
     return NextResponse.json(data.error.issues, { status: 422 });
   return await withAuth(authType, async tx => {
     try {
-      const [id] = await tx.insert(Parts).values({ ...data.data, category_id }).returning({ id: Parts.id });
+      const [id] = await tx.insert(Parts)
+        .values({ ...data.data, category_id: categoryId.data })
+        .returning({ id: Parts.id });
       return NextResponse.json({ id: id.id }, { status: 201 });
     } catch (err) {
       if (err instanceof DatabaseError && err.code === "42501")
@@ -49,13 +53,15 @@ export async function GET(req: NextRequest, { params }: Props) {
 
   if (authType.userId) {
     if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  } else if (authType.keyDigest) {}
-  else return new NextResponse(null, { status: 401 });
+  } else if (!authType.keyDigest)
+    return new NextResponse(null, { status: 401 });
 
-  const categoryId = Number((await params).id);
+  const categoryId = await zod.number().safeParseAsync((await params).id);
+  if (!categoryId.success)
+    return NextResponse.json(categoryId.error.issues, { status: 422 });
   return NextResponse.json(await withAuth(authType, async tx => {
     return await tx.query.Parts.findMany({
-      where: eq(Parts.category_id, categoryId),
+      where: eq(Parts.category_id, categoryId.data),
       columns: {
         epic: true,
         name: true,

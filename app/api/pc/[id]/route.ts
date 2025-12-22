@@ -24,7 +24,9 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   if (authType.userId && !await isEmailVerified())
     return EmailNotVerifiedResponse;
 
-  const categoryId = Number((await params).id);
+  const categoryId = await zod.number().safeParseAsync((await params).id);
+  if (!categoryId.success)
+    return NextResponse.json(categoryId.error.issues, { status: 422 });
   const data = await UpdateInput.safeParseAsync(await req.json());
   if (!data.success)
     return NextResponse.json(data.error.issues, { status: 422 });
@@ -34,7 +36,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
       const categories = await tx.update(PartCategories).set({
         ...data.data,
         thickness: data.data.thickness?.toString(),
-      }).where(eq(PartCategories.id, categoryId)).returning({ id: PartCategories.id });
+      }).where(eq(PartCategories.id, categoryId.data)).returning({ id: PartCategories.id });
       if (categories.length === 0)
         return new NextResponse(null, { status: 404 });
       return new NextResponse(null, { status: 204 });
@@ -54,11 +56,13 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   if (authType.userId && !await isEmailVerified())
     return EmailNotVerifiedResponse;
 
-  const categoryId = Number((await params).id);
+  const categoryId = await zod.number().safeParseAsync((await params).id);
+  if (!categoryId.success)
+    return NextResponse.json(categoryId.error.issues, { status: 422 });
   return await withAuth(authType, async tx => {
     try {
       const categories = await tx.delete(PartCategories)
-        .where(eq(PartCategories.id, categoryId))
+        .where(eq(PartCategories.id, categoryId.data))
         .returning({ id: PartCategories.id });
       if (categories.length === 0)
         return new NextResponse(null, { status: 404 });

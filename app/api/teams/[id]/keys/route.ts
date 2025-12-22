@@ -11,13 +11,15 @@ import zod from "zod";
 
 export async function GET(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const teamId = Number((await params).id);
+  const teamId = await zod.number().safeParseAsync((await params).id);
+  if (!teamId.success)
+    return NextResponse.json(teamId.error.issues, { status: 422 });
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new NextResponse(null, { status: 401 });
 
   const keys = (await withAuth({ userId: session.user.id }, async tx => {
     return await tx.query.TeamKeys.findMany({
-      where: eq(TeamKeys.team_id, teamId),
+      where: eq(TeamKeys.team_id, teamId.data),
       columns: { name: true, id: true }
     });
   }));
@@ -30,7 +32,9 @@ const CreateInput = zod.object({
 
 export async function POST(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const team_id = Number((await params).id);
+  const teamId = await zod.number().safeParseAsync((await params).id);
+  if (!teamId.success)
+    return NextResponse.json(teamId.error.issues, { status: 422 });
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new NextResponse(null, { status: 401 });
   const data = await CreateInput.safeParseAsync(await req.json());
@@ -43,7 +47,7 @@ export async function POST(req: NextRequest, { params }: Props) {
     try {
       await tx.insert(TeamKeys).values({
         digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
-        ...data.data, team_id
+        ...data.data, team_id: teamId.data
       });
       return NextResponse.json({ token }, { status: 201 });
     } catch (err) {

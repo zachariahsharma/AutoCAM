@@ -41,9 +41,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ke
 
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
-      await tx.update(TeamKeys)
+      const updated = await tx.update(TeamKeys)
         .set({ ...data.data })
-        .where(eq(TeamKeys.id, keyId));
+        .where(eq(TeamKeys.id, keyId))
+        .returning({ id: TeamKeys.id });
+      if (updated.length === 0)
+        return new NextResponse(null, { status: 404 });
       return new NextResponse(null, { status: 204 });
     } catch (err) {
       if (err instanceof DatabaseError && err.code === "42501")

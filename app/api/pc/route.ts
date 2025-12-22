@@ -58,7 +58,6 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
 const CreateInput = zod.object({
   material: zod.string(),
   thickness: zod.number(),
-  team_id: zod.number(),
 });
 
 export async function createPartCategory(json: any, team_id?: number) {
@@ -73,13 +72,13 @@ export async function createPartCategory(json: any, team_id?: number) {
   } else return new NextResponse(null, { status: 401 });
   if (!team_id) return new NextResponse(null, { status: 401 });
 
-  const data = await CreateInput.safeParseAsync({ ...json, team_id });
+  const data = await CreateInput.safeParseAsync(json);
   if (!data.success)
     return NextResponse.json(data.error.issues, { status: 422 });
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(PartCategories)
-        .values({ ...data.data, thickness: data.data.thickness.toString() })
+        .values({ ...data.data, team_id, thickness: data.data.thickness.toString() })
         .returning({ id: PartCategories.id });
       return NextResponse.json({ id: id.id }, { status: 201 });
     } catch (err) {

@@ -1,5 +1,6 @@
 import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
+import { Parts } from "@/lib/schema/cam";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
@@ -10,10 +11,10 @@ interface Props {
 };
 
 const UpdateInput = zod.object({
-  epic: zod.string(),
-  name: zod.string(),
-  quantity: zod.number(),
-  ticket: zod.string(),
+  epic: zod.string().optional(),
+  name: zod.string().optional(),
+  quantity: zod.number().optional(),
+  ticket: zod.string().optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: Props) {
@@ -36,7 +37,10 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
   return await withAuth(authType, async tx => {
     try {
-      //
+      const updated = await tx.update(Parts).set(data.data).returning({ id: Parts.id });
+      if (updated.length === 0)
+        return new NextResponse(null, { status: 404 });
+      return new NextResponse(null, { status: 204 });
     } catch (err) {
       if (err instanceof DatabaseError && err.code === "42501")
         return new NextResponse(null, { status: 403 });

@@ -6,8 +6,8 @@
 - /api/teams/:id/invite - POST - Invite email (in body) to team (only if admin and email is verified)
 - /api/teams/accept/:id - GET - Accept invite sent to email (must be signed in as the same user as the invite)
 - /api/teams/:id/keys - POST - Create an API key (only if admin and email is verified)
-- /api/teams/:id/keys/:key - PATCH - Update details of key (name) (only if admin and email is verified)
-- /api/teams/:id/keys/:key - DELETE - Delete key (only if admin and email is verified)
+- /api/keys/:id - PATCH - Update details of key (name) (only if admin and email is verified)
+- /api/keys/:id - DELETE - Delete key (only if admin and email is verified)
 - /api/teams/:id/pc - POST - Create a part category (everybody on team with verified email)
 - /api/teams/:id/pc - GET - Get all part categories (everybody on team)
 

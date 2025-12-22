@@ -1,28 +1,30 @@
-import { APIKeyInvalidResponse, auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
+import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
-import { TeamKeys, TeamMembers, Teams } from "@/lib/schema/entities";
+import { TeamMembers, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
+import zod from "zod";
 
-// Create team
+const CreateInput = zod.object({
+  name: zod.string(),
+  number: zod.coerce.number().positive(),
+});
+
 export async function POST(req: NextRequest) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const formData = await req.formData();
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return new NextResponse(null, { status: 401 });
 
-  const name = formData.get("name")?.toString();
-  const teamNumber = formData.get("number")?.toString();
+  const data = await CreateInput.safeParseAsync(await req.json());
+  if (!data.success)
+    return NextResponse.json(data.error.issues, { status: 422 });
 
-  if (!name || !teamNumber)
-    return new NextResponse(null, { status: 422 });
-
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
       const [team] = await tx.insert(Teams).values({
-        name,
-        number: Number(teamNumber),
+        ...data.data,
         created_by: session.user.id,
       }).returning({ id: Teams.id });
 
@@ -58,10 +60,15 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  return await updateTeam(await req.formData());
+  return await updateTeam(await req.json());
 }
 
-export async function updateTeam(data: FormData, teamId?: number) {
+const UpdateInput = zod.object({
+  number: zod.coerce.number().positive().optional(),
+  name: zod.string().optional(),
+});
+
+export async function updateTeam(json: object, teamId?: number) {
   const authType: AuthType = {
     userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
     keyDigest: await getKeyDigest(),
@@ -72,14 +79,17 @@ export async function updateTeam(data: FormData, teamId?: number) {
     teamId = await teamIdFromDigest(authType.keyDigest);
   } else return new NextResponse(null, { status: 401 });
   if (!teamId) return new NextResponse(null, { status: 401 });
-  
-  const teamNumber = data.get("number")?.toString();
+
+  const data = await UpdateInput.safeParseAsync(json);
+  if (!data.success)
+    return NextResponse.json(data.error.issues, { status: 422 });
+
   return await withAuth(authType, async tx => {
     try {
-      const updated = await tx.update(Teams).set({
-        name: data.get("name")?.toString(),
-        number: teamNumber ? Number(teamNumber) : undefined
-      }).where(eq(Teams.id, teamId)).returning({ id: Teams.id });
+      const updated = await tx.update(Teams)
+        .set(data.data)
+        .where(eq(Teams.id, teamId))
+        .returning({ id: Teams.id });
       if (updated.length === 0) return new NextResponse(null, { status: 404 })
       return new NextResponse(null, { status: 204 });
     } catch (err) {

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
 const SearchParams = zod.object({
   material: zod.string().optional(),
-  thickness: zod.coerce.number().int().optional(),
+  thickness: zod.coerce.number().positive().optional(),
 });
 
 export async function getPartCategories(params: URLSearchParams, teamId?: number) {

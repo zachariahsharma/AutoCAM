@@ -8,14 +8,11 @@ import { TeamKeys } from "@/lib/schema/entities";
 import crypto from "crypto";
 import { DatabaseError } from "pg";
 
-function getDigest(token: string) {
-  return crypto.createHmac("sha256", "key").update(token).digest("hex");
-}
-
 export async function GET(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const teamId = Number((await params).id);
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return new NextResponse(null, { status: 401 });
 
   const keys = (await withAuth({ userId: session.user.id }, async tx => {
     return await tx.query.TeamKeys.findMany({
@@ -29,7 +26,8 @@ export async function GET(req: NextRequest, { params }: Props) {
 export async function POST(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const team_id = Number((await params).id);
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return new NextResponse(null, { status: 401 });
   const name = (await req.formData()).get("name")?.toString();
   if (!name) return new NextResponse(null, { status: 422 });
 
@@ -38,7 +36,7 @@ export async function POST(req: NextRequest, { params }: Props) {
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
       await tx.insert(TeamKeys).values({
-        digest: getDigest(token),
+        digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
         name, team_id
       });
       return NextResponse.json({ token }, { status: 201 });

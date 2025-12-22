@@ -49,7 +49,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         .returning({ id: PartCategories.id });
       if (categories.length === 0)
         return new NextResponse(null, { status: 404 });
-      return new NextResponse(null, { status: 200 });
+      return new NextResponse(null, { status: 204 });
     } catch (err) {
       if (err instanceof DatabaseError && err.code === "42501")
         return new NextResponse(null, { status: 403 });

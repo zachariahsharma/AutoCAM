@@ -34,7 +34,12 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
         eq(PartCategories.team_id, teamId),
         material !== undefined ? eq(PartCategories.material, material) : undefined,
         thickness !== undefined ? eq(PartCategories.thickness, thickness) : undefined
-      )
+      ),
+      columns: {
+        id: true,
+        material: true,
+        thickness: true,
+      }
     });
   });
   return NextResponse.json(partCategories, { status: 200 });
@@ -58,10 +63,14 @@ export async function createPartCategory(formData: FormData, team_id?: number) {
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(PartCategories).values({ material, team_id, thickness }).returning({ id: PartCategories.id });
-      return NextResponse.json({ id }, { status: 204 });
+      return NextResponse.json({ id: id.id }, { status: 200 });
     } catch (err) {
-      if (err instanceof DatabaseError && err.code === "42501")
-        return new NextResponse(null, { status: 403 });
+      if (err instanceof DatabaseError) {
+        if (err.code === "42501")
+          return new NextResponse(null, { status: 403 });
+        else if (err.code === "23505")
+          return new NextResponse(null, { status: 409 });
+      }
       throw err;
     }
   });

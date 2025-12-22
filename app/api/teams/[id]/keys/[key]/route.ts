@@ -9,7 +9,8 @@ import { DatabaseError } from "pg";
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const keyId = Number((await params).key);
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return new NextResponse(null, { status: 401 });
 
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
@@ -26,7 +27,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ k
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const keyId = Number((await params).key);
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return new NextResponse(null, { status: 401 });
   const name = (await req.formData()).get("name")?.toString();
 
   return await withAuth({ userId: session.user.id }, async tx => {

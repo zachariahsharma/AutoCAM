@@ -6,6 +6,7 @@ import { withAuth } from "@/lib/db";
 import { Parts } from "@/lib/schema/cam";
 import { DatabaseError } from "pg";
 import zod from "zod";
+import { eq } from "drizzle-orm";
 
 const CreateInput = zod.object({
   name: zod.string(),
@@ -38,4 +39,30 @@ export async function POST(req: NextRequest, { params }: Props) {
       throw err;
     }
   });
+}
+
+export async function GET(req: NextRequest, { params }: Props) {
+  const authType: AuthType = {
+    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
+    keyDigest: await getKeyDigest()
+  };
+
+  if (authType.userId) {
+    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
+  } else if (authType.keyDigest) {}
+  else return new NextResponse(null, { status: 401 });
+
+  const categoryId = Number((await params).id);
+  return NextResponse.json(await withAuth(authType, async tx => {
+    return await tx.query.Parts.findMany({
+      where: eq(Parts.category_id, categoryId),
+      columns: {
+        epic: true,
+        name: true,
+        quantity: true,
+        id: true,
+        ticket: true,
+      }
+    });
+  }), { status: 200 });
 }

@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: Props) {
   const authType: AuthType = {
     userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
     keyDigest: await getKeyDigest()

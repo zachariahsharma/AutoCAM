@@ -8,10 +8,8 @@
 - /api/teams/:id/keys - POST - Create an API key (only if admin and email is verified)
 - /api/teams/:id/keys/:key - PATCH - Update details of key (name) (only if admin and email is verified)
 - /api/teams/:id/keys/:key - DELETE - Delete key (only if admin and email is verified)
-- /api/teams/:id/pc - POST - Create a part category (everybody on team)
+- /api/teams/:id/pc - POST - Create a part category (everybody on team with verified email)
 - /api/teams/:id/pc - GET - Get all part categories (everybody on team)
-- /api/pc/:id - DELETE - Delete a part category (everybody on team)
-- /api/pc/:id - PATCH - Update a part category (everybody on team)
 
 ## API Key Routes
 - /api/teams - PATCH - Update team details
@@ -19,5 +17,11 @@
 - /api/teams/invite - POST - Invite email (in body) to team
 - /api/pc - POST - Create a part category
 - /api/pc - GET - Get all part categories
-- /api/pc/:id - DELETE - Delete a part category
-- /api/pc/:id - PATCH - Update a part category
+
+## Common Routes
+- /api/pc/:id - DELETE - Delete a part category (everybody on team with verified email)
+- /api/pc/:id - PATCH - Update a part category (everybody on team with verified email)
+- /api/pc/:id/parts - POST - Create a part (everybody on team with verified email)
+- /api/pc/:id/parts - GET - Get all parts (everybody on team with verified email)
+- /api/parts/:id - DELETE - Delete a part (everybody on team with verified email)
+- /api/parts/:id - PATCH - Update a part (everybody on team with verified email)

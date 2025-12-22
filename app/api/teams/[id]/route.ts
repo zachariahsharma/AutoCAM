@@ -28,7 +28,9 @@ export async function DELETE(req: NextRequest, { params }: Props) {
     return NextResponse.json(teamId.error.issues, { status: 422 });
   return await withAuth({ userId: session.user.id }, async tx => {
     try {
-      await tx.delete(Teams).where(eq(Teams.id, teamId.data));
+      const deleted = await tx.delete(Teams).where(eq(Teams.id, teamId.data)).returning({ id: Teams.id });
+      if (deleted.length === 0)
+        return new NextResponse(null, { status: 404 });
       return new NextResponse(null, { status: 204 });
     } catch (err) {
       if (err instanceof DatabaseError && err.code === "42501")

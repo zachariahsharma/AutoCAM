@@ -1,4 +1,4 @@
-import { APIKeyInvalidResponse, auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified } from "@/lib/auth";
+import { APIKeyInvalidResponse, auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { TeamKeys, TeamMembers, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
@@ -69,11 +69,7 @@ export async function updateTeam(data: FormData, teamId?: number) {
   if (authType.userId) {
     if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   } else if (authType.keyDigest) {
-    teamId = await withAuth(authType, async tx => {
-      return (await tx.query.TeamKeys.findFirst({
-        where: eq(TeamKeys.digest, authType.keyDigest!)
-      }))?.team_id;
-    });
+    teamId = await teamIdFromDigest(authType.keyDigest);
   } else return new NextResponse(null, { status: 401 });
   if (!teamId) return new NextResponse(null, { status: 401 });
   

@@ -1,4 +1,4 @@
-import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified } from "@/lib/auth";
+import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import mailer from "@/lib/mailer";
 import { TeamInvites, TeamKeys, Teams } from "@/lib/schema/entities";
@@ -19,11 +19,7 @@ export async function inviteEmail(formData: FormData, team_id?: number) {
   if (authType.userId) {
     if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   } else if (authType.keyDigest) {
-    team_id = await withAuth(authType, async tx => {
-      return (await tx.query.TeamKeys.findFirst({
-        where: eq(TeamKeys.digest, authType.keyDigest!)
-      }))?.team_id;
-    });
+    team_id = await teamIdFromDigest(authType.keyDigest);
   } else return new NextResponse(null, { status: 401 });
   if (!team_id) return new NextResponse(null, { status: 401 });
 

@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   } else if (!authType.keyDigest)
     return new NextResponse(null, { status: 401 });
 
-  const partId = await zod.number().safeParseAsync((await params).id);
+  const partId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!partId.success)
     return NextResponse.json(partId.error.issues, { status: 422 });
   const data = await UpdateInput.safeParseAsync(await req.json());
@@ -61,7 +61,7 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   } else if (!authType.keyDigest)
     return new NextResponse(null, { status: 401 });
 
-  const partId = await zod.number().safeParseAsync((await params).id);
+  const partId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!partId.success)
     return NextResponse.json(partId.error.issues, { status: 422 });
 

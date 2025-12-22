@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   if (authType.userId && !await isEmailVerified())
     return EmailNotVerifiedResponse;
 
-  const categoryId = await zod.number().safeParseAsync((await params).id);
+  const categoryId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!categoryId.success)
     return NextResponse.json(categoryId.error.issues, { status: 422 });
   const data = await UpdateInput.safeParseAsync(await req.json());
@@ -56,7 +56,7 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   if (authType.userId && !await isEmailVerified())
     return EmailNotVerifiedResponse;
 
-  const categoryId = await zod.number().safeParseAsync((await params).id);
+  const categoryId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!categoryId.success)
     return NextResponse.json(categoryId.error.issues, { status: 422 });
   return await withAuth(authType, async tx => {

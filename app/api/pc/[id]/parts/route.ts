@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: Props) {
   } else if (!authType.keyDigest)
     return new NextResponse(null, { status: 401 });
 
-  const categoryId = await zod.number().safeParseAsync((await params).id);
+  const categoryId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!categoryId.success)
     return NextResponse.json(categoryId.error.issues, { status: 422 });
   const data = await CreateInput.safeParseAsync(await req.json());
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest, { params }: Props) {
   } else if (!authType.keyDigest)
     return new NextResponse(null, { status: 401 });
 
-  const categoryId = await zod.number().safeParseAsync((await params).id);
+  const categoryId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!categoryId.success)
     return NextResponse.json(categoryId.error.issues, { status: 422 });
   return NextResponse.json(await withAuth(authType, async tx => {

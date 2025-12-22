@@ -11,7 +11,7 @@ import zod from "zod";
 
 export async function GET(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const teamId = await zod.number().safeParseAsync((await params).id);
+  const teamId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!teamId.success)
     return NextResponse.json(teamId.error.issues, { status: 422 });
   const session = await auth.api.getSession({ headers: await headers() });
@@ -32,7 +32,7 @@ const CreateInput = zod.object({
 
 export async function POST(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const teamId = await zod.number().safeParseAsync((await params).id);
+  const teamId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!teamId.success)
     return NextResponse.json(teamId.error.issues, { status: 422 });
   const session = await auth.api.getSession({ headers: await headers() });

@@ -7,9 +7,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod from "zod";
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
+interface Props {
+  params: Promise<{ id: string }>
+};
+
+export async function DELETE(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const keyId = await zod.number().safeParseAsync((await params).key);
+  const keyId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!keyId.success)
     return NextResponse.json(keyId.error.issues, { status: 422 });
   const session = await auth.api.getSession({ headers: await headers() });
@@ -35,9 +39,10 @@ const UpdateInput = zod.object({
   name: zod.string(),
 });
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
+export async function PATCH(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const keyId = Number((await params).key);
+  const keyId = await zod.coerce.number().positive().safeParseAsync((await params).id);
+  if (!keyId.success) return NextResponse.json(keyId.data, { status: 422 });
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new NextResponse(null, { status: 401 });
   const data = await UpdateInput.safeParseAsync(await req.json());
@@ -47,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ke
     try {
       const updated = await tx.update(TeamKeys)
         .set({ ...data.data })
-        .where(eq(TeamKeys.id, keyId))
+        .where(eq(TeamKeys.id, keyId.data))
         .returning({ id: TeamKeys.id });
       if (updated.length === 0)
         return new NextResponse(null, { status: 404 });

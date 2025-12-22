@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: Props) {
   if (!await auth.api.getSession({ headers: await headers() }))
     return new NextResponse(null, { status: 401 });
   try {
-    return await getPartCategories(req.nextUrl.searchParams, await zod.number().parseAsync((await params).id));
+    return await getPartCategories(req.nextUrl.searchParams, await zod.coerce.number().positive().parseAsync((await params).id));
   } catch (err) {
     if (err instanceof ZodError)
       return NextResponse.json(err.issues, { status: 422 });
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: Props) {
   if (!await auth.api.getSession({ headers: await headers() }))
     return new NextResponse(null, { status: 401 });
   try {
-    return await createPartCategory(await req.json(), await zod.number().parseAsync((await params).id));
+    return await createPartCategory(await req.json(), await zod.coerce.number().positive().parseAsync((await params).id));
   } catch (err) {
     if (err instanceof ZodError)
       return NextResponse.json(err.issues, { status: 422 });

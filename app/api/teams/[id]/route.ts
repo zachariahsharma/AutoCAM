@@ -12,7 +12,7 @@ export interface Props { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Props) {
   try {
-    return await updateTeam(await req.json(), await zod.number().parseAsync((await params).id))
+    return await updateTeam(await req.json(), await zod.coerce.number().positive().parseAsync((await params).id))
   } catch (err) {
     if (err instanceof ZodError)
       return NextResponse.json(err.issues, { status: 422 });
@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 export async function DELETE(req: NextRequest, { params }: Props) {
   if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   const session = (await auth.api.getSession({ headers: await headers() }))!;
-  const teamId = await zod.number().safeParseAsync((await params).id);
+  const teamId = await zod.coerce.number().positive().safeParseAsync((await params).id);
   if (!teamId.success)
     return NextResponse.json(teamId.error.issues, { status: 422 });
   return await withAuth({ userId: session.user.id }, async tx => {

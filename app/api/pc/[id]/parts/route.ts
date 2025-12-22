@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Props } from "../route";
-import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified } from "@/lib/auth";
+import { auth, AuthType, getKeyDigest, isEmailVerified } from "@/lib/auth";
 import { headers } from "next/headers";
 import { withAuth } from "@/lib/db";
 import { Parts } from "@/lib/schema/cam";
 import { DatabaseError } from "pg";
 import zod from "zod";
 import { eq } from "drizzle-orm";
+import { getAuthType, getUserId, requireEmailVerified } from "@/lib/api-utils";
 
 const CreateInput = zod.object({
   name: zod.string(),
@@ -16,12 +17,10 @@ const CreateInput = zod.object({
 });
 
 export async function POST(req: NextRequest, { params }: Props) {
-  const authType: AuthType = {
-    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
-    keyDigest: await getKeyDigest()
-  };
+  const authType = await getAuthType();
   if (authType.userId) {
-    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
+    const err = await requireEmailVerified();
+    if (err) return err;
   } else if (!authType.keyDigest)
     return new NextResponse(null, { status: 401 });
 
@@ -46,13 +45,11 @@ export async function POST(req: NextRequest, { params }: Props) {
 }
 
 export async function GET(req: NextRequest, { params }: Props) {
-  const authType: AuthType = {
-    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
-    keyDigest: await getKeyDigest()
-  };
+  const authType = await getAuthType();
 
   if (authType.userId) {
-    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
+    const err = await requireEmailVerified();
+    if (err) return err;
   } else if (!authType.keyDigest)
     return new NextResponse(null, { status: 401 });
 

@@ -10,7 +10,8 @@ import {
   parseParamId,
   parseJsonBody,
   handleDatabaseError,
-  routeResponse
+  routeResponse,
+  getUserId
 } from "@/lib/api-utils";
 
 interface Props {
@@ -24,10 +25,10 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   const keyIdResult = await parseParamId((await params).id);
   if (!keyIdResult.success) return keyIdResult.response;
   
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return routeResponse(401);
+  const userId = await getUserId();
+  if (userId === undefined) return routeResponse(401);
 
-  return await withAuth({ userId: session.user.id }, async tx => {
+  return await withAuth({ userId }, async tx => {
     try {
       const deleted = await tx
         .delete(TeamKeys)
@@ -52,13 +53,13 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   const keyIdResult = await parseParamId((await params).id);
   if (!keyIdResult.success) return keyIdResult.response;
   
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return routeResponse(401);
+  const userId = await getUserId();
+  if (userId === undefined) return routeResponse(401);
   
   const bodyResult = await parseJsonBody(await req.json(), UpdateInput);
   if (!bodyResult.success) return bodyResult.response;
 
-  return await withAuth({ userId: session.user.id }, async tx => {
+  return await withAuth({ userId }, async tx => {
     try {
       const updated = await tx.update(TeamKeys)
         .set(bodyResult.data)

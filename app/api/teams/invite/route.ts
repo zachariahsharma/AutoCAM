@@ -1,3 +1,4 @@
+import { getAuthType, getUserId } from "@/lib/api-utils";
 import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import mailer from "@/lib/mailer";
@@ -17,10 +18,7 @@ const InviteInput = zod.object({
 });
 
 export async function inviteEmail(json: object, team_id?: number) {
-  const authType: AuthType = {
-    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
-    keyDigest: await getKeyDigest(),
-  };
+  const authType = await getAuthType();
   if (authType.userId) {
     if (!await isEmailVerified()) return EmailNotVerifiedResponse;
   } else if (authType.keyDigest) {

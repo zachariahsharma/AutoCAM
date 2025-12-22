@@ -1,5 +1,6 @@
 import { PartCategory } from "@/app/types";
-import { auth, AuthType, EmailNotVerifiedResponse, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
+import { getAuthType, getUserId, requireEmailVerified } from "@/lib/api-utils";
+import { auth, AuthType, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { PartCategories } from "@/lib/schema/cam";
 import { and, eq } from "drizzle-orm";
@@ -22,14 +23,11 @@ const SearchParams = zod.object({
 });
 
 export async function getPartCategories(params: URLSearchParams, teamId?: number) {
-  const authType: AuthType = {
-    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
-    keyDigest: await getKeyDigest()
-  };
-  if (authType.userId) {}
-  else if (authType.keyDigest) {
+  const authType = await getAuthType();
+  if (authType.keyDigest) {
     teamId = await teamIdFromDigest(authType.keyDigest);
-  } else return new NextResponse(null, { status: 401 });
+  } else if (!authType.userId)
+    return new NextResponse(null, { status: 401 });
   if (!teamId) return new NextResponse(null, { status: 401 });
 
   const data = await SearchParams.safeParseAsync({
@@ -61,12 +59,10 @@ const CreateInput = zod.object({
 });
 
 export async function createPartCategory(json: any, team_id?: number) {
-  const authType: AuthType = {
-    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
-    keyDigest: await getKeyDigest()
-  };
+  const authType = await getAuthType();
   if (authType.userId) {
-    if (!await isEmailVerified()) return EmailNotVerifiedResponse;
+    const err = await requireEmailVerified();
+    if (err) return err;
   } else if (authType.keyDigest) {
     team_id = await teamIdFromDigest(authType.keyDigest);
   } else return new NextResponse(null, { status: 401 });

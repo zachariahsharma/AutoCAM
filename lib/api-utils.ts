@@ -17,7 +17,7 @@ export async function getUserId(): Promise<string | undefined> {
  */
 export async function getAuthType(): Promise<AuthType> {
   return {
-    userId: (await auth.api.getSession({ headers: await headers() }))?.user.id,
+    userId: await getUserId(),
     keyDigest: await getKeyDigest()
   };
 }
@@ -66,18 +66,16 @@ export async function parseJsonBody<T extends ZodObject>(json: unknown, schema: 
  * Check email verification and return error if not verified
  * Only for userId-based auth
  */
-export async function requireEmailVerified(): Promise<NextResponse | null> {
-  if (!await isEmailVerified()) {
+export async function requireEmailVerified(): Promise<NextResponse | undefined> {
+  if (!await isEmailVerified())
     return routeResponse(403);
-  }
-  return null;
 }
 
 /**
  * Check authentication and email verification
  * Returns NextResponse error or null if authorized
  */
-export async function checkAuthWithEmailVerification(): Promise<NextResponse | null> {
+export async function checkAuthWithEmailVerification(): Promise<NextResponse | undefined> {
   if (await getUserId() === undefined)
     return routeResponse(401);
   return await requireEmailVerified();

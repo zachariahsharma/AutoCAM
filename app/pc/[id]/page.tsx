@@ -7,15 +7,15 @@ import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { PartCategories } from "@/lib/schema/cam";
 import { TeamMembers } from "@/lib/schema/entities";
+import { getUserId } from "@/lib/api-utils";
 
 export default async function PC({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
   const id = Number((await params).id);
-  const partcategory = await withAuth(session.user.id, async tx => {
+  const partcategory = await withAuth({ userId: await getUserId() }, async tx => {
     return await tx.query.PartCategories.findFirst({
       with: { parts: true },
       where: eq(PartCategories.id, id),

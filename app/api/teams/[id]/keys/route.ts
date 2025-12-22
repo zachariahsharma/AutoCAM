@@ -12,7 +12,8 @@ import {
   parseParamId,
   parseJsonBody,
   handleDatabaseError,
-  routeResponse
+  routeResponse,
+  getUserId
 } from "@/lib/api-utils";
 
 export async function GET(req: NextRequest, { params }: Props) {
@@ -22,10 +23,10 @@ export async function GET(req: NextRequest, { params }: Props) {
   const teamIdResult = await parseParamId((await params).id);
   if (!teamIdResult.success) return teamIdResult.response;
   
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new NextResponse(null, { status: 401 });
+  const userId = await getUserId();
+  if (!userId) return routeResponse(401);
 
-  const keys = (await withAuth({ userId: session.user.id }, async tx => {
+  const keys = (await withAuth({ userId }, async tx => {
     return await tx.query.TeamKeys.findMany({
       where: eq(TeamKeys.team_id, teamIdResult.data),
       columns: { name: true, id: true }
@@ -45,14 +46,14 @@ export async function POST(req: NextRequest, { params }: Props) {
   const teamIdResult = await parseParamId((await params).id);
   if (!teamIdResult.success) return teamIdResult.response;
   
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new NextResponse(null, { status: 401 });
+  const userId = await getUserId();
+  if (!userId) return new NextResponse(null, { status: 401 });
   const bodyResult = await parseJsonBody(await req.json(), CreateInput);
   if (!bodyResult.success) return bodyResult.response;
 
   const token = crypto.randomBytes(32).toString("hex");
 
-  return await withAuth({ userId: session.user.id }, async tx => {
+  return await withAuth({ userId }, async tx => {
     try {
       await tx.insert(TeamKeys).values({
         digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),

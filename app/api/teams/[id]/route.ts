@@ -9,7 +9,8 @@ import {
   parseParamId, 
   checkAuthWithEmailVerification, 
   handleDatabaseError,
-  routeResponse
+  routeResponse,
+  getUserId
 } from "@/lib/api-utils";
 
 export interface Props { params: Promise<{ id: string }> };
@@ -24,11 +25,11 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   const authError = await checkAuthWithEmailVerification();
   if (authError) return authError;
   
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
+  const userId = await getUserId();
   const teamIdResult = await parseParamId((await params).id);
   if (!teamIdResult.success) return teamIdResult.response;
   
-  return await withAuth({ userId: session.user.id }, async tx => {
+  return await withAuth({ userId }, async tx => {
     try {
       const deleted = await tx.delete(Teams).where(eq(Teams.id, teamIdResult.data)).returning({ id: Teams.id });
       if (deleted.length === 0) return routeResponse(404);

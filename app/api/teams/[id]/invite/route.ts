@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Props } from "../route";
 import { inviteEmail } from "../../invite/route";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import zod, { ZodError } from "zod";
+import { getUserId } from "@/lib/api-utils";
 
 export async function POST(req: NextRequest, { params }: Props) {
-  if (!await auth.api.getSession({ headers: await headers() }))
+  if (!await getUserId())
     return new NextResponse(null, { status: 401 });
   try {
     return await inviteEmail(await req.json(), await zod.coerce.number().positive().parseAsync((await params).id));

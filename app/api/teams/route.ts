@@ -1,8 +1,7 @@
-import { auth, teamIdFromDigest } from "@/lib/auth";
+import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { TeamMembers, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import zod from "zod";
 import { 
@@ -11,7 +10,8 @@ import {
   requireEmailVerified, 
   checkAuthWithEmailVerification,
   handleDatabaseError,
-  routeResponse
+  routeResponse,
+  getUserId
 } from "@/lib/api-utils";
 
 const CreateInput = zod.object({
@@ -22,22 +22,22 @@ const CreateInput = zod.object({
 export async function POST(req: NextRequest) {
   const authError = await checkAuthWithEmailVerification();
   if (authError) return authError;
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return routeResponse(401);
+  const userId = await getUserId();
+  if (!userId) return routeResponse(401);
 
   const bodyResult = await parseJsonBody(await req.json(), CreateInput);
   if (!bodyResult.success) return bodyResult.response;
 
-  return await withAuth({ userId: session.user.id }, async tx => {
+  return await withAuth({ userId }, async tx => {
     try {
       const [team] = await tx.insert(Teams).values({
         ...bodyResult.data,
-        created_by: session.user.id,
+        created_by: userId,
       }).returning({ id: Teams.id });
 
       // Assign current user to this team
       await tx.insert(TeamMembers).values({
-        user_id: session.user.id,
+        user_id: userId,
         team_id: team.id,
         admin: true,
       });

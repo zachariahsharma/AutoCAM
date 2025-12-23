@@ -58,6 +58,10 @@ export const Teams = pgTable("teams", {
     for: 'update',
     using: UserIsTeamAdmin(table.id)
   }),
+  pgPolicy('teams_delete', {
+    for: 'delete',
+    using: sql`owner = ${UserId()}`
+  }),
 ]);
 
 export const TeamInvites = pgTable("team_invites", {

@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { getTableName, relations, SQL, sql } from "drizzle-orm";
 import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { TeamFromKey, UserInTeam } from "./rls";
@@ -16,6 +16,17 @@ export const PartCategories = pgTable("part_categories", {
   }),
 ]);
 
+function PartsRLS(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1
+    FROM ${sql.identifier(getTableName(PartCategories))}
+    WHERE ${PartCategories.id} = ${Parts.category_id}
+      AND (${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)})
+  )
+  `
+}
+
 export const Parts = pgTable("parts", {
   id: integer().generatedAlwaysAsIdentity(),
   name: text().notNull(),
@@ -25,6 +36,10 @@ export const Parts = pgTable("parts", {
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
   primaryKey({ columns: [table.id, table.category_id]}),
+  pgPolicy('parts_access', {
+    using: PartsRLS(),
+    withCheck: PartsRLS()
+  })
 ]);
 
 export const Plates = pgTable("plates", {

@@ -78,6 +78,10 @@ export const TeamInvites = pgTable("team_invites", {
     for: 'insert',
     withCheck: sql`${TeamFromKey()} = ${table.team_id} OR ${UserIsTeamAdmin(table.team_id)}`
   }),
+  pgPolicy('team_invites_update', {
+    for: 'update',
+    using: sql`false`
+  }),
 ]);
 
 export const TeamMembers = pgTable("team_members", {

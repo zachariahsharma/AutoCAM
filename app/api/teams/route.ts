@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const bodyResult = await parseJsonBody(await req.json(), CreateInput);
-  if (!bodyResult.success) return bodyResult.response;
+  const body = await parseJsonBody(await req.json(), CreateInput);
+  if (!body.success) return body.response;
 
-  return await withAuth({ userId: authType.userId }, async tx => {
+  return await withAuth(authType, async tx => {
     try {
       const [team] = await tx.insert(Teams).values({
-        ...bodyResult.data,
+        ...body.data,
         owner: authType.userId!,
       }).returning({ id: Teams.id });
 

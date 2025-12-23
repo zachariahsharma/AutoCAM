@@ -51,12 +51,12 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const partIdResult = await parseParamId((await params).id);
-  if (!partIdResult.success) return partIdResult.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
 
-  return withAuth(authType, async tx => {
+  return await withAuth(authType, async tx => {
     try {
-      return checkAnyChanges(await tx.delete(Parts).where(eq(Parts.id, partIdResult.data)).returning({ id: Parts.id }));
+      return checkAnyChanges(await tx.delete(Parts).where(eq(Parts.id, id.data)).returning({ id: Parts.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }

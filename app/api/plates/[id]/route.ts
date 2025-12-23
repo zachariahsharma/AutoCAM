@@ -37,3 +37,22 @@ export async function PATCH(req: NextRequest, { params }: Props) {
     }
   });
 }
+
+export async function DELETE(req: NextRequest, { params }: Props) {
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
+
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
+
+  return await withAuth(authType, async tx => {
+    try {
+      return checkAnyChanges(await tx.delete(Plates)
+        .where(eq(Plates.id, id.data))
+        .returning({ id: Plates.id }));
+    } catch (err) {
+      return handleDatabaseError(err);
+    }
+  });
+}

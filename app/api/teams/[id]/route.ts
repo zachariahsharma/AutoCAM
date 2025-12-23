@@ -1,4 +1,3 @@
-import { auth, AuthType, teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
@@ -9,8 +8,7 @@ import {
   checkAuthWithEmailVerification,
   handleDatabaseError,
   getUserId,
-  checkAnyChanges,
-  getAuthType
+  checkAnyChanges
 } from "@/lib/api-utils";
 
 export interface Props { params: Promise<{ id: string }> };

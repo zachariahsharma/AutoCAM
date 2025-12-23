@@ -4,7 +4,7 @@ import { withAuth } from "@/lib/db";
 import { Parts } from "@/lib/schema/cam";
 import zod from "zod";
 import { eq } from "drizzle-orm";
-import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, requireEmailVerified, routeResponse } from "@/lib/api-utils";
+import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, requireEmailVerified, routeResponse, validateAuthType } from "@/lib/api-utils";
 
 const CreateInput = zod.object({
   name: zod.string(),
@@ -15,10 +15,9 @@ const CreateInput = zod.object({
 
 export async function POST(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  if (authType.userId) {
-    const err = await requireEmailVerified();
-    if (err) return err;
-  } else if (!authType.keyDigest)
+  try { validateAuthType(authType, true); }
+  catch (err) { return err; }
+  if (!authType.keyDigest)
     return routeResponse(401);
 
   const categoryId = await parseParamId((await params).id);
@@ -39,12 +38,8 @@ export async function POST(req: NextRequest, { params }: Props) {
 
 export async function GET(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-
-  if (authType.userId) {
-    const err = await requireEmailVerified();
-    if (err) return err;
-  } else if (!authType.keyDigest)
-    return routeResponse(401);
+  try { validateAuthType(authType, true); }
+  catch (err) { return err; }
 
   const categoryId = await parseParamId((await params).id);
   if (!categoryId.success)

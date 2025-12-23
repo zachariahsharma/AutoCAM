@@ -1,4 +1,4 @@
-import { getAuthType, handleDatabaseError, parseJsonBody, requireEmailVerified, routeResponse } from "@/lib/api-utils";
+import { getAuthType, handleDatabaseError, parseJsonBody, requireEmailVerified, routeResponse, validateAuthType } from "@/lib/api-utils";
 import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { PartCategories } from "@/lib/schema/cam";
@@ -21,10 +21,11 @@ const SearchParams = zod.object({
 
 export async function getPartCategories(params: URLSearchParams, teamId?: number) {
   const authType = await getAuthType();
+  try { validateAuthType(authType); }
+  catch (err) { return err; }
   if (authType.keyDigest) {
     teamId = await teamIdFromDigest(authType.keyDigest);
-  } else if (!authType.userId)
-    return routeResponse(401);
+  }
   if (!teamId) return routeResponse(401);
 
   const data = await parseJsonBody({
@@ -56,12 +57,10 @@ const CreateInput = zod.object({
 
 export async function createPartCategory(json: any, team_id?: number) {
   const authType = await getAuthType();
-  if (authType.userId) {
-    const err = await requireEmailVerified();
-    if (err) return err;
-  } else if (authType.keyDigest) {
+  try { validateAuthType(authType, true); }
+  catch (err) { return err; }
+  if (authType.keyDigest)
     team_id = await teamIdFromDigest(authType.keyDigest);
-  } else return routeResponse(401);
   if (!team_id) return routeResponse(401);
 
   const data = await parseJsonBody(json, CreateInput);

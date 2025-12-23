@@ -22,6 +22,13 @@ export async function getAuthType(): Promise<AuthType> {
   };
 }
 
+export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
+  if (!(authType.userId || authType.keyDigest))
+    throw routeResponse(401);
+  if (emailVerifiedNeeded && !await isEmailVerified())
+    throw routeResponse(403);
+}
+
 /**
  * Validate and parse a parameter ID (converts to positive number)
  */

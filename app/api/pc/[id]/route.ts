@@ -10,7 +10,8 @@ import {
   parseJsonBody,
   handleDatabaseError,
   routeResponse,
-  checkAnyChanges
+  checkAnyChanges,
+  validateAuthType
 } from "@/lib/api-utils";
 
 export interface Props {
@@ -24,10 +25,8 @@ const UpdateInput = zod.object({
 
 export async function PATCH(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  if (authType.userId) {
-    const emailError = await requireEmailVerified();
-    if (emailError) return emailError;
-  }
+  try { validateAuthType(authType, true); }
+  catch (err) { return err; }
 
   const categoryIdResult = await parseParamId((await params).id);
   if (!categoryIdResult.success) return categoryIdResult.response;
@@ -49,10 +48,8 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
 export async function DELETE(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  if (authType.userId) {
-    const emailError = await requireEmailVerified();
-    if (emailError) return emailError;
-  }
+  try { validateAuthType(authType, true); }
+  catch (err) { return err; }
 
   const categoryIdResult = await parseParamId((await params).id);
   if (!categoryIdResult.success) return categoryIdResult.response;

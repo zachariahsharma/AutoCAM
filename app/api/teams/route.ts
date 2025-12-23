@@ -4,15 +4,16 @@ import { TeamMembers, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import zod from "zod";
-import { 
-  getAuthType, 
-  parseJsonBody, 
-  requireEmailVerified, 
+import {
+  getAuthType,
+  parseJsonBody,
+  requireEmailVerified,
   checkAuthWithEmailVerification,
   handleDatabaseError,
   routeResponse,
   getUserId,
-  checkAnyChanges
+  checkAnyChanges,
+  validateAuthType
 } from "@/lib/api-utils";
 
 const CreateInput = zod.object({
@@ -51,17 +52,14 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   const authType = await getAuthType();
-  if (authType.userId) {
-    return await withAuth(authType, async tx => {
+  try { validateAuthType(authType); }
+  catch (err) { return err; }
+  return await withAuth(authType, async tx => {
+    if (authType.userId)
       return routeResponse(200, await tx.query.Teams.findMany());
-    });
-  } else if (authType.keyDigest) {
-    return await withAuth(authType, async tx => {
+    else if (authType.keyDigest)
       return routeResponse(200, await tx.query.Teams.findFirst());
-    });
-  } else {
-    return routeResponse(401);
-  }
+  });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -75,16 +73,12 @@ const UpdateInput = zod.object({
 
 export async function updateTeam(json: object, teamId?: number) {
   const authType = await getAuthType();
-  
-  if (authType.userId) {
-    const emailError = await requireEmailVerified();
-    if (emailError) return emailError;
-  } else if (authType.keyDigest) {
+  try { validateAuthType(authType); }
+  catch (err) { return err; }
+
+  if (authType.keyDigest)
     teamId = await teamIdFromDigest(authType.keyDigest);
-  } else {
-    return routeResponse(401);
-  }
-  
+
   if (!teamId) return routeResponse(401);
 
   const bodyResult = await parseJsonBody(json, UpdateInput);

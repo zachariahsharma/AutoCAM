@@ -10,7 +10,8 @@ import {
   requireEmailVerified,
   handleDatabaseError,
   routeResponse,
-  checkAnyChanges
+  checkAnyChanges,
+  validateAuthType
 } from "@/lib/api-utils";
 
 interface Props {
@@ -26,6 +27,8 @@ const UpdateInput = zod.object({
 
 export async function PATCH(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
+  try { validateAuthType(authType); }
+  catch (err) { return err; }
 
   if (authType.userId) {
     const emailError = await requireEmailVerified();
@@ -51,6 +54,8 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
 export async function DELETE(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
+  try { validateAuthType(authType); }
+  catch (err) { return err; }
 
   if (authType.userId) {
     const emailError = await requireEmailVerified();

@@ -11,6 +11,7 @@ import {
   checkAnyChanges,
   validateAuthType
 } from "@/lib/api-utils";
+import { xid } from "better-auth";
 
 export interface Props {
   params: Promise<{ id: string }>
@@ -18,7 +19,7 @@ export interface Props {
 
 const UpdateInput = zod.object({
   material: zod.string().optional(),
-  thickness: zod.number().optional().transform(x => x !== undefined ? x.toString() : undefined),
+  thickness: zod.number().optional().transform(x => x?.toString()),
 });
 
 export async function PATCH(req: NextRequest, { params }: Props) {

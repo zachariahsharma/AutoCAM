@@ -28,15 +28,18 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const partIdResult = await parseParamId((await params).id);
-  if (!partIdResult.success) return partIdResult.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
   
-  const bodyResult = await parseJsonBody(await req.json(), UpdateInput);
-  if (!bodyResult.success) return bodyResult.response;
+  const body = await parseJsonBody(await req.json(), UpdateInput);
+  if (!body.success) return body.response;
 
   return await withAuth(authType, async tx => {
     try {
-      return checkAnyChanges(await tx.update(Parts).set(bodyResult.data).returning({ id: Parts.id }));
+      return checkAnyChanges(await tx.update(Parts)
+        .set(body.data)
+        .where(eq(Parts.id, id.data))
+        .returning({ id: Parts.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }

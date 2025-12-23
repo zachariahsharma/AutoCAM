@@ -1,4 +1,4 @@
-import { getAuthType, handleDatabaseError, parseJsonBody, requireEmailVerified, routeResponse, validateAuthType } from "@/lib/api-utils";
+import { getAuthType, handleDatabaseError, parseJsonBody, routeResponse, validateAuthType } from "@/lib/api-utils";
 import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import mailer from "@/lib/mailer";
@@ -15,13 +15,13 @@ const InviteInput = zod.object({
   email: zod.email()
 });
 
-export async function inviteEmail(json: object, team_id?: number) {
+export async function inviteEmail(json: object, teamId?: number) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
-  catch (err) { return err; }
-  if (authType.keyDigest)
-    team_id = await teamIdFromDigest(authType.keyDigest);
-  if (!team_id) return routeResponse(401);
+  try {
+    validateAuthType(authType, true);
+    if (authType.keyDigest)
+      teamId = await teamIdFromDigest(authType.keyDigest);
+  } catch (err) { return err; }
 
   const data = await parseJsonBody(json, InviteInput);
   if (!data.success)
@@ -31,11 +31,11 @@ export async function inviteEmail(json: object, team_id?: number) {
     const [id, teamName] = await withAuth(authType, async tx => {
       const [invite] = await tx
         .insert(TeamInvites)
-        .values({ team_id, ...data.data })
+        .values({ team_id: teamId!, ...data.data })
         .returning({ id: TeamInvites.id });
       // Unless there is an egregious race condition this should never return nothing
       const team = (await tx.query.Teams.findFirst({
-        where: eq(Teams.id, team_id!)
+        where: eq(Teams.id, teamId!)
       }))!;
       return [invite.id, team.name];
     });

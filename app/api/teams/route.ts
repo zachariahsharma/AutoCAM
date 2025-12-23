@@ -7,11 +7,8 @@ import zod from "zod";
 import {
   getAuthType,
   parseJsonBody,
-  requireEmailVerified,
-  checkAuthWithEmailVerification,
   handleDatabaseError,
   routeResponse,
-  getUserId,
   checkAnyChanges,
   validateAuthType
 } from "@/lib/api-utils";
@@ -22,24 +19,23 @@ const CreateInput = zod.object({
 });
 
 export async function POST(req: NextRequest) {
-  const authError = await checkAuthWithEmailVerification();
-  if (authError) return authError;
-  const userId = await getUserId();
-  if (!userId) return routeResponse(401);
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
 
   const bodyResult = await parseJsonBody(await req.json(), CreateInput);
   if (!bodyResult.success) return bodyResult.response;
 
-  return await withAuth({ userId }, async tx => {
+  return await withAuth({ userId: authType.userId }, async tx => {
     try {
       const [team] = await tx.insert(Teams).values({
         ...bodyResult.data,
-        created_by: userId,
+        created_by: authType.userId!,
       }).returning({ id: Teams.id });
 
       // Assign current user to this team
       await tx.insert(TeamMembers).values({
-        user_id: userId,
+        user_id: authType.userId!,
         team_id: team.id,
         admin: true,
       });
@@ -73,13 +69,11 @@ const UpdateInput = zod.object({
 
 export async function updateTeam(json: object, teamId?: number) {
   const authType = await getAuthType();
-  try { validateAuthType(authType); }
-  catch (err) { return err; }
-
-  if (authType.keyDigest)
-    teamId = await teamIdFromDigest(authType.keyDigest);
-
-  if (!teamId) return routeResponse(401);
+  try {
+    validateAuthType(authType);
+    if (authType.keyDigest)
+      teamId = await teamIdFromDigest(authType.keyDigest);
+  } catch (err) { return err; }
 
   const bodyResult = await parseJsonBody(json, UpdateInput);
   if (!bodyResult.success) return bodyResult.response;
@@ -88,7 +82,7 @@ export async function updateTeam(json: object, teamId?: number) {
     try {
       return checkAnyChanges(await tx.update(Teams)
         .set(bodyResult.data)
-        .where(eq(Teams.id, teamId))
+        .where(eq(Teams.id, teamId!))
         .returning({ id: Teams.id }));
     } catch (err) {
       return handleDatabaseError(err);

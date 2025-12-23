@@ -8,6 +8,7 @@ import { headers } from "next/headers";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "./schema/entities";
+import { routeResponse } from "./api-utils";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -31,12 +32,6 @@ export const auth = betterAuth({
   baseURL: process.env.BASE_URL,
 })
 
-export async function isEmailVerified() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return false;
-  return session.user.emailVerified;
-}
-
 export async function getKeyDigest() {
   const authHeader = (await headers()).get("authorization");
   if (!authHeader) return;
@@ -46,11 +41,13 @@ export async function getKeyDigest() {
 export const APIKeyInvalidResponse = new NextResponse(null, { status: 401 });
 
 export async function teamIdFromDigest(digest: string) {
-  return withAuth({ keyDigest: digest }, async tx => {
+  const teamId = await withAuth({ keyDigest: digest }, async tx => {
     return (await tx.query.TeamKeys.findFirst({
       where: eq(TeamKeys.digest, digest)
     }))?.team_id;
   });
+  if (!teamId) throw routeResponse(401);
+  return teamId;
 }
 
 export interface AuthType {

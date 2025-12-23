@@ -5,10 +5,10 @@ import { NextRequest } from "next/server";
 import { updateTeam } from "../route";
 import {
   parseParamId,
-  checkAuthWithEmailVerification,
   handleDatabaseError,
-  getUserId,
-  checkAnyChanges
+  checkAnyChanges,
+  validateAuthType,
+  getAuthType
 } from "@/lib/api-utils";
 
 export interface Props { params: Promise<{ id: string }> };
@@ -20,14 +20,14 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
-  const authError = await checkAuthWithEmailVerification();
-  if (authError) return authError;
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
 
-  const userId = await getUserId();
   const teamIdResult = await parseParamId((await params).id);
   if (!teamIdResult.success) return teamIdResult.response;
 
-  return await withAuth({ userId }, async tx => {
+  return await withAuth({ userId: authType.userId }, async tx => {
     try {
       return checkAnyChanges(await tx.delete(Teams)
         .where(eq(Teams.id, teamIdResult.data))

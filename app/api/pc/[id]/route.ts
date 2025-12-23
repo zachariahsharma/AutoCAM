@@ -5,11 +5,9 @@ import { NextRequest } from "next/server";
 import zod from "zod";
 import {
   getAuthType,
-  requireEmailVerified,
   parseParamId,
   parseJsonBody,
   handleDatabaseError,
-  routeResponse,
   checkAnyChanges,
   validateAuthType
 } from "@/lib/api-utils";

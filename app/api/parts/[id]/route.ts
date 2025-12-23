@@ -7,9 +7,7 @@ import {
   getAuthType,
   parseParamId,
   parseJsonBody,
-  requireEmailVerified,
   handleDatabaseError,
-  routeResponse,
   checkAnyChanges,
   validateAuthType
 } from "@/lib/api-utils";
@@ -27,15 +25,8 @@ const UpdateInput = zod.object({
 
 export async function PATCH(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType); }
+  try { validateAuthType(authType, true); }
   catch (err) { return err; }
-
-  if (authType.userId) {
-    const emailError = await requireEmailVerified();
-    if (emailError) return emailError;
-  } else if (!authType.keyDigest) {
-    return routeResponse(401);
-  }
 
   const partIdResult = await parseParamId((await params).id);
   if (!partIdResult.success) return partIdResult.response;
@@ -54,15 +45,8 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
 export async function DELETE(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType); }
+  try { validateAuthType(authType, true); }
   catch (err) { return err; }
-
-  if (authType.userId) {
-    const emailError = await requireEmailVerified();
-    if (emailError) return emailError;
-  } else if (!authType.keyDigest) {
-    return routeResponse(401);
-  }
 
   const partIdResult = await parseParamId((await params).id);
   if (!partIdResult.success) return partIdResult.response;

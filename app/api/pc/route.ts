@@ -1,4 +1,4 @@
-import { getAuthType, handleDatabaseError, parseJsonBody, requireEmailVerified, routeResponse, validateAuthType } from "@/lib/api-utils";
+import { getAuthType, handleDatabaseError, parseJsonBody, routeResponse, validateAuthType } from "@/lib/api-utils";
 import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { PartCategories } from "@/lib/schema/cam";
@@ -21,12 +21,12 @@ const SearchParams = zod.object({
 
 export async function getPartCategories(params: URLSearchParams, teamId?: number) {
   const authType = await getAuthType();
-  try { validateAuthType(authType); }
-  catch (err) { return err; }
-  if (authType.keyDigest) {
-    teamId = await teamIdFromDigest(authType.keyDigest);
+  try {
+    validateAuthType(authType);
+    if (authType.keyDigest)
+      teamId = await teamIdFromDigest(authType.keyDigest);
   }
-  if (!teamId) return routeResponse(401);
+  catch (err) { return err; }
 
   const data = await parseJsonBody({
     material: params.get("material")?.toString(),
@@ -36,7 +36,7 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
   const partCategories = await withAuth(authType, async tx => {
     return (await tx.query.PartCategories.findMany({
       where: and(
-        eq(PartCategories.team_id, teamId),
+        eq(PartCategories.team_id, teamId!),
         data.data.material !== undefined ? eq(PartCategories.material, data.data.material) : undefined,
         data.data.thickness !== undefined ? eq(PartCategories.thickness, data.data.thickness.toString()) : undefined
       ),
@@ -55,13 +55,13 @@ const CreateInput = zod.object({
   thickness: zod.number(),
 });
 
-export async function createPartCategory(json: any, team_id?: number) {
+export async function createPartCategory(json: any, teamId?: number) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
-  catch (err) { return err; }
-  if (authType.keyDigest)
-    team_id = await teamIdFromDigest(authType.keyDigest);
-  if (!team_id) return routeResponse(401);
+  try {
+    validateAuthType(authType, true);
+    if (authType.keyDigest)
+      teamId = await teamIdFromDigest(authType.keyDigest);
+  } catch (err) { return err; }
 
   const data = await parseJsonBody(json, CreateInput);
   if (!data.success)
@@ -69,7 +69,7 @@ export async function createPartCategory(json: any, team_id?: number) {
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(PartCategories)
-        .values({ ...data.data, team_id, thickness: data.data.thickness.toString() })
+        .values({ ...data.data, team_id: teamId!, thickness: data.data.thickness.toString() })
         .returning({ id: PartCategories.id });
       return routeResponse(201, { id: id.id });
     } catch (err) {

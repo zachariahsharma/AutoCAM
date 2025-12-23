@@ -4,7 +4,7 @@ import { withAuth } from "@/lib/db";
 import { Parts } from "@/lib/schema/cam";
 import zod from "zod";
 import { eq } from "drizzle-orm";
-import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, requireEmailVerified, routeResponse, validateAuthType } from "@/lib/api-utils";
+import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
 
 const CreateInput = zod.object({
   name: zod.string(),
@@ -17,8 +17,6 @@ export async function POST(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
   try { validateAuthType(authType, true); }
   catch (err) { return err; }
-  if (!authType.keyDigest)
-    return routeResponse(401);
 
   const categoryId = await parseParamId((await params).id);
   if (!categoryId.success) return categoryId.response;

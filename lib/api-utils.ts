@@ -1,4 +1,4 @@
-import { auth, AuthType, getKeyDigest, isEmailVerified, teamIdFromDigest } from "@/lib/auth";
+import { auth, AuthType, getKeyDigest } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { DatabaseError } from "pg";
@@ -25,8 +25,13 @@ export async function getAuthType(): Promise<AuthType> {
 export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
   if (!(authType.userId || authType.keyDigest))
     throw routeResponse(401);
-  if (emailVerifiedNeeded && !await isEmailVerified())
-    throw routeResponse(403);
+  if (emailVerifiedNeeded) {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session)
+      throw routeResponse(401);
+    if (!session.user.emailVerified)
+      throw routeResponse(403);
+  }
 }
 
 /**
@@ -49,25 +54,6 @@ export async function parseJsonBody<T extends ZodObject>(json: unknown, schema: 
     return { success: false, response: NextResponse.json(result.error.issues, { status: 422 }) };
   }
   return { success: true, data: result.data };
-}
-
-/**
- * Check email verification and return error if not verified
- * Only for userId-based auth
- */
-export async function requireEmailVerified(): Promise<NextResponse | undefined> {
-  if (!await isEmailVerified())
-    return routeResponse(403);
-}
-
-/**
- * Check authentication and email verification
- * Returns NextResponse error or null if authorized
- */
-export async function checkAuthWithEmailVerification(): Promise<NextResponse | undefined> {
-  if (await getUserId() === undefined)
-    return routeResponse(401);
-  return await requireEmailVerified();
 }
 
 /**

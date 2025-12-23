@@ -1,18 +1,15 @@
-import { auth } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { TeamKeys } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import zod from "zod";
 import {
-  checkAuthWithEmailVerification,
   parseParamId,
   parseJsonBody,
   handleDatabaseError,
-  routeResponse,
-  getUserId,
-  checkAnyChanges
+  checkAnyChanges,
+  getAuthType,
+  validateAuthType
 } from "@/lib/api-utils";
 
 interface Props {
@@ -20,16 +17,14 @@ interface Props {
 };
 
 export async function DELETE(req: NextRequest, { params }: Props) {
-  const authError = await checkAuthWithEmailVerification();
-  if (authError) return authError;
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
 
   const keyIdResult = await parseParamId((await params).id);
   if (!keyIdResult.success) return keyIdResult.response;
   
-  const userId = await getUserId();
-  if (userId === undefined) return routeResponse(401);
-
-  return await withAuth({ userId }, async tx => {
+  return await withAuth({ userId: authType.userId }, async tx => {
     try {
       return checkAnyChanges(await tx
         .delete(TeamKeys)
@@ -46,19 +41,17 @@ const UpdateInput = zod.object({
 });
 
 export async function PATCH(req: NextRequest, { params }: Props) {
-  const authError = await checkAuthWithEmailVerification();
-  if (authError) return authError;
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
   
   const keyIdResult = await parseParamId((await params).id);
   if (!keyIdResult.success) return keyIdResult.response;
   
-  const userId = await getUserId();
-  if (userId === undefined) return routeResponse(401);
-  
   const bodyResult = await parseJsonBody(await req.json(), UpdateInput);
   if (!bodyResult.success) return bodyResult.response;
 
-  return await withAuth({ userId }, async tx => {
+  return await withAuth({ userId: authType.userId }, async tx => {
     try {
       return checkAnyChanges(await tx.update(TeamKeys)
         .set(bodyResult.data)

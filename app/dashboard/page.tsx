@@ -4,6 +4,7 @@ import { BoxTube, Plate } from "../types";
 import db, { withAuth } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { getUserId } from "@/lib/api-utils";
 
 const boxTubes: BoxTube[] = [
   {
@@ -78,8 +79,7 @@ const plates: Plate[] = [
 ];
 
 export default async function Dashboard() {
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
-  const partCategories = (await withAuth({ userId: session.user.id }, async tx => {
+  const partCategories = (await withAuth({ userId: await getUserId() }, async tx => {
     return await tx.query.PartCategories.findMany({ with: { parts: true } })
   })).map(cat => ({
     ...cat,

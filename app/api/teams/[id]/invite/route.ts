@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Props } from "../route";
 import { inviteEmail } from "../../invite/route";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getUserId, parseParamId, routeResponse } from "@/lib/api-utils";
 
 export async function POST(req: NextRequest, { params }: Props) {
-  if (!await auth.api.getSession({ headers: await headers() }))
-    return new NextResponse(null, { status: 401 });
-  return await inviteEmail(await req.json(), Number((await params).id));
+  if (!await getUserId())
+    return routeResponse(401);
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
+  return await inviteEmail(await req.json(), id.data);
 }

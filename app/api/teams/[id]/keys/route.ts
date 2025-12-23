@@ -1,27 +1,34 @@
-import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { Props } from "../route";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "@/lib/schema/entities";
 import crypto from "crypto";
-import { DatabaseError } from "pg";
 import zod from "zod";
+import {
+  parseParamId,
+  parseJsonBody,
+  handleDatabaseError,
+  routeResponse,
+  getAuthType,
+  validateAuthType
+} from "@/lib/api-utils";
 
 export async function GET(req: NextRequest, { params }: Props) {
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const teamId = Number((await params).id);
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new NextResponse(null, { status: 401 });
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
+  
+  const teamIdResult = await parseParamId((await params).id);
+  if (!teamIdResult.success) return teamIdResult.response;
 
-  const keys = (await withAuth({ userId: session.user.id }, async tx => {
+  const keys = (await withAuth({ userId: authType.userId }, async tx => {
     return await tx.query.TeamKeys.findMany({
-      where: eq(TeamKeys.team_id, teamId),
+      where: eq(TeamKeys.team_id, teamIdResult.data),
       columns: { name: true, id: true }
     });
   }));
-  return NextResponse.json(keys, { status: 200 });
+  return routeResponse(200, keys);
 }
 
 const CreateInput = zod.object({
@@ -29,27 +36,27 @@ const CreateInput = zod.object({
 })
 
 export async function POST(req: NextRequest, { params }: Props) {
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const team_id = Number((await params).id);
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new NextResponse(null, { status: 401 });
-  const data = await CreateInput.safeParseAsync(await req.json());
-  if (!data.success)
-    return NextResponse.json(data.error.issues, { status: 422 });
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
+  
+  const teamIdResult = await parseParamId((await params).id);
+  if (!teamIdResult.success) return teamIdResult.response;
+  
+  const bodyResult = await parseJsonBody(await req.json(), CreateInput);
+  if (!bodyResult.success) return bodyResult.response;
 
   const token = crypto.randomBytes(32).toString("hex");
 
-  return await withAuth({ userId: session.user.id }, async tx => {
+  return await withAuth({ userId: authType.userId }, async tx => {
     try {
       await tx.insert(TeamKeys).values({
         digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
-        ...data.data, team_id
+        ...bodyResult.data, team_id: teamIdResult.data
       });
-      return NextResponse.json({ token }, { status: 201 });
+      return routeResponse(201, { token });
     } catch (err) {
-      if (err instanceof DatabaseError && err.code === "42501")
-        return new NextResponse(null, { status: 403 });
-      throw err;
+      return handleDatabaseError(err);
     }
   });
 }

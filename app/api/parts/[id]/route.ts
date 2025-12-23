@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/db";
-import { PartCategories } from "@/lib/schema/cam";
+import { Parts } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import zod from "zod";
@@ -12,13 +12,15 @@ import {
   validateAuthType
 } from "@/lib/api-utils";
 
-export interface Props {
+interface Props {
   params: Promise<{ id: string }>
 };
 
 const UpdateInput = zod.object({
-  material: zod.string().optional(),
-  thickness: zod.number().optional(),
+  epic: zod.string().optional(),
+  name: zod.string().optional(),
+  quantity: zod.number().optional(),
+  ticket: zod.string().optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: Props) {
@@ -26,18 +28,15 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   try { validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const categoryIdResult = await parseParamId((await params).id);
-  if (!categoryIdResult.success) return categoryIdResult.response;
+  const partIdResult = await parseParamId((await params).id);
+  if (!partIdResult.success) return partIdResult.response;
   
   const bodyResult = await parseJsonBody(await req.json(), UpdateInput);
   if (!bodyResult.success) return bodyResult.response;
 
-  return withAuth(authType, async tx => {
+  return await withAuth(authType, async tx => {
     try {
-      return checkAnyChanges(await tx.update(PartCategories).set({
-        ...bodyResult.data,
-        thickness: bodyResult.data.thickness?.toString(),
-      }).where(eq(PartCategories.id, categoryIdResult.data)).returning({ id: PartCategories.id }));
+      return checkAnyChanges(await tx.update(Parts).set(bodyResult.data).returning({ id: Parts.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -49,14 +48,12 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   try { validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const categoryIdResult = await parseParamId((await params).id);
-  if (!categoryIdResult.success) return categoryIdResult.response;
-  
-  return await withAuth(authType, async tx => {
+  const partIdResult = await parseParamId((await params).id);
+  if (!partIdResult.success) return partIdResult.response;
+
+  return withAuth(authType, async tx => {
     try {
-      return checkAnyChanges(await tx.delete(PartCategories)
-        .where(eq(PartCategories.id, categoryIdResult.data))
-        .returning({ id: PartCategories.id }));
+      return checkAnyChanges(await tx.delete(Parts).where(eq(Parts.id, partIdResult.data)).returning({ id: Parts.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }

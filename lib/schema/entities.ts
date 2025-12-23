@@ -69,7 +69,11 @@ export const TeamInvites = pgTable("team_invites", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   email: text().notNull(),
 }, table => [
-  unique().on(table.team_id, table.email)
+  unique().on(table.team_id, table.email),
+  pgPolicy('team_invites_query', {
+    for: 'select',
+    using: sql`${TeamFromKey()} = ${table.team_id} OR ${UserInTeam(table.team_id)}`
+  }),
 ]);
 
 export const TeamMembers = pgTable("team_members", {

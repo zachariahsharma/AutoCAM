@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   const authType = await getAuthType();
-  try { validateAuthType(authType); }
+  try { await validateAuthType(authType); }
   catch (err) { return err; }
   return await withAuth(authType, async tx => {
     if (authType.userId)
@@ -70,7 +70,7 @@ const UpdateInput = zod.object({
 export async function updateTeam(json: object, teamId?: number) {
   const authType = await getAuthType();
   try {
-    validateAuthType(authType);
+    await validateAuthType(authType);
     if (authType.keyDigest)
       teamId = await teamIdFromDigest(authType.keyDigest);
   } catch (err) { return err; }

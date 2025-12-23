@@ -2,7 +2,7 @@ import { auth, AuthType, getKeyDigest } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { DatabaseError } from "pg";
-import zod, { ZodObject } from "zod";
+import zod, { ZodType } from "zod";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
@@ -25,7 +25,7 @@ export async function getAuthType(): Promise<AuthType> {
 export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
   if (!(authType.userId || authType.keyDigest))
     throw routeResponse(401);
-  if (emailVerifiedNeeded) {
+  if (emailVerifiedNeeded && authType.userId) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session)
       throw routeResponse(401);
@@ -48,7 +48,7 @@ export async function parseParamId(paramValue: string): Promise<{ success: true;
 /**
  * Validate and parse request body against a Zod schema
  */
-export async function parseJsonBody<T extends ZodObject>(json: unknown, schema: T): Promise<{ success: true; data: zod.infer<typeof schema> } | { success: false; response: NextResponse }> {
+export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<{ success: true; data: zod.infer<typeof schema> } | { success: false; response: NextResponse }> {
   const result = await schema.safeParseAsync(json);
   if (!result.success) {
     return { success: false, response: NextResponse.json(result.error.issues, { status: 422 }) };

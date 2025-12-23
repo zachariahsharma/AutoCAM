@@ -18,7 +18,7 @@ const InviteInput = zod.object({
 export async function inviteEmail(json: object, teamId?: number) {
   const authType = await getAuthType();
   try {
-    validateAuthType(authType, true);
+    await validateAuthType(authType, true);
     if (authType.keyDigest)
       teamId = await teamIdFromDigest(authType.keyDigest);
   } catch (err) { return err; }
@@ -45,7 +45,7 @@ export async function inviteEmail(json: object, teamId?: number) {
       subject: `Join ${teamName}`,
       text: `Join the ${teamName} Team with this link: ${new URL(`/api/teams/accept/${id}`, `http://${process.env.BASE_URL}`)}`
     });
-    return routeResponse(200);
+    return routeResponse();
   } catch (err) {
     return handleDatabaseError(err);
   }

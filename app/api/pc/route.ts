@@ -16,13 +16,13 @@ export async function POST(req: NextRequest) {
 
 const SearchParams = zod.object({
   material: zod.string().optional(),
-  thickness: zod.coerce.number().positive().optional(),
+  thickness: zod.coerce.number().positive().optional().transform(x => x ? x.toString() : undefined),
 });
 
 export async function getPartCategories(params: URLSearchParams, teamId?: number) {
   const authType = await getAuthType();
   try {
-    validateAuthType(authType);
+    await validateAuthType(authType);
     if (authType.keyDigest)
       teamId = await teamIdFromDigest(authType.keyDigest);
   }
@@ -38,7 +38,7 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
       where: and(
         eq(PartCategories.team_id, teamId!),
         data.data.material !== undefined ? eq(PartCategories.material, data.data.material) : undefined,
-        data.data.thickness !== undefined ? eq(PartCategories.thickness, data.data.thickness.toString()) : undefined
+        data.data.thickness ? eq(PartCategories.thickness, data.data.thickness) : undefined
       ),
       columns: {
         id: true,
@@ -52,13 +52,13 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
 
 const CreateInput = zod.object({
   material: zod.string(),
-  thickness: zod.number(),
+  thickness: zod.number().transform(x => x.toString()),
 });
 
 export async function createPartCategory(json: any, teamId?: number) {
   const authType = await getAuthType();
   try {
-    validateAuthType(authType, true);
+    await validateAuthType(authType, true);
     if (authType.keyDigest)
       teamId = await teamIdFromDigest(authType.keyDigest);
   } catch (err) { return err; }
@@ -69,7 +69,7 @@ export async function createPartCategory(json: any, teamId?: number) {
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(PartCategories)
-        .values({ ...data.data, team_id: teamId!, thickness: data.data.thickness.toString() })
+        .values({ ...data.data, team_id: teamId! })
         .returning({ id: PartCategories.id });
       return routeResponse(201, { id: id.id });
     } catch (err) {

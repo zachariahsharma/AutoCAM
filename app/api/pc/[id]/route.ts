@@ -11,6 +11,7 @@ import {
   checkAnyChanges,
   validateAuthType
 } from "@/lib/api-utils";
+import { xid } from "better-auth";
 
 export interface Props {
   params: Promise<{ id: string }>
@@ -18,12 +19,12 @@ export interface Props {
 
 const UpdateInput = zod.object({
   material: zod.string().optional(),
-  thickness: zod.number().optional(),
+  thickness: zod.number().optional().transform(x => x?.toString()),
 });
 
 export async function PATCH(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
+  try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
   const categoryIdResult = await parseParamId((await params).id);
@@ -34,10 +35,10 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
   return withAuth(authType, async tx => {
     try {
-      return checkAnyChanges(await tx.update(PartCategories).set({
-        ...bodyResult.data,
-        thickness: bodyResult.data.thickness?.toString(),
-      }).where(eq(PartCategories.id, categoryIdResult.data)).returning({ id: PartCategories.id }));
+      return checkAnyChanges(await tx.update(PartCategories)
+      .set(bodyResult.data)
+      .where(eq(PartCategories.id, categoryIdResult.data))
+      .returning({ id: PartCategories.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }
@@ -46,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
 export async function DELETE(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
+  try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
   const categoryIdResult = await parseParamId((await params).id);

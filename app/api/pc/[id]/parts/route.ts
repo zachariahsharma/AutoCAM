@@ -15,7 +15,7 @@ const CreateInput = zod.object({
 
 export async function POST(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
+  try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
   const categoryId = await parseParamId((await params).id);
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: Props) {
 
 export async function GET(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
+  try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
   const categoryId = await parseParamId((await params).id);

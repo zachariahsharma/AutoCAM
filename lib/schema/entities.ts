@@ -1,7 +1,46 @@
-import { boolean, char, integer, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, char, integer, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { PartCategories } from "./cam";
+
+function UserId() {
+  return sql`current_setting('app.user_id', true)`
+}
+
+function KeyDigest() {
+  return sql`current_setting('app.key_digest', true)`
+}
+
+function UserInTeam(tid: any) {
+  return sql`
+  EXISTS (
+    SELECT 1 FROM team_members tm
+    WHERE tm.team_id = ${tid}
+      AND tm.user_id = ${UserId()}
+  )
+  `
+}
+
+function UserIsTeamAdmin(tid: any) {
+  return sql`
+  EXISTS (
+    SELECT 1 FROM team_members tm
+    WHERE tm.team_id = ${tid}
+      AND tm.admin = true
+      AND tm.user_id = ${UserId()}
+  )
+  `
+}
+
+function TeamFromKey() {
+  return sql`
+  (
+    SELECT team_id
+      FROM team_keys tk
+      WHERE tk.digest = ${KeyDigest()}
+  )
+  `
+}
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -10,7 +49,12 @@ export const Teams = pgTable("teams", {
   // This will need to change
   // Do we really want to delete team if the owner deletes their account?
   created_by: text().notNull().references(() => user.id, { onDelete: "cascade" })
-});
+}, table => [
+  pgPolicy('teams_query', {
+    for: 'select',
+    using: sql`${TeamFromKey()} = id OR ${UserInTeam(table.id)} OR owner = ${UserId()}`
+  })
+]);
 
 export const TeamInvites = pgTable("team_invites", {
   id: uuid().primaryKey().defaultRandom(),

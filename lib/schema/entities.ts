@@ -8,9 +8,7 @@ export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   number: integer().notNull(),
-  // This will need to change
-  // Do we really want to delete team if the owner deletes their account?
-  created_by: text().notNull().references(() => user.id, { onDelete: "cascade" })
+  owner: text().notNull().references(() => user.id)
 }, table => [
   pgPolicy('teams_query', {
     for: 'select',
@@ -94,7 +92,7 @@ export const TeamsRelations = relations(Teams, ({ many, one }) => ({
   partCategories: many(PartCategories),
   keys: many(TeamKeys),
   creator: one(user, {
-    fields: [Teams.created_by],
+    fields: [Teams.owner],
     references: [user.id],
   })
 }));

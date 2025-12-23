@@ -24,7 +24,7 @@ export const Parts = pgTable("parts", {
   quantity: integer().default(1).notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
-  primaryKey({ columns: [table.id, table.category_id]})
+  primaryKey({ columns: [table.id, table.category_id]}),
 ]);
 
 export const Plates = pgTable("plates", {

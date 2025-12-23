@@ -4,6 +4,7 @@ import { Props } from "../route";
 import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
 import { withAuth } from "@/lib/db";
 import { Plates } from "@/lib/schema/cam";
+import { eq } from "drizzle-orm";
 
 const CreateInput = zod.object({
   width: zod.number().transform(x => x.toString()),
@@ -13,7 +14,7 @@ const CreateInput = zod.object({
 
 export async function POST(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
+  try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
   const categoryId = await parseParamId((await params).id);
@@ -35,4 +36,20 @@ export async function POST(req: NextRequest, { params }: Props) {
       return handleDatabaseError(err);
     }
   });
+}
+
+export async function GET(req: NextRequest, { params }: Props) {
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
+
+  const categoryId = await parseParamId((await params).id);
+  if (!categoryId.success)
+    return categoryId.response;
+
+  return routeResponse(200, await withAuth(authType, async tx => {
+    return await tx.query.Plates.findMany({
+      where: eq(Plates.category_id, categoryId.data)
+    });
+  }));
 }

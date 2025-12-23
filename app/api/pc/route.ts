@@ -22,7 +22,7 @@ const SearchParams = zod.object({
 export async function getPartCategories(params: URLSearchParams, teamId?: number) {
   const authType = await getAuthType();
   try {
-    validateAuthType(authType);
+    await validateAuthType(authType);
     if (authType.keyDigest)
       teamId = await teamIdFromDigest(authType.keyDigest);
   }
@@ -58,7 +58,7 @@ const CreateInput = zod.object({
 export async function createPartCategory(json: any, teamId?: number) {
   const authType = await getAuthType();
   try {
-    validateAuthType(authType, true);
+    await validateAuthType(authType, true);
     if (authType.keyDigest)
       teamId = await teamIdFromDigest(authType.keyDigest);
   } catch (err) { return err; }

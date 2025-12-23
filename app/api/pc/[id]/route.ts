@@ -23,7 +23,7 @@ const UpdateInput = zod.object({
 
 export async function PATCH(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
+  try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
   const categoryIdResult = await parseParamId((await params).id);
@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
 export async function DELETE(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { validateAuthType(authType, true); }
+  try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
   const categoryIdResult = await parseParamId((await params).id);

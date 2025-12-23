@@ -25,7 +25,7 @@ export async function getAuthType(): Promise<AuthType> {
 export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
   if (!(authType.userId || authType.keyDigest))
     throw routeResponse(401);
-  if (emailVerifiedNeeded) {
+  if (emailVerifiedNeeded && authType.userId) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session)
       throw routeResponse(401);

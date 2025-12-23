@@ -22,6 +22,10 @@ export const Teams = pgTable("teams", {
     for: 'delete',
     using: sql`owner = ${UserId()}`
   }),
+  pgPolicy('teams_insert', {
+    for: 'insert',
+    using: sql`true`
+  }),
 ]);
 
 export const TeamInvites = pgTable("team_invites", {

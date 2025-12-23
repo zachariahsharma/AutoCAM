@@ -53,7 +53,11 @@ export const Teams = pgTable("teams", {
   pgPolicy('teams_query', {
     for: 'select',
     using: sql`${TeamFromKey()} = id OR ${UserInTeam(table.id)} OR owner = ${UserId()}`
-  })
+  }),
+  pgPolicy('teams_update', {
+    for: 'update',
+    using: UserIsTeamAdmin(table.id)
+  }),
 ]);
 
 export const TeamInvites = pgTable("team_invites", {

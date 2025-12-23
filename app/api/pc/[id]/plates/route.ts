@@ -38,6 +38,13 @@ export async function POST(req: NextRequest, { params }: Props) {
   });
 }
 
+const GetOutput = zod.array(zod.object({
+  id: zod.number(),
+  width: zod.coerce.number(),
+  length: zod.coerce.number(),
+  true_depth: zod.coerce.number(),
+}));
+
 export async function GET(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
   try { await validateAuthType(authType, true); }
@@ -47,9 +54,14 @@ export async function GET(req: NextRequest, { params }: Props) {
   if (!categoryId.success)
     return categoryId.response;
 
-  return routeResponse(200, await withAuth(authType, async tx => {
+  const result = await parseJsonBody(await withAuth(authType, async tx => {
     return await tx.query.Plates.findMany({
-      where: eq(Plates.category_id, categoryId.data)
+      where: eq(Plates.category_id, categoryId.data),
     });
+  }), GetOutput);
+  if (!result.success) return result.response;
+  return routeResponse(200, result.data.map(plate => {
+    const { true_depth, ...x } = plate;
+    return { ...x, trueDepth: true_depth };
   }));
 }

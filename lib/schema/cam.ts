@@ -42,6 +42,17 @@ export const Parts = pgTable("parts", {
   })
 ]);
 
+function PlatesRLS(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1
+    FROM ${sql.identifier(getTableName(PartCategories))}
+    WHERE ${PartCategories.id} = ${Plates.category_id}
+      AND (${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)})
+  )
+  `
+}
+
 export const Plates = pgTable("plates", {
   id: integer().generatedAlwaysAsIdentity(),
   width: decimal().notNull(),
@@ -52,7 +63,11 @@ export const Plates = pgTable("plates", {
   cam_download_url: text(),
   screenshot_url: text(),
 }, table => [
-  primaryKey({ columns: [table.id, table.category_id] })
+  primaryKey({ columns: [table.id, table.category_id] }),
+  pgPolicy('plates_access', {
+    using: PlatesRLS(),
+    withCheck: PlatesRLS()
+  })
 ]);
 
 export const BoxTubes = pgTable("box_tubes", {

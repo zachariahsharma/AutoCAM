@@ -18,7 +18,7 @@ export interface Props {
 
 const UpdateInput = zod.object({
   material: zod.string().optional(),
-  thickness: zod.number().optional(),
+  thickness: zod.number().optional().transform(x => x !== undefined ? x.toString() : undefined),
 });
 
 export async function PATCH(req: NextRequest, { params }: Props) {
@@ -34,10 +34,10 @@ export async function PATCH(req: NextRequest, { params }: Props) {
 
   return withAuth(authType, async tx => {
     try {
-      return checkAnyChanges(await tx.update(PartCategories).set({
-        ...bodyResult.data,
-        thickness: bodyResult.data.thickness?.toString(),
-      }).where(eq(PartCategories.id, categoryIdResult.data)).returning({ id: PartCategories.id }));
+      return checkAnyChanges(await tx.update(PartCategories)
+      .set(bodyResult.data)
+      .where(eq(PartCategories.id, categoryIdResult.data))
+      .returning({ id: PartCategories.id }));
     } catch (err) {
       return handleDatabaseError(err);
     }

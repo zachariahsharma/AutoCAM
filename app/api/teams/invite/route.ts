@@ -45,7 +45,7 @@ export async function inviteEmail(json: object, teamId?: number) {
       subject: `Join ${teamName}`,
       text: `Join the ${teamName} Team with this link: ${new URL(`/api/teams/accept/${id}`, `http://${process.env.BASE_URL}`)}`
     });
-    return routeResponse(200);
+    return routeResponse();
   } catch (err) {
     return handleDatabaseError(err);
   }

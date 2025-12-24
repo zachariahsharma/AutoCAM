@@ -5,6 +5,7 @@ import {
   Plates,
   BoxTubes,
 } from "@/lib/schema/cam";
+import { Teams } from "@/lib/schema/entities";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 export type PartCategory = Omit<
@@ -30,6 +31,8 @@ export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
   part?: Part;
 };
 export type BoxTube = InferInsertModel<typeof BoxTubes>;
+
+export type Team = InferSelectModel<typeof Teams>;
 
 export interface Assignment {
   plateId: string;

@@ -7,7 +7,6 @@ import { TeamFromKey, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  number: integer().notNull(),
   owner: text().notNull().references(() => user.id)
 }, table => [
   pgPolicy('teams_query', {

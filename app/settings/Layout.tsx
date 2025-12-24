@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAnimate } from "framer-motion";
 import { useEffect, useState } from "react";
+import { Team } from "../types";
 
 export function Header({
   delay = 0,
@@ -56,8 +57,14 @@ export function Header({
 function Sidebar({ selected }: { selected: string }) {
   const [top, setTop] = useState(2);
   const router = useRouter();
-  let teams = ["Valor 6800", "Orbit 1690", "Madtown 1323"];
-  console.log(Number.parseInt("0"));
+  const [teams, setTeams] = useState<Team[]>([]);
+
+  useEffect(() => {
+    (async function() {
+      setTeams(await (await fetch("/api/teams")).json());
+    })();
+  }, []);
+
   useEffect(() => {
     if (selected === "personal") {
       setTop(2);
@@ -117,7 +124,7 @@ function Sidebar({ selected }: { selected: string }) {
             alt="Team Icon"
             className={styles.icon}
           />
-          <span>{team}</span>
+          <span>{team.name}</span>
         </div>
       ))}
       <hr />

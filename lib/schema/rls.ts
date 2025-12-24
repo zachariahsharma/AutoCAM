@@ -37,7 +37,7 @@ export function KeyAuthorized(teamId: any, scope: string): SQL<boolean> {
     FROM ${sql.identifier(getTableName(TeamKeys))}
     WHERE ${TeamKeys.digest} = ${KeyDigest()}
       AND ${TeamKeys.team_id} = ${teamId}
-      AND ${scope} = ANY(${TeamKeys.scopes})
+      AND '${sql.raw(scope)}' = ANY(${TeamKeys.scopes})
   )
   `
 }

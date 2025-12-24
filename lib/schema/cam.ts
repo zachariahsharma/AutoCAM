@@ -17,8 +17,17 @@ export const PartCategories = pgTable("part_categories", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
 }, table => [
   unique().on(table.team_id, table.material, table.thickness),
-  pgPolicy('part_categories_access', {
+  pgPolicy('part_categories_query', {
+    for: "select",
     using: PartCategoriesRLS("part_categories:read"),
+  }),
+  pgPolicy('part_categories_update', {
+    for: "update",
+    using: PartCategoriesRLS("part_categories:write"),
+  }),
+  pgPolicy('part_categories_delete', {
+    for: "delete",
+    using: PartCategoriesRLS("part_categories:write"),
   }),
   pgPolicy('part_categories_insert', {
     for: 'insert',

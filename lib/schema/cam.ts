@@ -2,6 +2,7 @@ import { getTableName, relations, SQL, sql } from "drizzle-orm";
 import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam } from "./rls";
+import scopes from "../scopes";
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -10,17 +11,17 @@ export const PartCategories = pgTable("part_categories", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
 }, table => [
   unique().on(table.team_id, table.material, table.thickness),
-  pgPolicy('part_categories_query_key', { for: "select", using: KeyAuthorized(table.team_id, 'part_categories:read') }),
+  pgPolicy('part_categories_query_key', { for: "select", using: KeyAuthorized(table.team_id, scopes.pc.read) }),
   pgPolicy('part_categories_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('part_categories_update_key', { for: "update", using: KeyAuthorized(table.team_id, "part_categories:write") }),
+  pgPolicy('part_categories_update_key', { for: "update", using: KeyAuthorized(table.team_id, scopes.pc.write) }),
   pgPolicy('part_categories_update_user', { for: 'update', using: UserInTeam(table.team_id) }),
-  pgPolicy('part_categories_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, "part_categories:write") }),
+  pgPolicy('part_categories_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, scopes.pc.write) }),
   pgPolicy('part_categories_delete_user', { for: "delete", using: UserInTeam(table.team_id) }),
-  pgPolicy('part_categories_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, "part_categories:write") }),
+  pgPolicy('part_categories_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, scopes.pc.write) }),
   pgPolicy('part_categories_insert_user', { for: 'insert', withCheck: UserInTeam(table.team_id) })
 ]);
 
-function PartsKeyRLS(scope = "parts:write"): SQL<boolean> {
+function PartsKeyRLS(scope = scopes.parts.write): SQL<boolean> {
   return sql`
   EXISTS (
     SELECT 1
@@ -51,7 +52,7 @@ export const Parts = pgTable("parts", {
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
   primaryKey({ columns: [table.id, table.category_id]}),
-  pgPolicy('parts_query_key', { for: "select", using: PartsKeyRLS("parts:read") }),
+  pgPolicy('parts_query_key', { for: "select", using: PartsKeyRLS(scopes.parts.read) }),
   pgPolicy('parts_query_user', { for: "select", using: PartsUserRLS() }),
   pgPolicy("parts_update_key", { for: "update", using: PartsKeyRLS() }),
   pgPolicy("parts_update_user", { for: "update", using: PartsUserRLS() }),
@@ -61,7 +62,7 @@ export const Parts = pgTable("parts", {
   pgPolicy('parts_insert_user', { for: 'insert', withCheck: PartsUserRLS() })
 ]);
 
-function PlatesKeyRLS(scope = "plates:write"): SQL<boolean> {
+function PlatesKeyRLS(scope = scopes.plates.write): SQL<boolean> {
   return sql`
   EXISTS (
     SELECT 1
@@ -94,7 +95,7 @@ export const Plates = pgTable("plates", {
   screenshot_url: text(),
 }, table => [
   primaryKey({ columns: [table.id, table.category_id] }),
-  pgPolicy('plates_query_key', { for: "select", using: PlatesKeyRLS("parts:read") }),
+  pgPolicy('plates_query_key', { for: "select", using: PlatesKeyRLS(scopes.parts.read) }),
   pgPolicy('plates_query_user', { for: "select", using: PlatesUserRLS() }),
   pgPolicy("plates_update_key", { for: "update", using: PlatesKeyRLS() }),
   pgPolicy("plates_update_user", { for: "update", using: PlatesUserRLS() }),

@@ -56,7 +56,7 @@ export function Header({
 function Sidebar({ selected }: { selected: string }) {
   const [top, setTop] = useState(2);
   const router = useRouter();
-  let clubs = ["Valor 6800", "Orbit 1690", "Madtown 1323"];
+  let teams = ["Valor 6800", "Orbit 1690", "Madtown 1323"];
   console.log(Number.parseInt("0"));
   useEffect(() => {
     if (selected === "personal") {
@@ -94,7 +94,7 @@ function Sidebar({ selected }: { selected: string }) {
         />
         <span>Personal</span>
       </div>
-      {clubs.map((club, index) => (
+      {teams.map((team, index) => (
         <div
           key={index}
           onClick={() => {
@@ -117,7 +117,7 @@ function Sidebar({ selected }: { selected: string }) {
             alt="Team Icon"
             className={styles.icon}
           />
-          <span>{club}</span>
+          <span>{team}</span>
         </div>
       ))}
       <hr />

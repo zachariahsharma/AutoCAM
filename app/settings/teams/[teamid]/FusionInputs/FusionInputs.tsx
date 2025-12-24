@@ -32,7 +32,7 @@ function Machines({ oldMachines }: { oldMachines: Machine[] }) {
         />
       </div>
       {machines.map((machine, index) => (
-        <div key={machine.id} className={styles.machineContainer}>
+        <div key={index} className={styles.machineContainer}>
           <input
             type="text"
             value={machineName[index]}
@@ -47,6 +47,16 @@ function Machines({ oldMachines }: { oldMachines: Machine[] }) {
           />
           <span id={styles.machineVertical} />
           <span>{machine.file}</span>
+          <Image
+            alt="Trash"
+            src="/settings/teams/Trash.svg"
+            width={2000}
+            height={2000}
+            onClick={() =>
+              setMachines((prev) => prev.filter((t) => t.id !== machine.id))
+            }
+            className={styles.trashIcon}
+          />
         </div>
       ))}
     </main>
@@ -91,6 +101,16 @@ function Materials({ oldMaterials }: { oldMaterials: Material[] }) {
               });
               setMaterials(newMaterials);
             }}
+          />
+          <Image
+            alt="Trash"
+            src="/settings/teams/Trash.svg"
+            width={2000}
+            height={2000}
+            onClick={() =>
+              setMaterials((prev) => prev.filter((t) => t.id !== material.id))
+            }
+            className={styles.trashIcon}
           />
         </div>
       ))}

@@ -6,6 +6,7 @@ import { Material, Machine, Tool, Collaborator, ApiKey } from "@/app/types";
 import { useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";
+import CollaboratorsSettingsPage from "./Collaborators/Collaborators";
 
 function TeamName({ oldTeamName }: { oldTeamName: string }) {
   const [teamName, setTeamName] = useState(oldTeamName);
@@ -51,10 +52,14 @@ export default function TeamSettingsPage({
         <hr />
         <TeamName oldTeamName={teamName} />
         <br />
-        <FusionInputs defaultMachines={teamMachines}
+        <FusionInputs
+          defaultMachines={teamMachines}
           defaultMaterials={teamMaterials}
-          defaultTools={teamTools} />
+          defaultTools={teamTools}
+        />
       </div>
+      <br />
+      <CollaboratorsSettingsPage />
     </SettingsLayout>
   );
 }

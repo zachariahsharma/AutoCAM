@@ -90,7 +90,7 @@ const collaborators: Collaborator[] = [
     id: 3,
     name: "Ishan",
     email: "ishan.karmakar33@k12.leanderisd.org",
-    role: "Member",
+    role: "pending",
   },
   {
     id: 4,

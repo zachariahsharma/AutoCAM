@@ -59,7 +59,7 @@ export default function TeamSettingsPage({
         />
       </div>
       <br />
-      <CollaboratorsSettingsPage />
+      <CollaboratorsSettingsPage defaultCollaborators={teamCollaborators} />
     </SettingsLayout>
   );
 }

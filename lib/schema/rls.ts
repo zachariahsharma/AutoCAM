@@ -30,12 +30,14 @@ export function UserIsTeamAdmin(tid: any): SQL<boolean> {
   `
 }
 
-export function TeamFromKey(): SQL<number | null> {
+export function KeyAuthorized(teamId: any, scope: string): SQL<boolean> {
   return sql`
-  (
-    SELECT ${TeamKeys.team_id}
-      FROM ${sql.identifier(getTableName(TeamKeys))}
-      WHERE ${TeamKeys.digest} = ${KeyDigest()}
+  EXISTS (
+    SELECT 1
+    FROM ${sql.identifier(getTableName(TeamKeys))}
+    WHERE ${TeamKeys.digest} = ${KeyDigest()}
+      AND ${TeamKeys.team_id} = ${teamId}
+      AND '${sql.raw(scope)}' = ANY(${TeamKeys.scopes})
   )
   `
 }

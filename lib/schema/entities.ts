@@ -1,30 +1,19 @@
-import { boolean, char, integer, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations, sql } from "drizzle-orm";
 import { PartCategories } from "./cam";
-import { TeamFromKey, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { KeyAuthorized, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   owner: text().notNull().references(() => user.id)
 }, table => [
-  pgPolicy('teams_query', {
-    for: 'select',
-    using: sql`${TeamFromKey()} = id OR ${UserInTeam(table.id)} OR owner = ${UserId()}`
-  }),
-  pgPolicy('teams_update', {
-    for: 'update',
-    using: UserIsTeamAdmin(table.id)
-  }),
-  pgPolicy('teams_delete', {
-    for: 'delete',
-    using: sql`owner = ${UserId()}`
-  }),
-  pgPolicy('teams_insert', {
-    for: 'insert',
-    withCheck: sql`true`
-  }),
+  pgPolicy('teams_query_key', { for: 'select', using: KeyAuthorized(table.id, "teams:read") }),
+  pgPolicy('teams_query_user', { for: 'select', using: sql`${UserInTeam(table.id)} OR owner = ${UserId()}` }),
+  pgPolicy('teams_update', { for: 'update', using: UserIsTeamAdmin(table.id) }),
+  pgPolicy('teams_delete', { for: 'delete', using: sql`owner = ${UserId()}` }),
+  pgPolicy('teams_insert', { for: 'insert', withCheck: sql`true` }),
 ]);
 
 export const TeamInvites = pgTable("team_invites", {
@@ -33,22 +22,13 @@ export const TeamInvites = pgTable("team_invites", {
   email: text().notNull(),
 }, table => [
   unique().on(table.team_id, table.email),
-  pgPolicy('team_invites_query', {
-    for: 'select',
-    using: sql`${TeamFromKey()} = ${table.team_id} OR ${UserInTeam(table.team_id)}`
-  }),
-  pgPolicy('team_invites_insert', {
-    for: 'insert',
-    withCheck: sql`${TeamFromKey()} = ${table.team_id} OR ${UserIsTeamAdmin(table.team_id)}`
-  }),
-  pgPolicy('team_invites_update', {
-    for: 'update',
-    using: sql`false`
-  }),
-  pgPolicy('team_invites_delete', {
-    for: 'delete',
-    using: sql`${TeamFromKey()} = ${table.team_id} OR ${UserIsTeamAdmin(table.team_id)}`
-  })
+  pgPolicy('team_invites_query_key', { for: 'select', using: KeyAuthorized(table.team_id, "team:invites:read") }),
+  pgPolicy('team_invites_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('team_invites_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, "team:invites:send") }),
+  pgPolicy('team_invites_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('team_invites_update', { for: 'update', using: sql`false` }),
+  pgPolicy('team_invites_delete_key', { for: 'delete', using: KeyAuthorized(table.team_id, "team:invites:cancel") }),
+  pgPolicy('team_invites_delete_user', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
 ]);
 
 export const TeamMembers = pgTable("team_members", {
@@ -64,7 +44,8 @@ export const TeamKeys = pgTable("team_keys", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   digest: char({ length: 64 }).notNull(),
-  name: text().notNull()
+  name: text().notNull(),
+  scopes: text().array().notNull()
 }, table => [
   unique().on(table.team_id, table.name)
 ]);

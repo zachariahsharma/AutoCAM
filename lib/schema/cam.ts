@@ -1,11 +1,7 @@
 import { getTableName, relations, SQL, sql } from "drizzle-orm";
 import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
-import { TeamFromKey, UserInTeam } from "./rls";
-
-function PartCategoriesRLS(): SQL<boolean> {
-  return sql`${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)}`
-}
+import { KeyAuthorized, UserInTeam } from "./rls";
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -14,22 +10,34 @@ export const PartCategories = pgTable("part_categories", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
 }, table => [
   unique().on(table.team_id, table.material, table.thickness),
-  pgPolicy('part_categories_access', {
-    using: PartCategoriesRLS(),
-  }),
-  pgPolicy('part_categories_insert', {
-    for: 'insert',
-    withCheck: PartCategoriesRLS()
-  })
+  pgPolicy('part_categories_query_key', { for: "select", using: KeyAuthorized(table.team_id, 'part_categories:read') }),
+  pgPolicy('part_categories_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('part_categories_update_key', { for: "update", using: KeyAuthorized(table.team_id, "part_categories:write") }),
+  pgPolicy('part_categories_update_user', { for: 'update', using: UserInTeam(table.team_id) }),
+  pgPolicy('part_categories_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, "part_categories:write") }),
+  pgPolicy('part_categories_delete_user', { for: "delete", using: UserInTeam(table.team_id) }),
+  pgPolicy('part_categories_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, "part_categories:write") }),
+  pgPolicy('part_categories_insert_user', { for: 'insert', withCheck: UserInTeam(table.team_id) })
 ]);
 
-function PartsRLS(): SQL<boolean> {
+function PartsKeyRLS(scope = "parts:write"): SQL<boolean> {
   return sql`
   EXISTS (
     SELECT 1
     FROM ${sql.identifier(getTableName(PartCategories))}
     WHERE ${PartCategories.id} = ${Parts.category_id}
-      AND (${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)})
+      AND ${KeyAuthorized(PartCategories.team_id, scope)}
+  )
+  `
+}
+
+function PartsUserRLS(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1
+    FROM ${sql.identifier(getTableName(PartCategories))}
+    WHERE ${PartCategories.id} = ${Parts.category_id}
+      AND ${UserInTeam(PartCategories.team_id)}
   )
   `
 }
@@ -43,22 +51,34 @@ export const Parts = pgTable("parts", {
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
   primaryKey({ columns: [table.id, table.category_id]}),
-  pgPolicy('parts_access', {
-    using: PartsRLS(),
-  }),
-  pgPolicy('parts_insert', {
-    for: 'insert',
-    withCheck: PartsRLS()
-  })
+  pgPolicy('parts_query_key', { for: "select", using: PartsKeyRLS("parts:read") }),
+  pgPolicy('parts_query_user', { for: "select", using: PartsUserRLS() }),
+  pgPolicy("parts_update_key", { for: "update", using: PartsKeyRLS() }),
+  pgPolicy("parts_update_user", { for: "update", using: PartsUserRLS() }),
+  pgPolicy("parts_delete_key", { for: "delete", using: PartsKeyRLS() }),
+  pgPolicy("parts_delete_user", { for: "delete", using: PartsUserRLS() }),
+  pgPolicy('parts_insert_key', { for: 'insert', withCheck: PartsKeyRLS() }),
+  pgPolicy('parts_insert_user', { for: 'insert', withCheck: PartsUserRLS() })
 ]);
 
-function PlatesRLS(): SQL<boolean> {
+function PlatesKeyRLS(scope = "plates:write"): SQL<boolean> {
   return sql`
   EXISTS (
     SELECT 1
     FROM ${sql.identifier(getTableName(PartCategories))}
     WHERE ${PartCategories.id} = ${Plates.category_id}
-      AND (${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)})
+      AND ${KeyAuthorized(PartCategories.team_id, scope)}
+  )
+  `
+}
+
+function PlatesUserRLS(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1
+    FROM ${sql.identifier(getTableName(PartCategories))}
+    WHERE ${PartCategories.id} = ${Plates.category_id}
+      AND ${UserInTeam(PartCategories.team_id)}
   )
   `
 }
@@ -74,13 +94,14 @@ export const Plates = pgTable("plates", {
   screenshot_url: text(),
 }, table => [
   primaryKey({ columns: [table.id, table.category_id] }),
-  pgPolicy('plates_access', {
-    using: PlatesRLS(),
-  }),
-  pgPolicy('plates_insert', {
-    for: 'insert',
-    withCheck: PlatesRLS()
-  })
+  pgPolicy('plates_query_key', { for: "select", using: PlatesKeyRLS("parts:read") }),
+  pgPolicy('plates_query_user', { for: "select", using: PlatesUserRLS() }),
+  pgPolicy("plates_update_key", { for: "update", using: PlatesKeyRLS() }),
+  pgPolicy("plates_update_user", { for: "update", using: PlatesUserRLS() }),
+  pgPolicy("plates_delete_key", { for: "delete", using: PlatesKeyRLS() }),
+  pgPolicy("plates_delete_user", { for: "delete", using: PlatesUserRLS() }),
+  pgPolicy('plates_insert_key', { for: 'insert', withCheck: PlatesKeyRLS() }),
+  pgPolicy('plates_insert_user', { for: 'insert', withCheck: PlatesUserRLS() })
 ]);
 
 export const BoxTubes = pgTable("box_tubes", {

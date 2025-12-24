@@ -18,7 +18,6 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: true },
   emailVerification: {
     async sendVerificationEmail({ user, url }) {
-      console.log();
       await transporter.sendMail({
         from: `"AutoCAM" <${process.env.SMTP_SENDER}>`,
         to: user.email,

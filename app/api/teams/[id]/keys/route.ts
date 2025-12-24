@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: Props) {
   const keys = (await withAuth({ userId: authType.userId }, async tx => {
     return await tx.query.TeamKeys.findMany({
       where: eq(TeamKeys.team_id, teamIdResult.data),
-      columns: { name: true, id: true }
+      columns: { name: true, id: true, scopes: true }
     });
   }));
   return routeResponse(200, keys);
@@ -33,6 +33,7 @@ export async function GET(req: NextRequest, { params }: Props) {
 
 const CreateInput = zod.object({
   name: zod.string(),
+  scopes: zod.array(zod.string())
 })
 
 export async function POST(req: NextRequest, { params }: Props) {

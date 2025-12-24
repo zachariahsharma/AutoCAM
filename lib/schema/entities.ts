@@ -24,7 +24,7 @@ export const Teams = pgTable("teams", {
   }),
   pgPolicy('teams_insert', {
     for: 'insert',
-    using: sql`true`
+    withCheck: sql`true`
   }),
 ]);
 

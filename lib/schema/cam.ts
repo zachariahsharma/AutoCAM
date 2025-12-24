@@ -46,8 +46,17 @@ export const Parts = pgTable("parts", {
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
   primaryKey({ columns: [table.id, table.category_id]}),
-  pgPolicy('parts_access', {
+  pgPolicy('parts_query', {
+    for: "select",
     using: PartsRLS("parts:read"),
+  }),
+  pgPolicy("parts_update", {
+    for: "update",
+    using: PartsRLS("parts:write"),
+  }),
+  pgPolicy("parts_delete", {
+    for: "delete",
+    using: PartsRLS("parts:write")
   }),
   pgPolicy('parts_insert', {
     for: 'insert',
@@ -77,12 +86,20 @@ export const Plates = pgTable("plates", {
   screenshot_url: text(),
 }, table => [
   primaryKey({ columns: [table.id, table.category_id] }),
-  pgPolicy('plates_access', {
+  pgPolicy('plates_query', {
     using: PlatesRLS("plates:read"),
   }),
   pgPolicy('plates_insert', {
     for: 'insert',
     withCheck: PlatesRLS("plates:write")
+  }),
+  pgPolicy('plates_update', {
+    for: 'update',
+    using: PlatesRLS("plates:write")
+  }),
+  pgPolicy('plates_delete', {
+    for: 'delete',
+    using: PlatesRLS("plates:write")
   })
 ]);
 

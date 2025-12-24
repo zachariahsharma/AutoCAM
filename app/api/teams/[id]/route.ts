@@ -15,7 +15,6 @@ import zod from "zod";
 export interface Props { params: Promise<{ id: string }> };
 
 const UpdateInput = zod.object({
-  number: zod.coerce.number().positive().optional(),
   name: zod.string().optional(),
 });
 

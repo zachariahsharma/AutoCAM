@@ -1,7 +1,5 @@
-import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { TeamMembers, Teams } from "@/lib/schema/entities";
-import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import zod from "zod";
 import {
@@ -9,7 +7,6 @@ import {
   parseJsonBody,
   handleDatabaseError,
   routeResponse,
-  checkAnyChanges,
   validateAuthType
 } from "@/lib/api-utils";
 
@@ -30,7 +27,7 @@ export async function POST(req: NextRequest) {
     try {
       const [team] = await tx.insert(Teams).values({
         ...bodyResult.data,
-        created_by: authType.userId!,
+        owner: authType.userId!,
       }).returning({ id: Teams.id });
 
       // Assign current user to this team
@@ -47,6 +44,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  return await getTeams();
+}
+
+export async function getTeams() {
   const authType = await getAuthType();
   try { await validateAuthType(authType); }
   catch (err) { return err; }
@@ -55,37 +56,5 @@ export async function GET() {
       return routeResponse(200, await tx.query.Teams.findMany());
     else if (authType.keyDigest)
       return routeResponse(200, await tx.query.Teams.findFirst());
-  });
-}
-
-export async function PATCH(req: NextRequest) {
-  return await updateTeam(await req.json());
-}
-
-const UpdateInput = zod.object({
-  number: zod.coerce.number().positive().optional(),
-  name: zod.string().optional(),
-});
-
-export async function updateTeam(json: object, teamId?: number) {
-  const authType = await getAuthType();
-  try {
-    await validateAuthType(authType);
-    if (authType.keyDigest)
-      teamId = await teamIdFromDigest(authType.keyDigest);
-  } catch (err) { return err; }
-
-  const bodyResult = await parseJsonBody(json, UpdateInput);
-  if (!bodyResult.success) return bodyResult.response;
-
-  return await withAuth(authType, async tx => {
-    try {
-      return checkAnyChanges(await tx.update(Teams)
-        .set(bodyResult.data)
-        .where(eq(Teams.id, teamId!))
-        .returning({ id: Teams.id }));
-    } catch (err) {
-      return handleDatabaseError(err);
-    }
   });
 }

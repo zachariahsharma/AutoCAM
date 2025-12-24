@@ -168,7 +168,7 @@ function SignupContainer() {
           id={styles.signupbutton}
           type="submit"
           onClick={() => {
-            setMessage("Beans");
+            // setMessage("Beans");
             // setErrorModalOpen(true);
           }}
         >

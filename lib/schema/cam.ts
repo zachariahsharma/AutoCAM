@@ -3,6 +3,10 @@ import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, uniq
 import { Teams } from "./entities";
 import { TeamFromKey, UserInTeam } from "./rls";
 
+function PartCategoriesRLS(): SQL<boolean> {
+  return sql`${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)}`
+}
+
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   material: text().notNull(),
@@ -11,9 +15,12 @@ export const PartCategories = pgTable("part_categories", {
 }, table => [
   unique().on(table.team_id, table.material, table.thickness),
   pgPolicy('part_categories_access', {
-    using: sql`${TeamFromKey()} = ${table.team_id} OR ${UserInTeam(table.team_id)}`,
-    withCheck: sql`${TeamFromKey()} = ${table.team_id} OR ${UserInTeam(table.team_id)}`
+    using: PartCategoriesRLS(),
   }),
+  pgPolicy('part_categories_insert', {
+    for: 'insert',
+    withCheck: PartCategoriesRLS()
+  })
 ]);
 
 function PartsRLS(): SQL<boolean> {
@@ -38,6 +45,9 @@ export const Parts = pgTable("parts", {
   primaryKey({ columns: [table.id, table.category_id]}),
   pgPolicy('parts_access', {
     using: PartsRLS(),
+  }),
+  pgPolicy('parts_insert', {
+    for: 'insert',
     withCheck: PartsRLS()
   })
 ]);
@@ -66,6 +76,9 @@ export const Plates = pgTable("plates", {
   primaryKey({ columns: [table.id, table.category_id] }),
   pgPolicy('plates_access', {
     using: PlatesRLS(),
+  }),
+  pgPolicy('plates_insert', {
+    for: 'insert',
     withCheck: PlatesRLS()
   })
 ]);

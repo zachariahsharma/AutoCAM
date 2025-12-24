@@ -20,12 +20,12 @@ export async function GET(req: NextRequest, { params }: Props) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
   
-  const teamIdResult = await parseParamId((await params).id);
-  if (!teamIdResult.success) return teamIdResult.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
 
-  const keys = (await withAuth({ userId: authType.userId }, async tx => {
+  const keys = (await withAuth(authType, async tx => {
     return await tx.query.TeamKeys.findMany({
-      where: eq(TeamKeys.team_id, teamIdResult.data),
+      where: eq(TeamKeys.team_id, id.data),
       columns: { name: true, id: true, scopes: true }
     });
   }));
@@ -42,11 +42,11 @@ export async function POST(req: NextRequest, { params }: Props) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
   
-  const teamIdResult = await parseParamId((await params).id);
-  if (!teamIdResult.success) return teamIdResult.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
   
-  const bodyResult = await parseJsonBody(await req.json(), CreateInput);
-  if (!bodyResult.success) return bodyResult.response;
+  const body = await parseJsonBody(await req.json(), CreateInput);
+  if (!body.success) return body.response;
 
   const token = crypto.randomBytes(32).toString("hex");
 
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: Props) {
     try {
       await tx.insert(TeamKeys).values({
         digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
-        ...bodyResult.data, team_id: teamIdResult.data
+        ...body.data, team_id: id.data
       });
       return routeResponse(201, { token });
     } catch (err) {

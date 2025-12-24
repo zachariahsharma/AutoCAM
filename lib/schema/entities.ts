@@ -2,7 +2,7 @@ import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, uniq
 import { user } from "./auth";
 import { relations, sql } from "drizzle-orm";
 import { PartCategories } from "./cam";
-import { KeyAuthorized, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { KeyAuthorized, KeyDigest, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
 
 export const Teams = pgTable("teams", {
@@ -48,7 +48,16 @@ export const TeamKeys = pgTable("team_keys", {
   name: text().notNull(),
   scopes: text().array().notNull()
 }, table => [
-  unique().on(table.team_id, table.name)
+  unique().on(table.team_id, table.name),
+  pgPolicy('team_keys_access', {
+    using: UserIsTeamAdmin(table.team_id),
+    withCheck: UserIsTeamAdmin(table.team_id)
+  }),
+  // Required so that API keys can check if they are able to access other stuff
+  pgPolicy('team_keys_query', {
+    for: "select",
+    using: sql`${KeyDigest()} IS NOT NULL`
+  })
 ]);
 
 export const TeamRunners = pgTable("team_runners", {

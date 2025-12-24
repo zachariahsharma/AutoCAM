@@ -169,7 +169,7 @@ function SignupContainer() {
           // type="submit"
           onClick={() => {
             setMessage("Beans");
-            setErrorModalOpen(true);
+            // setErrorModalOpen(true);
           }}
         >
           <span className={styles.signupbuttontext + " " + styles.textGradient}>

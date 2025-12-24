@@ -3,13 +3,14 @@ import { user } from "./auth";
 import { relations, sql } from "drizzle-orm";
 import { PartCategories } from "./cam";
 import { KeyAuthorized, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
+import scopes from "../scopes";
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   owner: text().notNull().references(() => user.id)
 }, table => [
-  pgPolicy('teams_query_key', { for: 'select', using: KeyAuthorized(table.id, "teams:read") }),
+  pgPolicy('teams_query_key', { for: 'select', using: KeyAuthorized(table.id, scopes.teams.read) }),
   pgPolicy('teams_query_user', { for: 'select', using: sql`${UserInTeam(table.id)} OR owner = ${UserId()}` }),
   pgPolicy('teams_update', { for: 'update', using: UserIsTeamAdmin(table.id) }),
   pgPolicy('teams_delete', { for: 'delete', using: sql`owner = ${UserId()}` }),
@@ -22,12 +23,12 @@ export const TeamInvites = pgTable("team_invites", {
   email: text().notNull(),
 }, table => [
   unique().on(table.team_id, table.email),
-  pgPolicy('team_invites_query_key', { for: 'select', using: KeyAuthorized(table.team_id, "team:invites:read") }),
+  pgPolicy('team_invites_query_key', { for: 'select', using: KeyAuthorized(table.team_id, scopes.teams.invites.read) }),
   pgPolicy('team_invites_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('team_invites_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, "team:invites:send") }),
+  pgPolicy('team_invites_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, scopes.teams.invites.send) }),
   pgPolicy('team_invites_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
   pgPolicy('team_invites_update', { for: 'update', using: sql`false` }),
-  pgPolicy('team_invites_delete_key', { for: 'delete', using: KeyAuthorized(table.team_id, "team:invites:cancel") }),
+  pgPolicy('team_invites_delete_key', { for: 'delete', using: KeyAuthorized(table.team_id, scopes.teams.invites.cancel) }),
   pgPolicy('team_invites_delete_user', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
 ]);
 

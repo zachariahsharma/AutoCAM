@@ -1,5 +1,5 @@
 import MaterialThickness from "./MaterialThickness";
-import db, { withUser } from "@/lib/db";
+import db, { withAuth } from "@/lib/db";
 import { PartCategory, Part } from "@/app/types";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
@@ -7,15 +7,15 @@ import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { PartCategories } from "@/lib/schema/cam";
 import { TeamMembers } from "@/lib/schema/entities";
+import { getUserId } from "@/lib/api-utils";
 
 export default async function PC({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
   const id = Number((await params).id);
-  const partcategory = await withUser(session.user.id, async tx => {
+  const partcategory = await withAuth({ userId: await getUserId() }, async tx => {
     return await tx.query.PartCategories.findFirst({
       with: { parts: true },
       where: eq(PartCategories.id, id),

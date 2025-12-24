@@ -1,48 +1,39 @@
-import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
-import { withUser } from "@/lib/db";
+import { withAuth } from "@/lib/db";
 import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { DatabaseError } from "pg";
+import { NextRequest } from "next/server";
+import { updateTeam } from "../route";
+import {
+  parseParamId,
+  handleDatabaseError,
+  checkAnyChanges,
+  validateAuthType,
+  getAuthType
+} from "@/lib/api-utils";
 
 export interface Props { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: Props) {
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
-  const teamId = Number((await params).id);
-  const formData = await req.formData();
-
-  const teamNumber = formData.get("number")?.toString();
-  return await withUser(session.user.id, async tx => {
-    try {
-      const updated = await tx.update(Teams).set({
-        name: formData.get("name")?.toString(),
-        number: teamNumber ? Number(teamNumber) : undefined
-      }).where(eq(Teams.id, teamId)).returning({ id: Teams.id });
-      if (updated.length === 0) return new NextResponse(null, { status: 404 })
-      return new NextResponse(null, { status: 204 });
-    } catch (err) {
-      if (err instanceof DatabaseError && err.code === "42501")
-        return new NextResponse(null, { status: 403 });
-      throw err;
-    }
-  });
+  const teamIdResult = await parseParamId((await params).id);
+  if (!teamIdResult.success) return teamIdResult.response;
+  return await updateTeam(await req.json(), teamIdResult.data);
 }
 
 export async function DELETE(req: NextRequest, { params }: Props) {
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
-  const teamId = Number((await params).id);
-  return await withUser(session.user.id, async tx => {
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
+
+  const teamIdResult = await parseParamId((await params).id);
+  if (!teamIdResult.success) return teamIdResult.response;
+
+  return await withAuth({ userId: authType.userId }, async tx => {
     try {
-      await tx.delete(Teams).where(eq(Teams.id, teamId));
-      return new NextResponse(null, { status: 204 });
+      return checkAnyChanges(await tx.delete(Teams)
+        .where(eq(Teams.id, teamIdResult.data))
+        .returning({ id: Teams.id }));
     } catch (err) {
-      if (err instanceof DatabaseError && err.code === "42501")
-        return new NextResponse(null, { status: 403 });
-      throw err;
+      return handleDatabaseError(err);
     }
   });
 }

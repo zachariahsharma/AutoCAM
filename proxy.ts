@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "./lib/auth";
+import { getUserId } from "./lib/api-utils";
 
 export async function proxy(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers })
+  const userId = await getUserId();
   if (["/login", "/signup"].some(p => request.nextUrl.pathname.startsWith(p))) {
-    if (session)
+    if (userId)
       return NextResponse.redirect(new URL("/dashboard", request.url));
     return NextResponse.next();
   }
-  if (session) return NextResponse.next();
+  if (userId) return NextResponse.next();
   return NextResponse.redirect(new URL("/login", request.url));
 }
 
 export const config = {
   matcher: [
-    "/((?!$|_next/|index/|(?:api/)?auth|dashboard/.+|api/runners).*)"
+    "/((?!$|_next/|index/|auth|dashboard/.+|api).*)",
   ]
 }

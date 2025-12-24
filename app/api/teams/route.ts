@@ -1,49 +1,91 @@
-import { auth, EmailNotVerifiedResponse, isEmailVerified } from "@/lib/auth";
-import { withUser } from "@/lib/db";
+import { teamIdFromDigest } from "@/lib/auth";
+import { withAuth } from "@/lib/db";
 import { TeamMembers, Teams } from "@/lib/schema/entities";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { DatabaseError } from "pg";
+import { eq } from "drizzle-orm";
+import { NextRequest } from "next/server";
+import zod from "zod";
+import {
+  getAuthType,
+  parseJsonBody,
+  handleDatabaseError,
+  routeResponse,
+  checkAnyChanges,
+  validateAuthType
+} from "@/lib/api-utils";
 
-// Create team
+const CreateInput = zod.object({
+  name: zod.string(),
+  number: zod.coerce.number().positive(),
+});
+
 export async function POST(req: NextRequest) {
-  // Comfortable doing assert here because middleware should take care of not signed in users
-  if (!await isEmailVerified()) return EmailNotVerifiedResponse;
-  const formData = await req.formData();
-  
-  const name = formData.get("name")?.toString();
-  const teamNumber = formData.get("number")?.toString();
-  
-  if (!name || !teamNumber)
-    return new NextResponse(null, { status: 422 });
-  
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
-  return await withUser(session.user.id, async tx => {
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
+
+  const bodyResult = await parseJsonBody(await req.json(), CreateInput);
+  if (!bodyResult.success) return bodyResult.response;
+
+  return await withAuth({ userId: authType.userId }, async tx => {
     try {
       const [team] = await tx.insert(Teams).values({
-        name,
-        number: Number(teamNumber),
-        created_by: session.user.id,
+        ...bodyResult.data,
+        created_by: authType.userId!,
       }).returning({ id: Teams.id });
 
       // Assign current user to this team
       await tx.insert(TeamMembers).values({
-        user_id: session.user.id,
+        user_id: authType.userId!,
         team_id: team.id,
         admin: true,
       });
-      return NextResponse.json({ id: team.id }, { status: 201 });
+      return routeResponse(201, { id: team.id });
     } catch (err) {
-      if (err instanceof DatabaseError && err.code === "42501")
-        return new NextResponse(null, { status: 403 });
-      throw err;
+      return handleDatabaseError(err);
     }
   });
 }
 
 export async function GET() {
-  const session = (await auth.api.getSession({ headers: await headers() }))!;
-  return await withUser(session.user.id, async tx => {
-    return NextResponse.json(await tx.query.Teams.findMany(), { status: 200 });
+  const authType = await getAuthType();
+  try { await validateAuthType(authType); }
+  catch (err) { return err; }
+  return await withAuth(authType, async tx => {
+    if (authType.userId)
+      return routeResponse(200, await tx.query.Teams.findMany());
+    else if (authType.keyDigest)
+      return routeResponse(200, await tx.query.Teams.findFirst());
+  });
+}
+
+export async function PATCH(req: NextRequest) {
+  return await updateTeam(await req.json());
+}
+
+const UpdateInput = zod.object({
+  number: zod.coerce.number().positive().optional(),
+  name: zod.string().optional(),
+});
+
+export async function updateTeam(json: object, teamId?: number) {
+  const authType = await getAuthType();
+  try {
+    await validateAuthType(authType);
+    if (authType.keyDigest)
+      teamId = await teamIdFromDigest(authType.keyDigest);
+  } catch (err) { return err; }
+
+  const bodyResult = await parseJsonBody(json, UpdateInput);
+  if (!bodyResult.success) return bodyResult.response;
+
+  return await withAuth(authType, async tx => {
+    try {
+      return checkAnyChanges(await tx.update(Teams)
+        .set(bodyResult.data)
+        .where(eq(Teams.id, teamId!))
+        .returning({ id: Teams.id }));
+    } catch (err) {
+      return handleDatabaseError(err);
+    }
   });
 }

@@ -37,7 +37,8 @@
     "react-hook-form": "^7.69.0",
     "react-resizable-panels": "^4.0.13",
     "recharts": "^3.6.0",
-    "swiper": "^12.0.3"
+    "swiper": "^12.0.3",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/node": "^25",

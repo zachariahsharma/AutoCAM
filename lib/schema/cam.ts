@@ -1,6 +1,7 @@
-import { relations } from "drizzle-orm";
-import { decimal, foreignKey, integer, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
+import { getTableName, relations, SQL, sql } from "drizzle-orm";
+import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
+import { TeamFromKey, UserInTeam } from "./rls";
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -8,8 +9,23 @@ export const PartCategories = pgTable("part_categories", {
   thickness: decimal({ scale: 3 }).notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
 }, table => [
-  unique().on(table.team_id, table.material, table.thickness)
+  unique().on(table.team_id, table.material, table.thickness),
+  pgPolicy('part_categories_access', {
+    using: sql`${TeamFromKey()} = ${table.team_id} OR ${UserInTeam(table.team_id)}`,
+    withCheck: sql`${TeamFromKey()} = ${table.team_id} OR ${UserInTeam(table.team_id)}`
+  }),
 ]);
+
+function PartsRLS(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1
+    FROM ${sql.identifier(getTableName(PartCategories))}
+    WHERE ${PartCategories.id} = ${Parts.category_id}
+      AND (${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)})
+  )
+  `
+}
 
 export const Parts = pgTable("parts", {
   id: integer().generatedAlwaysAsIdentity(),
@@ -19,8 +35,23 @@ export const Parts = pgTable("parts", {
   quantity: integer().default(1).notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
-  primaryKey({ columns: [table.id, table.category_id]})
+  primaryKey({ columns: [table.id, table.category_id]}),
+  pgPolicy('parts_access', {
+    using: PartsRLS(),
+    withCheck: PartsRLS()
+  })
 ]);
+
+function PlatesRLS(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1
+    FROM ${sql.identifier(getTableName(PartCategories))}
+    WHERE ${PartCategories.id} = ${Plates.category_id}
+      AND (${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)})
+  )
+  `
+}
 
 export const Plates = pgTable("plates", {
   id: integer().generatedAlwaysAsIdentity(),
@@ -32,7 +63,11 @@ export const Plates = pgTable("plates", {
   cam_download_url: text(),
   screenshot_url: text(),
 }, table => [
-  primaryKey({ columns: [table.id, table.category_id] })
+  primaryKey({ columns: [table.id, table.category_id] }),
+  pgPolicy('plates_access', {
+    using: PlatesRLS(),
+    withCheck: PlatesRLS()
+  })
 ]);
 
 export const BoxTubes = pgTable("box_tubes", {

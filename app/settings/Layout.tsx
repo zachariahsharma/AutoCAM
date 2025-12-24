@@ -57,7 +57,6 @@ function Sidebar({ selected }: { selected: string }) {
   const [top, setTop] = useState(2);
   const router = useRouter();
   let teams = ["Valor 6800", "Orbit 1690", "Madtown 1323"];
-  console.log(Number.parseInt("0"));
   useEffect(() => {
     if (selected === "personal") {
       setTop(2);

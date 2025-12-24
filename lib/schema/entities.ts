@@ -49,15 +49,12 @@ export const TeamKeys = pgTable("team_keys", {
   scopes: text().array().notNull()
 }, table => [
   unique().on(table.team_id, table.name),
-  pgPolicy('team_keys_access', {
-    using: UserIsTeamAdmin(table.team_id),
-    withCheck: UserIsTeamAdmin(table.team_id)
-  }),
   // Required so that API keys can check if they are able to access other stuff
-  pgPolicy('team_keys_query', {
-    for: "select",
-    using: sql`${KeyDigest()} IS NOT NULL`
-  })
+  pgPolicy('team_keys_query_key', { for: "select", using: sql`${KeyDigest()} IS NOT NULL` }),
+  pgPolicy('team_keys_query_user', { for: "select", using: UserInTeam(table.team_id) }),
+  pgPolicy('team_keys_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('team_keys_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('team_keys_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) })
 ]);
 
 export const TeamRunners = pgTable("team_runners", {

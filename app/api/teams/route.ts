@@ -49,7 +49,10 @@ export async function GET() {
   return await withAuth(authType, async tx => {
     if (authType.userId)
       return routeResponse(200, await tx.query.Teams.findMany());
-    else if (authType.keyDigest)
-      return routeResponse(200, await tx.query.Teams.findFirst());
+    else if (authType.keyDigest) {
+      const team = await tx.query.Teams.findFirst();
+      if (!team) return routeResponse(403);
+      return routeResponse(200, team);
+    }
   });
 }

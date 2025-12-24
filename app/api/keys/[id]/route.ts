@@ -37,7 +37,8 @@ export async function DELETE(req: NextRequest, { params }: Props) {
 }
 
 const UpdateInput = zod.object({
-  name: zod.string(),
+  name: zod.string().optional(),
+  scopes: zod.array(zod.string()).optional()
 });
 
 export async function PATCH(req: NextRequest, { params }: Props) {

@@ -29,3 +29,15 @@
 - /api/parts/:id - PATCH - Update a part (everybody on team with verified email)
 - /api/plates/:id - DELETE - Delete a plate (everybody on team with verified email)
 - /api/plates/:id - PATCH - Update a plate (everybody on team with verified email)
+
+## API Key Scopes
+- teams:read - Able to read details about the teams that the key is assigned to
+- team:invites:read - Able to read outgoing invites
+- team:invites:send - Able to send invites
+- team:invites:cancel - Able to cancel invites
+- part_categories:read - Able to read part categories
+- part_categories:write - Able to INSERT, UPDATE, and DELETE part categories
+- parts:read - Able to read parts
+- parts:write - Able to INSERT, UPDATE, and DELETE parts
+- plates:read - Able to read plates
+- plates:write - Able to INSERT, UPDATE, and DELETE plates

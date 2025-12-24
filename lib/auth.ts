@@ -28,6 +28,10 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
   },
+  user: {
+    deleteUser: { enabled: true },
+    changeEmail: { enabled: true }
+  },
   baseURL: process.env.BASE_URL,
 })
 

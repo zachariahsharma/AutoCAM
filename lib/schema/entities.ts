@@ -9,9 +9,13 @@ export const Teams = pgTable("teams", {
   name: text().notNull(),
   owner: text().notNull().references(() => user.id)
 }, table => [
-  pgPolicy('teams_query', {
+  pgPolicy('teams_query_key', {
     for: 'select',
-    using: sql`${KeyAuthorized(table.id, "teams:read")} OR ${UserInTeam(table.id)} OR owner = ${UserId()}`
+    using: KeyAuthorized(table.id, "teams:read")
+  }),
+  pgPolicy('teams_query_user', {
+    for: 'select',
+    using: sql`${UserInTeam(table.id)} OR owner = ${UserId()}`
   }),
   pgPolicy('teams_update', {
     for: 'update',
@@ -33,21 +37,33 @@ export const TeamInvites = pgTable("team_invites", {
   email: text().notNull(),
 }, table => [
   unique().on(table.team_id, table.email),
-  pgPolicy('team_invites_query', {
+  pgPolicy('team_invites_query_key', {
     for: 'select',
-    using: sql`${KeyAuthorized(table.team_id, "team:invites:read")} OR ${UserInTeam(table.team_id)}`
+    using: KeyAuthorized(table.team_id, "team:invites:read")
   }),
-  pgPolicy('team_invites_insert', {
+  pgPolicy('team_invites_query_user', {
+    for: 'select',
+    using: UserInTeam(table.team_id)
+  }),
+  pgPolicy('team_invites_insert_key', {
     for: 'insert',
-    withCheck: sql`${KeyAuthorized(table.team_id, "team:invites:write")} OR ${UserIsTeamAdmin(table.team_id)}`
+    withCheck: KeyAuthorized(table.team_id, "team:invites:write")
+  }),
+  pgPolicy('team_invites_insert_user', {
+    for: 'insert',
+    withCheck: UserIsTeamAdmin(table.team_id)
   }),
   pgPolicy('team_invites_update', {
     for: 'update',
     using: sql`false`
   }),
-  pgPolicy('team_invites_delete', {
+  pgPolicy('team_invites_delete_key', {
     for: 'delete',
-    using: sql`${KeyAuthorized(table.team_id, "team:invites:write")} OR ${UserIsTeamAdmin(table.team_id)}`
+    using: KeyAuthorized(table.team_id, "team:invites:write")
+  }),
+  pgPolicy('team_invites_delete_user', {
+    for: 'delete',
+    using: UserIsTeamAdmin(table.team_id)
   })
 ]);
 

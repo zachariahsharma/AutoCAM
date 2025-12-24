@@ -44,3 +44,35 @@ export interface Session {
   updatedAt: string;
   updatedBy: string;
 }
+
+export interface Material {
+  id: number;
+  name: string;
+}
+
+export interface Machine {
+  id: number;
+  name: string;
+  file: string;
+}
+
+export interface Tool {
+  id: number,
+  name: string;
+  materials: Material[];
+  machines: Machine[];
+  file: string; 
+}
+
+export interface Collaborator {
+  id: number;
+  name: string;
+  role: "Admin" | "Member";
+  email: string;
+}
+
+export interface ApiKey {
+  id: number;
+  name: string;
+  startchars: string;
+}

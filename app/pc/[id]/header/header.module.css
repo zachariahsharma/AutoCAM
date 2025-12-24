@@ -70,6 +70,7 @@
 
 #headertext {
     position: absolute;
+    font-size: 40px;
     top: 30px;
     left:100px;
 }

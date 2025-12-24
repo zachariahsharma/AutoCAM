@@ -1,0 +1,40 @@
+.teamContainer > hr{ 
+  opacity: 1;
+  width: 100%;
+  border: .25px solid #636363;
+}
+.teamContainer > h1{
+  font-size: 35px;
+  font-weight: 400;
+}
+.teamContainer > form {
+  display: flex;
+  flex-direction: column;
+}
+.teamContainer > form > label {
+  color: white;
+  font-family: var(--font-roboto);
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+.teamContainer > form > input, .teamContainer > form >div >input {
+  border-radius: 5px;
+  padding: 10px;
+  height: 40px;
+  width: calc(100% - 200px);
+  border: 1px solid rgba(255,255,255,.53);
+  background-color: rgba(217,217,217, .19);
+  color: #BCBCBC;
+  font-size: 15px;
+  transition: all .25s;
+}
+.teamContainer > form > input:focus {
+  outline: none;
+  border: 1px solid rgba(255,255,255,.70);
+  color:white;
+}
+#teamNameButton {
+  float: right;
+  width: 190px;
+  height: 40px;
+}

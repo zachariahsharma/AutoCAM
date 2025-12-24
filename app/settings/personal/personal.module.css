@@ -1,0 +1,38 @@
+.personalContainer > hr{ 
+  opacity: 1;
+  width: 100%;
+  border: .25px solid #636363;
+}
+.personalContainer > h1{
+  font-size: 35px;
+  font-weight: 400;
+}
+.personalContainer > form {
+  display: flex;
+  flex-direction: column;
+}
+.personalContainer > form > label {
+  color: white;
+  font-family: var(--font-roboto);
+  margin-bottom: 2px;
+  font-size: 18px;
+}
+.personalContainer > form > input {
+  margin-bottom: 15px;
+  border-radius: 5px;
+  padding: 10px;
+  height: 40px;
+  border: 1px solid rgba(255,255,255,.53);
+  background-color: rgba(217,217,217, .19);
+  color: #BCBCBC;
+  font-size: 15px;
+  transition: all .25s;
+}
+.personalContainer > form > input:focus {
+  outline: none;
+  border: 1px solid rgba(255,255,255,.70);
+  color:white;
+}
+#submitbutton {
+  margin-top: 10px;
+}

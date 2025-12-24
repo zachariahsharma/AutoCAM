@@ -1,0 +1,106 @@
+#header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  z-index: 3;
+}
+
+#headerlogoButton {
+  background-color: rgba(0,0,0,0);
+  outline:none;
+  border:none;
+}
+
+#headerlogo {
+  position: relative;
+  height: 70px;
+  width: 70px;
+  top: 18px;
+  left:13px;
+}
+
+#usericon {
+    height: 30px;
+  width: 30px;
+}
+#usericoncontainer {
+    padding:15px;
+    border: 1px solid #DBC826;
+    border-radius: 50%;
+    position: absolute;
+  top: 20px;
+  right:25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#headertext {
+    position: absolute;
+    top: 30px;
+    left:100px;
+    font-family: var(--font-zalando);
+    font-size: 40px;
+    font-weight: 400;
+}
+#subheadertext {
+    position: absolute;
+    top: 73px;
+    left:100px;
+    font-family: var(--font-roboto);
+    font-size: 25px;
+    color: rgba(255,255,255,.68);
+    font-weight: 400;
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  height: calc(100vh - 140px);
+  top: 140px;
+  /* background-color: blue; */
+  width: 200px;
+}
+.icon {
+  width: 20px;
+  height: 20px;
+}
+.sidebar > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 20px;
+  padding: 3px 0px 3px 30px;
+  border-radius: 10px;
+  color: white;
+  transition: background-color .3s;
+  font-size: 18px;
+}
+.sidebar > div:hover {
+  background-color: rgba(255,255,255,.15);
+}
+.sidebar > hr {
+  margin: 5px 0px;
+  margin-left: 10px;
+  border: .5px solid rgba(128,128,128,.77);
+  opacity: 1;
+}
+#selected {
+  opacity: 1;
+  position: absolute;
+  left: 5px;
+  height: 30px;
+  width: 10px;
+  background-color: var(--yellow-1);
+  border-radius: 10px;
+  transition: top .3s;
+  top: 0;
+}
+.main {
+  position: absolute;
+  top: 110px;
+  left: 300px;
+  width: calc(80vw - 300px)
+}

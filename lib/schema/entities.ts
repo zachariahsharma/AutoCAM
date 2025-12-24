@@ -1,4 +1,4 @@
-import { boolean, char, integer, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations, sql } from "drizzle-orm";
 import { PartCategories } from "./cam";
@@ -64,7 +64,8 @@ export const TeamKeys = pgTable("team_keys", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   digest: char({ length: 64 }).notNull(),
-  name: text().notNull()
+  name: text().notNull(),
+  scopes: text().array().notNull()
 }, table => [
   unique().on(table.team_id, table.name)
 ]);

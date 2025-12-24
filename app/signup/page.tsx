@@ -166,7 +166,7 @@ function SignupContainer() {
         <Alert message="Password's aren't matching!" open={mismatch} />
         <PrimaryButton
           id={styles.signupbutton}
-          // type="submit"
+          type="submit"
           onClick={() => {
             setMessage("Beans");
             // setErrorModalOpen(true);

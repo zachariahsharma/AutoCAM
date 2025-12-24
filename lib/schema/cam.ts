@@ -1,10 +1,13 @@
 import { getTableName, relations, SQL, sql } from "drizzle-orm";
 import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
-import { TeamFromKey, UserInTeam } from "./rls";
+import { KeyAuthorized, UserInTeam } from "./rls";
 
-function PartCategoriesRLS(): SQL<boolean> {
-  return sql`${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)}`
+function PartCategoriesRLS(scope: string): SQL<boolean> {
+  return sql`
+    ${KeyAuthorized(PartCategories.team_id, scope)}
+    OR ${UserInTeam(PartCategories.team_id)}
+  `
 }
 
 export const PartCategories = pgTable("part_categories", {
@@ -15,21 +18,21 @@ export const PartCategories = pgTable("part_categories", {
 }, table => [
   unique().on(table.team_id, table.material, table.thickness),
   pgPolicy('part_categories_access', {
-    using: PartCategoriesRLS(),
+    using: PartCategoriesRLS("part_categories:read"),
   }),
   pgPolicy('part_categories_insert', {
     for: 'insert',
-    withCheck: PartCategoriesRLS()
+    withCheck: PartCategoriesRLS("part_categories:write")
   })
 ]);
 
-function PartsRLS(): SQL<boolean> {
+function PartsRLS(scope: string): SQL<boolean> {
   return sql`
   EXISTS (
     SELECT 1
     FROM ${sql.identifier(getTableName(PartCategories))}
     WHERE ${PartCategories.id} = ${Parts.category_id}
-      AND (${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)})
+      AND (${KeyAuthorized(PartCategories.team_id, scope)} OR ${UserInTeam(PartCategories.team_id)})
   )
   `
 }
@@ -44,21 +47,21 @@ export const Parts = pgTable("parts", {
 }, table => [
   primaryKey({ columns: [table.id, table.category_id]}),
   pgPolicy('parts_access', {
-    using: PartsRLS(),
+    using: PartsRLS("parts:read"),
   }),
   pgPolicy('parts_insert', {
     for: 'insert',
-    withCheck: PartsRLS()
+    withCheck: PartsRLS("parts:write")
   })
 ]);
 
-function PlatesRLS(): SQL<boolean> {
+function PlatesRLS(scope: string): SQL<boolean> {
   return sql`
   EXISTS (
     SELECT 1
     FROM ${sql.identifier(getTableName(PartCategories))}
     WHERE ${PartCategories.id} = ${Plates.category_id}
-      AND (${TeamFromKey()} = ${PartCategories.team_id} OR ${UserInTeam(PartCategories.team_id)})
+      AND (${KeyAuthorized(PartCategories.team_id, scope)} OR ${UserInTeam(PartCategories.team_id)})
   )
   `
 }
@@ -75,11 +78,11 @@ export const Plates = pgTable("plates", {
 }, table => [
   primaryKey({ columns: [table.id, table.category_id] }),
   pgPolicy('plates_access', {
-    using: PlatesRLS(),
+    using: PlatesRLS("plates:read"),
   }),
   pgPolicy('plates_insert', {
     for: 'insert',
-    withCheck: PlatesRLS()
+    withCheck: PlatesRLS("plates:write")
   })
 ]);
 

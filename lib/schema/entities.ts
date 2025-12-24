@@ -2,7 +2,7 @@ import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, uniq
 import { user } from "./auth";
 import { relations, sql } from "drizzle-orm";
 import { PartCategories } from "./cam";
-import { TeamFromKey, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { KeyAuthorized, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -11,7 +11,7 @@ export const Teams = pgTable("teams", {
 }, table => [
   pgPolicy('teams_query', {
     for: 'select',
-    using: sql`${TeamFromKey()} = id OR ${UserInTeam(table.id)} OR owner = ${UserId()}`
+    using: sql`${KeyAuthorized(table.id, "teams:read")} OR ${UserInTeam(table.id)} OR owner = ${UserId()}`
   }),
   pgPolicy('teams_update', {
     for: 'update',
@@ -35,11 +35,11 @@ export const TeamInvites = pgTable("team_invites", {
   unique().on(table.team_id, table.email),
   pgPolicy('team_invites_query', {
     for: 'select',
-    using: sql`${TeamFromKey()} = ${table.team_id} OR ${UserInTeam(table.team_id)}`
+    using: sql`${KeyAuthorized(table.team_id, "team:invites:read")} OR ${UserInTeam(table.team_id)}`
   }),
   pgPolicy('team_invites_insert', {
     for: 'insert',
-    withCheck: sql`${TeamFromKey()} = ${table.team_id} OR ${UserIsTeamAdmin(table.team_id)}`
+    withCheck: sql`${KeyAuthorized(table.team_id, "team:invites:write")} OR ${UserIsTeamAdmin(table.team_id)}`
   }),
   pgPolicy('team_invites_update', {
     for: 'update',
@@ -47,7 +47,7 @@ export const TeamInvites = pgTable("team_invites", {
   }),
   pgPolicy('team_invites_delete', {
     for: 'delete',
-    using: sql`${TeamFromKey()} = ${table.team_id} OR ${UserIsTeamAdmin(table.team_id)}`
+    using: sql`${KeyAuthorized(table.team_id, "team:invites:write")} OR ${UserIsTeamAdmin(table.team_id)}`
   })
 ]);
 

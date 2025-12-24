@@ -33,6 +33,7 @@ export async function GET(req: NextRequest, { params }: Props) {
 
 const CreateInput = zod.object({
   name: zod.string(),
+  scopes: zod.array(zod.string())
 })
 
 export async function POST(req: NextRequest, { params }: Props) {

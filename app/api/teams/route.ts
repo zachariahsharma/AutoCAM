@@ -12,7 +12,6 @@ import {
 
 const CreateInput = zod.object({
   name: zod.string(),
-  number: zod.coerce.number().positive(),
 });
 
 export async function POST(req: NextRequest) {

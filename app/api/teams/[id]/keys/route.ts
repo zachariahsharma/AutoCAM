@@ -13,6 +13,7 @@ import {
   getAuthType,
   validateAuthType
 } from "@/lib/api-utils";
+import { ScopeEnum } from "@/lib/scopes";
 
 export async function GET(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest, { params }: Props) {
 
 const CreateInput = zod.object({
   name: zod.string(),
-  scopes: zod.array(zod.string())
+  scopes: zod.array(ScopeEnum)
 })
 
 export async function POST(req: NextRequest, { params }: Props) {

@@ -1,4 +1,6 @@
-export default {
+import zod from "zod";
+
+const scopes = {
   teams: {
     read: "team:read",
     invites: {
@@ -20,3 +22,17 @@ export default {
     write: "plates:write"
   }
 };
+export default scopes;
+
+function getValues(obj: Record<string, unknown>) {
+  let result: string[] = [];
+  for (const key in obj) {
+    if (typeof obj[key] === "string")
+      result.push(obj[key]);
+    else
+      result = result.concat(getValues(obj[key] as Record<string, unknown>))
+  }
+  return result;
+}
+
+export const ScopeEnum = zod.enum(getValues(scopes));

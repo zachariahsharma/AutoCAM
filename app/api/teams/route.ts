@@ -44,6 +44,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  return await getTeams();
+}
+
+export async function getTeams() {
   const authType = await getAuthType();
   try { await validateAuthType(authType); }
   catch (err) { return err; }

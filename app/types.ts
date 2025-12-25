@@ -79,3 +79,8 @@ export interface ApiKey {
   name: string;
   startchars: string;
 }
+
+export interface TeamInvite {
+  id: number;
+  teamName: string;
+}

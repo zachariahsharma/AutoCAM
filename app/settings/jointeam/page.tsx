@@ -1,12 +1,16 @@
-import styles from "./jointeam.module.css";
-import SettingsLayout from "../Layout";
+import JoinTeamSettingsPage from "./jointeam";
+import { TeamInvite } from "@/app/types";
 
-export default function JointeamSettingsPage() {
-  return (
-    <SettingsLayout selected={"jointeam"}>
-      <div className={styles.joinTeamContainer}>
-        <h1>Join team Settings</h1>
-      </div>
-    </SettingsLayout>
-  );
+const mockInvites: TeamInvite[] = [
+  {
+    id: 1,
+    teamName: "AutoCAM Devs",
+  },
+  {
+    id: 2,
+    teamName: "Project X",
+  },
+];
+export default function JoinTeamPage({}) {
+  return <JoinTeamSettingsPage mockInvites={mockInvites} />;
 }

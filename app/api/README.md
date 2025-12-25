@@ -13,7 +13,6 @@
 - /api/user/invites - GET - Get all invites for a user
 
 ## API Key Routes
-- /api/teams - PATCH - Update team details
 - /api/teams - GET - Get team details
 - /api/teams/invite - POST - Invite email (in body) to team
 - /api/pc - POST - Create a part category

@@ -1,7 +1,7 @@
 import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { getTableName, relations, sql } from "drizzle-orm";
-import { PartCategories } from "./cam";
+import { Machines, Materials, PartCategories, Tools } from "./cam";
 import { KeyAuthorized, KeyDigest, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
 
@@ -93,6 +93,9 @@ export const TeamsRelations = relations(Teams, ({ many, one }) => ({
   runners: many(TeamRunners),
   partCategories: many(PartCategories),
   keys: many(TeamKeys),
+  materials: many(Materials),
+  machines: many(Machines),
+  tools: many(Tools),
   creator: one(user, {
     fields: [Teams.owner],
     references: [user.id],

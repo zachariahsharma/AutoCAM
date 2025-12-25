@@ -1,4 +1,4 @@
-import { getTableName, relations, SQL, sql } from "drizzle-orm";
+import { getTableName, Many, relations, SQL, sql } from "drizzle-orm";
 import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam } from "./rls";
@@ -140,6 +140,20 @@ export const Tools = pgTable("tools", {
   unique().on(table.name, table.team_id)
 ]);
 
+export const ToolMaterials = pgTable("tool_materials", {
+  tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
+  material_id: integer().notNull().references(() => Materials.id, { onDelete: "cascade" }),
+}, table => [
+  primaryKey({ columns: [table.tool_id, table.material_id] })
+]);
+
+export const ToolMachines = pgTable("tool_machines", {
+  tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
+  machine_id: integer().notNull().references(() => Machines.id, { onDelete: "cascade" })
+}, table => [
+  primaryKey({ columns: [table.tool_id, table.machine_id] })
+])
+
 export const PartsToPlates = pgTable("parts_to_plates", {
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
   plate_id: integer().notNull(),
@@ -195,23 +209,49 @@ export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
   }),
 }));
 
-export const MaterialsRelations = relations(Materials, ({ one }) => ({
+export const MaterialsRelations = relations(Materials, ({ one, many }) => ({
   team: one(Teams, {
     fields: [Materials.team_id],
     references: [Teams.id]
-  })
+  }),
+  toolMaterials: many(ToolMaterials)
 }));
 
-export const MachinesRelations = relations(Machines, ({ one }) => ({
+export const MachinesRelations = relations(Machines, ({ one, many }) => ({
   team: one(Teams, {
     fields: [Machines.team_id],
     references: [Teams.id]
-  })
+  }),
+  toolMachines: many(ToolMachines)
 }));
 
-export const ToolsRelations = relations(Tools, ({ one }) => ({
+export const ToolsRelations = relations(Tools, ({ one, many }) => ({
   team: one(Teams, {
     fields: [Tools.team_id],
     references: [Teams.id]
+  }),
+  toolMachines: many(ToolMachines),
+  toolMaterials: many(ToolMaterials)
+}))
+
+export const ToolMachinesRelations = relations(ToolMachines, ({ one }) => ({
+  tool: one(Tools, {
+    fields: [ToolMachines.tool_id],
+    references: [Tools.id]
+  }),
+  machine: one(Machines, {
+    fields: [ToolMachines.machine_id],
+    references: [Machines.id]
+  })
+}))
+
+export const ToolMaterialsRelations = relations(ToolMaterials, ({ one }) => ({
+  tool: one(Tools, {
+    fields: [ToolMaterials.tool_id],
+    references: [Tools.id]
+  }),
+  material: one(Materials, {
+    fields: [ToolMaterials.material_id],
+    references: [Materials.id]
   })
 }))

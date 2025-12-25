@@ -1,6 +1,6 @@
 import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
-import { relations, sql } from "drizzle-orm";
+import { getTableName, relations, sql } from "drizzle-orm";
 import { PartCategories } from "./cam";
 import { KeyAuthorized, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
@@ -24,7 +24,18 @@ export const TeamInvites = pgTable("team_invites", {
 }, table => [
   unique().on(table.team_id, table.email),
   pgPolicy('team_invites_query_key', { for: 'select', using: KeyAuthorized(table.team_id, scopes.teams.invites.read) }),
-  pgPolicy('team_invites_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('team_invites_query_team', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('team_invites_query_user', {
+    for: 'select',
+    using:  sql`
+    EXISTS (
+      SELECT 1
+      FROM ${sql.identifier(getTableName(user))}
+      WHERE ${user.id} = ${UserId()}
+        AND ${user.email} = ${table.email}
+    )
+    `
+  }),
   pgPolicy('team_invites_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, scopes.teams.invites.send) }),
   pgPolicy('team_invites_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
   pgPolicy('team_invites_update', { for: 'update', using: sql`false` }),

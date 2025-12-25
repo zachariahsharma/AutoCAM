@@ -1,4 +1,4 @@
-import { getTableName, SQL, sql } from "drizzle-orm"
+import { and, eq, getTableName, SQL, sql } from "drizzle-orm"
 import { TeamKeys, TeamMembers } from "./entities"
 
 export function UserId() {
@@ -13,8 +13,7 @@ export function UserInTeam(tid: any): SQL<boolean> {
   return sql`
   EXISTS (
     SELECT 1 FROM ${sql.identifier(getTableName(TeamMembers))}
-    WHERE ${TeamMembers.team_id} = ${tid}
-      AND ${TeamMembers.user_id} = ${UserId()}
+    WHERE ${and(eq(TeamMembers.team_id, tid), eq(TeamMembers.user_id, UserId()))}
   )
   `
 }
@@ -23,9 +22,7 @@ export function UserIsTeamAdmin(tid: any): SQL<boolean> {
   return sql`
   EXISTS (
     SELECT 1 FROM ${sql.identifier(getTableName(TeamMembers))}
-    WHERE ${TeamMembers.team_id} = ${tid}
-      AND ${TeamMembers.admin} = true
-      AND ${TeamMembers.user_id} = ${UserId()}
+    WHERE ${and(eq(TeamMembers.team_id, tid), eq(TeamMembers.admin, true), eq(TeamMembers.user_id, UserId()))}
   )
   `
 }
@@ -35,9 +32,7 @@ export function KeyAuthorized(teamId: any, scope: string): SQL<boolean> {
   EXISTS (
     SELECT 1
     FROM ${sql.identifier(getTableName(TeamKeys))}
-    WHERE ${TeamKeys.digest} = ${KeyDigest()}
-      AND ${TeamKeys.team_id} = ${teamId}
-      AND '${sql.raw(scope)}' = ANY(${TeamKeys.scopes})
+    WHERE ${and(eq(TeamKeys.digest, KeyDigest()), eq(TeamKeys.team_id, teamId), eq(sql.raw(scope), sql`ANY(${TeamKeys.scopes})`))}
   )
   `
 }

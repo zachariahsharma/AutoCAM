@@ -194,3 +194,24 @@ export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
     references: [PartCategories.id],
   }),
 }));
+
+export const MaterialsRelations = relations(Materials, ({ one }) => ({
+  team: one(Teams, {
+    fields: [Materials.team_id],
+    references: [Teams.id]
+  })
+}));
+
+export const MachinesRelations = relations(Machines, ({ one }) => ({
+  team: one(Teams, {
+    fields: [Machines.team_id],
+    references: [Teams.id]
+  })
+}));
+
+export const ToolsRelations = relations(Tools, ({ one }) => ({
+  team: one(Teams, {
+    fields: [Tools.team_id],
+    references: [Teams.id]
+  })
+}))

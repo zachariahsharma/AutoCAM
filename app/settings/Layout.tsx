@@ -62,9 +62,8 @@ export function Header({
 function Sidebar() {
   const [top, setTop] = useState(2);
   const router = useRouter();
-  const [teams, setTeams] = useState<Team[]>([]);
   const tab = useCurrentTab();
-  const { updateCount } = useTabEvents();
+  const { updateCount, teams, setTeams } = useTabEvents();
   useEffect(() => {
     (async function () {
       setTeams(await (await fetch("/api/teams")).json());

@@ -1,7 +1,7 @@
 "use client";
 
 import styles from "./newteam.module.css";
-import { TeamName } from "../teams/[teamid]/team";
+import { TeamName } from "../teams/[teamid]/page";
 import CollaboratorsSettingsPage from "../teams/[teamid]/Collaborators/Collaborators";
 import type { Collaborator } from "@/app/types";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
@@ -13,7 +13,7 @@ export default function NewteamSettingsPage() {
   const [teamName, setTeamName] = useState("");
   const router = useRouter();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const { notifyUpdate } = useTabEvents();
+  const { notifyUpdate, teams } = useTabEvents();
   async function handleCreateTeam(e: React.FormEvent) {
     e.preventDefault();
     console.log(
@@ -35,7 +35,6 @@ export default function NewteamSettingsPage() {
       const data = await response.json();
       console.log("Team created successfully:", data);
       notifyUpdate();
-      const teams = await (await fetch("/api/teams")).json();
       router.push("/settings/teams/" + (teams.length - 1));
     } else {
       console.error("Error creating team:", response.statusText);

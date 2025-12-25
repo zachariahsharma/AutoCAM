@@ -1,148 +1,97 @@
-import TeamSettingsPage from "./team";
+"use client";
+
+import styles from "./team.module.css";
 import { Material, Machine, Tool, Collaborator, ApiKey } from "@/app/types";
-
-const name: string = "Valor 6800";
-const materials: Material[] = [
-  {
-    id: 1,
-    name: "AL 6061",
-  },
-  {
-    id: 2,
-    name: "AL 7075",
-  },
-  {
-    id: 3,
-    name: "Polycarbonate",
-  },
-  {
-    id: 4,
-    name: "SRPP",
-  },
-];
-const machines: Machine[] = [
-  {
-    id: 1,
-    name: "Laguna Swift",
-    file: "swift.cps",
-  },
-  {
-    id: 2,
-    name: "Laguna IQ",
-    file: "iq.cps",
-  },
-  {
-    id: 3,
-    name: "Tormach 1100MX",
-    file: "pathpilot.cps",
-  },
-  {
-    id: 4,
-    name: "Tormach PCNC",
-    file: "pathpilot.cps",
-  },
-];
-const tools: Tool[] = [
-  {
-    id: 1,
-    name: "SwiftPolycarb",
-    materials: [materials[2]],
-    machines: [machines[0]],
-    file: "SwiftPolycarb.json",
-  },
-  {
-    id: 2,
-    name: "SwiftFull",
-    materials: [materials[2], materials[0]],
-    machines: [machines[0]],
-    file: "SwiftFull.json",
-  },
-  {
-    id: 3,
-    name: "FullPolycarb",
-    materials: [materials[2]],
-    machines: [machines[0], machines[1]],
-    file: "FullPolycarb.json",
-  },
-  {
-    id: 4,
-    name: "Full",
-    materials: materials,
-    machines: machines,
-    file: "Full.json",
-  },
-];
-
-const collaborators: Collaborator[] = [
-  {
-    id: 1,
-    name: "Ishan",
-    email: "ishan.karmakar33@k12.leanderisd.org",
-    role: "Admin",
-  },
-  {
-    id: 2,
-    name: "Ishan",
-    email: "ishan.karmakar33@k12.leanderisd.org",
-    role: "Member",
-  },
-  {
-    id: 3,
-    name: "Ishan",
-    email: "ishan.karmakar33@k12.leanderisd.org",
-    role: "pending",
-  },
-  {
-    id: 4,
-    name: "Ishan",
-    email: "ishan.karmakar33@k12.leanderisd.org",
-    role: "Member",
-  },
-];
-
-const apikeys: ApiKey[] = [
-  {
-    id: 1,
-    name: "Beans",
-    startchars: "1dbd",
-  },
-  {
-    id: 2,
-    name: "Beans",
-    startchars: "1dbd",
-  },
-  {
-    id: 3,
-    name: "Beans",
-    startchars: "1dbd",
-  },
-  {
-    id: 4,
-    name: "Beans",
-    startchars: "1dbd",
-  },
-];
-export default async function Team({
-  params,
+import { useEffect, useState } from "react";
+import { PrimaryButton } from "@/components/Buttons/Buttons";
+import FusionInputs from "./FusionInputs/FusionInputs";
+import CollaboratorsSettingsPage from "./Collaborators/Collaborators";
+import { useTabEvents } from "@/app/settings/teamUpdate";
+import { useParams } from "next/navigation";
+export function TeamName({
+  oldTeamName,
+  rename = true,
+  handleFormSubmit,
 }: {
-  params: Promise<{ teamid: string }>;
+  oldTeamName: string;
+  rename?: boolean;
+  handleFormSubmit: (teamName: string) => void;
 }) {
-  const teamid = (await params).teamid;
-  const teamName: string = name;
-  const teamMaterials: Material[] = materials;
-  const teamMachines: Machine[] = machines
-  const teamTools: Tool[] = tools;
-  const teamCollaborators: Collaborator[] = collaborators;
-  const teamApiKeys: ApiKey[] = apikeys;
+  const [teamName, setTeamName] = useState(oldTeamName);
   return (
-    <TeamSettingsPage
-      teamid={teamid}
-      teamName={teamName}
-      teamMaterials={teamMaterials}
-      teamMachines={teamMachines}
-      teamTools={teamTools}
-      teamCollaborators={teamCollaborators}
-      teamApiKeys={teamApiKeys}
-    />
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleFormSubmit(teamName);
+      }}
+    >
+      <label>Team Name</label>
+      <div id={styles.teamNameContainer}>
+        <input
+          type="text"
+          placeholder="Add Team Name"
+          value={teamName}
+          min={3}
+          onChange={(val) => setTeamName(val.target.value)}
+        />
+        <PrimaryButton id={styles.teamNameButton}>
+          <span className="textGradient">{rename ? "Rename" : "Save"}</span>
+        </PrimaryButton>
+      </div>
+    </form>
+  );
+}
+
+export default function TeamSettingsPage({
+  teamApiKeys,
+}: {
+  teamApiKeys: ApiKey[];
+}) {
+  const [teamName, setTeamName] = useState<string>("");
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [machines, setMachines] = useState<Machine[]>([]);
+  const { teamid } = useParams();
+  const { teams } = useTabEvents();
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  useEffect(() => {
+    const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
+    console.log("Loading team with id:", idStr);
+    const teamIndex = parseInt(idStr, 10);
+    const team = teams[teamIndex];
+    if (team) {
+      setTeamName(team.name);
+      setMaterials(team.materials || []);
+      setMachines(team.machines || []);
+      setTools(team.tools || []);
+      setCollaborators(team.collaborators || []);
+    }
+  }, [teamid, teams]);
+  return (
+    <div>
+      <div className={styles.teamContainer}>
+        <h1>{teamName}</h1>
+        <hr />
+        {teamName ? (
+          <TeamName
+            oldTeamName={teamName}
+            handleFormSubmit={(newName) => {
+              // Handle team name change
+            }}
+          />
+        ) : null}
+        <br />
+        <FusionInputs
+          defaultMachines={machines}
+          defaultMaterials={materials}
+          defaultTools={tools}
+        />
+      </div>
+      <br />
+      <CollaboratorsSettingsPage
+        collaborators={collaborators}
+        setCollaborators={setCollaborators}
+      />
+    </div>
   );
 }

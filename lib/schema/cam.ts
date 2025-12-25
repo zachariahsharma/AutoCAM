@@ -1,7 +1,7 @@
 import { getTableName, Many, relations, SQL, sql } from "drizzle-orm";
 import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
-import { KeyAuthorized, UserInTeam } from "./rls";
+import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
 
 export const PartCategories = pgTable("part_categories", {
@@ -95,7 +95,7 @@ export const Plates = pgTable("plates", {
   screenshot_url: text(),
 }, table => [
   primaryKey({ columns: [table.id, table.category_id] }),
-  pgPolicy('plates_query_key', { for: "select", using: PlatesKeyRLS(scopes.parts.read) }),
+  pgPolicy('plates_query_key', { for: "select", using: PlatesKeyRLS(scopes.plates.read) }),
   pgPolicy('plates_query_user', { for: "select", using: PlatesUserRLS() }),
   pgPolicy("plates_update_key", { for: "update", using: PlatesKeyRLS() }),
   pgPolicy("plates_update_user", { for: "update", using: PlatesUserRLS() }),
@@ -115,43 +115,82 @@ export const BoxTubes = pgTable("box_tubes", {
 });
 
 export const Materials = pgTable("materials", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
-  unique().on(table.name, table.team_id)
+  primaryKey({ columns: [table.id, table.team_id] }),
+  unique().on(table.name, table.team_id),
+  pgPolicy('materials_query', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('materials_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('materials_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('materials_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
 ]);
 
 export const Machines = pgTable("machines", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   file: text().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
-  unique().on(table.name, table.team_id)
+  primaryKey({ columns: [table.id, table.team_id] }),
+  unique().on(table.name, table.team_id),
+  pgPolicy('machines_query', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('machines_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('machines_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('machines_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
 ]);
 
 export const Tools = pgTable("tools", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   file: text().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
-  unique().on(table.name, table.team_id)
+  primaryKey({ columns: [table.id, table.team_id] }),
+  unique().on(table.name, table.team_id),
+  pgPolicy('tools_query', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('tools_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('tools_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('tools_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
 ]);
 
 export const ToolMaterials = pgTable("tool_materials", {
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
   material_id: integer().notNull().references(() => Materials.id, { onDelete: "cascade" }),
 }, table => [
-  primaryKey({ columns: [table.tool_id, table.material_id] })
+  foreignKey({
+    columns: [table.material_id, table.team_id],
+    foreignColumns: [Materials.id, Materials.team_id]
+  }),
+  foreignKey({
+    columns: [table.tool_id, table.team_id],
+    foreignColumns: [Tools.id, Tools.team_id]
+  }),
+  pgPolicy('tool_materials_query', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('tool_materials_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('tool_materials_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('tool_materials_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
 ]);
 
 export const ToolMachines = pgTable("tool_machines", {
-  tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
-  machine_id: integer().notNull().references(() => Machines.id, { onDelete: "cascade" })
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
+  tool_id: integer().notNull(),
+  machine_id: integer().notNull()
 }, table => [
-  primaryKey({ columns: [table.tool_id, table.machine_id] })
+  foreignKey({
+    columns: [table.machine_id, table.team_id],
+    foreignColumns: [Machines.id, Machines.team_id]
+  }),
+  foreignKey({
+    columns: [table.tool_id, table.team_id],
+    foreignColumns: [Tools.id, Tools.team_id]
+  }),
+  pgPolicy('tools_machines_query', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('tools_machines_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('tools_machines_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('tools_machines_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
 ])
 
 export const PartsToPlates = pgTable("parts_to_plates", {

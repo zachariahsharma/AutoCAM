@@ -167,10 +167,10 @@ function SignupContainer() {
         <PrimaryButton
           id={styles.signupbutton}
           type="submit"
-          onClick={() => {
+          // onClick={() => {
             // setMessage("Beans");
             // setErrorModalOpen(true);
-          }}
+          // }}
         >
           <span className={styles.signupbuttontext + " " + styles.textGradient}>
             SIGN UP

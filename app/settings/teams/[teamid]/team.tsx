@@ -8,10 +8,23 @@ import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";
 import CollaboratorsSettingsPage from "./Collaborators/Collaborators";
 
-function TeamName({ oldTeamName }: { oldTeamName: string }) {
+export function TeamName({
+  oldTeamName,
+  rename = true,
+  handleFormSubmit,
+}: {
+  oldTeamName: string;
+  rename?: boolean;
+  handleFormSubmit: (teamName: string) => void;
+}) {
   const [teamName, setTeamName] = useState(oldTeamName);
   return (
-    <form>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleFormSubmit(teamName);
+      }}
+    >
       <label>Team Name</label>
       <div id={styles.teamNameContainer}>
         <input
@@ -21,7 +34,7 @@ function TeamName({ oldTeamName }: { oldTeamName: string }) {
           onChange={(val) => setTeamName(val.target.value)}
         />
         <PrimaryButton id={styles.teamNameButton}>
-          <span className="textGradient">Rename</span>
+          <span className="textGradient">{rename ? "Rename" : "Save"}</span>
         </PrimaryButton>
       </div>
     </form>
@@ -45,12 +58,18 @@ export default function TeamSettingsPage({
   teamCollaborators: Collaborator[];
   teamApiKeys: ApiKey[];
 }) {
+  const [collaborators, setCollaborators] = useState(teamCollaborators);
   return (
     <SettingsLayout selected={`${teamid}`}>
       <div className={styles.teamContainer}>
         <h1>{teamName}</h1>
         <hr />
-        <TeamName oldTeamName={teamName} />
+        <TeamName
+          oldTeamName={teamName}
+          handleFormSubmit={(newName) => {
+            // Handle team name change
+          }}
+        />
         <br />
         <FusionInputs
           defaultMachines={teamMachines}
@@ -59,7 +78,10 @@ export default function TeamSettingsPage({
         />
       </div>
       <br />
-      <CollaboratorsSettingsPage defaultCollaborators={teamCollaborators} />
+      <CollaboratorsSettingsPage
+        collaborators={collaborators}
+        setCollaborators={setCollaborators}
+      />
     </SettingsLayout>
   );
 }

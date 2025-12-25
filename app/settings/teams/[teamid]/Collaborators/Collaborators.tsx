@@ -4,15 +4,21 @@ import { useEffect, useRef, useState, FormEvent } from "react";
 import { Collaborator } from "@/app/types";
 import Image from "next/image";
 
+
 export default function CollaboratorsSettingsPage({
-  defaultCollaborators,
+  optional = false,
+  collaborators,
+  setCollaborators,
 }: {
-  defaultCollaborators: Collaborator[];
+  optional?: boolean;
+  collaborators: Collaborator[];
+  setCollaborators: React.Dispatch<React.SetStateAction<Collaborator[]>>;
 }) {
-  const [collaborators, setCollaborators] = useState(defaultCollaborators);
   return (
     <div className={styles.collaboratorsContainer}>
-      <h1>Collaborators</h1>
+      <h1>
+        Collaborators <span className={styles.optional}>{optional ? "(Optional)" : null}</span>
+      </h1>
       <form
         onSubmit={(e: FormEvent<HTMLFormElement>) => {
           e.preventDefault();
@@ -57,6 +63,13 @@ export default function CollaboratorsSettingsPage({
             collaborators={collaborators}
           />
         ))}
+        {collaborators.length === 0 && (
+          <div className={styles.emptyStateContainer}>
+            <span className={styles.emptyState}>
+              Enter an email to add a collaborator.
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

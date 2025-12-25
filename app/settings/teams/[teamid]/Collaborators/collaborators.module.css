@@ -45,6 +45,7 @@
   width: 100%;
   margin-top: 20px;
   border-radius: 10px;
+  min-height: 40px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -124,4 +125,23 @@
   padding: 5px 10px;
   box-shadow: 0 -1px 0 #9A9A9A;
   cursor: pointer;
+}
+.emptyState {
+  color: #BBBBBB;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  font-style: italic;
+}
+.emptyStateContainer {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.optional {
+  font-size: 14px;
+  font-style: italic;
+  color: #BBBBBB;
+  margin-left: 5px;
 }

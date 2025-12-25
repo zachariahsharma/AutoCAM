@@ -10,6 +10,7 @@
 - /api/keys/:id - DELETE - Delete key (only if admin and email is verified)
 - /api/teams/:id/pc - POST - Create a part category (everybody on team with verified email)
 - /api/teams/:id/pc - GET - Get all part categories (everybody on team)
+- /api/user/invites - GET - Get all invites for a user
 
 ## API Key Routes
 - /api/teams - PATCH - Update team details

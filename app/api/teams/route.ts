@@ -43,17 +43,16 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return await getTeams();
-}
-
-export async function getTeams() {
   const authType = await getAuthType();
   try { await validateAuthType(authType); }
   catch (err) { return err; }
   return await withAuth(authType, async tx => {
     if (authType.userId)
       return routeResponse(200, await tx.query.Teams.findMany());
-    else if (authType.keyDigest)
-      return routeResponse(200, await tx.query.Teams.findFirst());
+    else if (authType.keyDigest) {
+      const team = await tx.query.Teams.findFirst();
+      if (!team) return routeResponse(403);
+      return routeResponse(200, team);
+    }
   });
 }

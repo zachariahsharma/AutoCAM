@@ -114,6 +114,32 @@ export const BoxTubes = pgTable("box_tubes", {
   cam_download_url: text(),
 });
 
+export const Materials = pgTable("materials", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
+}, table => [
+  unique().on(table.name, table.team_id)
+]);
+
+export const Machines = pgTable("machines", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull(),
+  file: text().notNull(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
+}, table => [
+  unique().on(table.name, table.team_id)
+]);
+
+export const Tools = pgTable("tools", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull(),
+  file: text().notNull(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
+}, table => [
+  unique().on(table.name, table.team_id)
+]);
+
 export const PartsToPlates = pgTable("parts_to_plates", {
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
   plate_id: integer().notNull(),

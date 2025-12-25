@@ -3,9 +3,14 @@ import styles from "./layout.module.css";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useAnimate } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Team } from "../types";
+import { useSelectedLayoutSegment } from "next/navigation";
+export function useCurrentTab() {
+  const segment = useSelectedLayoutSegment("tabs");
+  return segment ?? "default";
+}
+import { TabEventsProvider, useTabEvents } from "./teamUpdate";
 
 export function Header({
   delay = 0,
@@ -54,37 +59,40 @@ export function Header({
   );
 }
 
-function Sidebar({ selected }: { selected: string }) {
+function Sidebar() {
   const [top, setTop] = useState(2);
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
-
+  const tab = useCurrentTab();
+  const { updateCount } = useTabEvents();
   useEffect(() => {
-    (async function() {
+    (async function () {
       setTeams(await (await fetch("/api/teams")).json());
     })();
-  }, []);
+  }, [updateCount]);
 
   useEffect(() => {
-    if (selected === "personal") {
+    if (tab === "personal") {
       setTop(2);
-    } else if (selected === "0" || Number.parseInt(selected)) {
-      setTop(2 + 34 * (Number.parseInt(selected) + 1));
-    } else if (selected == "newteam") {
-      setTop(144);
-    } else if (selected == "jointeam") {
-      setTop(181);
+    } else if (tab === "0" || Number.parseInt(tab)) {
+      setTop(2 + 34 * (Number.parseInt(tab) + 1));
+    } else if (tab == "newteam") {
+      setTop(2 + 34 * (teams.length + 1) + 8);
+    } else if (tab == "jointeam") {
+      setTop(2 + 34 * (teams.length + 2) + 8);
     }
-  }, [selected]);
+  }, [tab, updateCount]);
   return (
     <aside className={styles.sidebar}>
       <span id={styles.selected} style={{ top: top }} />
       <div
         onClick={() => {
-          router.push("/settings/personal");
+          if (tab !== "personal") {
+            router.push("/settings/personal");
+          }
         }}
         style={
-          selected === "personal"
+          tab === "personal"
             ? {
                 backgroundColor: "rgba(255,255,255,.15)",
                 marginBottom: "2px",
@@ -105,10 +113,12 @@ function Sidebar({ selected }: { selected: string }) {
         <div
           key={index}
           onClick={() => {
-            router.push("/settings/teams/" + index);
+            if (tab !== String(index)) {
+              router.push("/settings/teams/" + index);
+            }
           }}
           style={
-            selected === String(index)
+            tab === String(index)
               ? {
                   backgroundColor: "rgba(255,255,255,.15)",
                   marginBottom: "2px",
@@ -130,10 +140,12 @@ function Sidebar({ selected }: { selected: string }) {
       <hr />
       <div
         onClick={() => {
-          router.push("/settings/newteam");
+          if (tab !== "newteam") {
+            router.push("/settings/newteam");
+          }
         }}
         style={
-          selected === "newteam"
+          tab === "newteam"
             ? {
                 backgroundColor: "rgba(255,255,255,.15)",
                 marginBottom: "2px",
@@ -152,10 +164,12 @@ function Sidebar({ selected }: { selected: string }) {
       </div>
       <div
         onClick={() => {
-          router.push("/settings/jointeam");
+          if (tab !== "jointeam") {
+            router.push("/settings/jointeam");
+          }
         }}
         style={
-          selected === "jointeam"
+          tab === "jointeam"
             ? {
                 backgroundColor: "rgba(255,255,255,.15)",
                 marginTop: "2px",
@@ -176,20 +190,16 @@ function Sidebar({ selected }: { selected: string }) {
   );
 }
 
-export default function SettingsLayout({
-  children,
-  selected,
-}: {
-  children: React.ReactNode;
-  selected: string;
-}) {
+export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
   return (
     <div className={styles.container}>
       <Header />
-      <div className={styles.mainContent}>
-        <Sidebar selected={selected} />
-        <main className={styles.main}>{children}</main>
-      </div>
+      <TabEventsProvider>
+        <div className={styles.mainContent}>
+          <Sidebar />
+          <main className={styles.main}>{tabs}</main>
+        </div>
+      </TabEventsProvider>
     </div>
   );
 }

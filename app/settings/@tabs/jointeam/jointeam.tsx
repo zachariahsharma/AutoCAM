@@ -1,11 +1,10 @@
 "use client";
 
-import SettingsLayout from "../Layout";
 import styles from "./jointeam.module.css";
 import { TeamInvite } from "@/app/types";
 import Image from "next/image";
 import { useState } from "react";
-
+import { useTabEvents } from "../../teamUpdate";
 export default function JoinTeamSettingsPage({
   mockInvites,
 }: {
@@ -13,15 +12,13 @@ export default function JoinTeamSettingsPage({
 }) {
   const [invites, setInvites] = useState<TeamInvite[]>(mockInvites);
   return (
-    <SettingsLayout selected={"jointeam"}>
-      <div className={styles.jointeamContainer}>
-        <h1>Join Team</h1>
-        <hr />
-        {invites.map((invite, index) => (
-          <JoinCard key={index} invite={invite} setInvites={setInvites} />
-        ))}
-      </div>
-    </SettingsLayout>
+    <div className={styles.jointeamContainer}>
+      <h1>Join Team</h1>
+      <hr />
+      {invites.map((invite, index) => (
+        <JoinCard key={index} invite={invite} setInvites={setInvites} />
+      ))}
+    </div>
   );
 }
 
@@ -32,12 +29,14 @@ function JoinCard({
   invite: TeamInvite;
   setInvites: React.Dispatch<React.SetStateAction<TeamInvite[]>>;
 }) {
+  const { notifyUpdate } = useTabEvents();
   const handleJoin = () => {
+    notifyUpdate();
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
     console.log(`Joining team: ${invite.teamName}`);
   };
   const handleDecline = () => {
-    // Logic to decline the invite
+    notifyUpdate();
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
     console.log(`Declining invite to team: ${invite.teamName}`);
   };

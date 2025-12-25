@@ -1,7 +1,6 @@
 "use client";
 
 import styles from "./team.module.css";
-import SettingsLayout from "../../Layout";
 import { Material, Machine, Tool, Collaborator, ApiKey } from "@/app/types";
 import { useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
@@ -31,6 +30,7 @@ export function TeamName({
           type="text"
           placeholder="Add Team Name"
           value={teamName}
+          min={3}
           onChange={(val) => setTeamName(val.target.value)}
         />
         <PrimaryButton id={styles.teamNameButton}>
@@ -60,7 +60,7 @@ export default function TeamSettingsPage({
 }) {
   const [collaborators, setCollaborators] = useState(teamCollaborators);
   return (
-    <SettingsLayout selected={`${teamid}`}>
+    <div>
       <div className={styles.teamContainer}>
         <h1>{teamName}</h1>
         <hr />
@@ -82,6 +82,6 @@ export default function TeamSettingsPage({
         collaborators={collaborators}
         setCollaborators={setCollaborators}
       />
-    </SettingsLayout>
+    </div>
   );
 }

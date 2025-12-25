@@ -8,6 +8,72 @@
   /* background-color: white; */
 }
 
+#teamdropdown {
+  height: 40px;
+  width: 175px;
+  position: absolute;
+  top: 35px;
+  left: 300px;
+  background-color: white;
+  border-radius: 5px;
+  background-color: black;
+  border: 1px solid #4F4F4F;
+  color: #A1A1A1;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  transition: background-color 0.2s ease;
+}
+
+#teamdropdown:hover {
+  cursor: pointer;
+  background-color: rgba(255,255,255,0.1);
+}
+
+#teamdropdown > span {
+  font-family: var(--font-roboto);
+  font-size: 16px;
+  font-weight: 200;
+  width: calc(100% - 25px);
+  overflow: hidden;
+}
+.teamdropdownIcon {
+  height: 12px;
+  width: 12px;
+  position: absolute;
+  right: 10px;
+}
+
+#teamdropdownMenu {
+  position: absolute;
+  top: 80px;
+  left: 300px;
+  width: 175px;
+  background-color: black;
+  border: 1px solid #4F4F4F;
+  border-radius: 5px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  color: #A1A1A1;
+  font-family: var(--font-roboto);
+  font-size: 16px;
+  font-weight: 200;
+  padding: 5px 0px;
+}
+.teamdropdownItem {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+
+.teamdropdownItem:hover {
+  background-color: rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+
 #headerlogoButton {
   background-color: rgba(0,0,0,0);
   outline:none;

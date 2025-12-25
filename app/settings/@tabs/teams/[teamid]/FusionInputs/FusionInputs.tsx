@@ -138,7 +138,6 @@ function ToolItem({
     useState<boolean>(false);
   const [materials, setMaterials] = useState<Material[]>(tool.materials);
   useEffect(() => {
-    // make this work with machines too
     function handleClickOutside(e: MouseEvent) {
       if (
         dropdownMaterialsRef.current &&

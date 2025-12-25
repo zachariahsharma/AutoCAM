@@ -11,6 +11,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { DashboardEventsProvider } from "./dashboardTeam";
 
 export function AccountDropdown({ scope }: { scope: any }) {
   const router = useRouter();
@@ -36,10 +37,7 @@ export function AccountDropdown({ scope }: { scope: any }) {
         <span onClick={() => router.push("/settings")}>Settings</span>
       </div>
       <hr />
-      <div
-        className={styles.logoutcategory}
-        onClick={signOut}
-      >
+      <div className={styles.logoutcategory} onClick={signOut}>
         <Image
           src="/account/Logout.svg"
           width={2000}
@@ -66,23 +64,25 @@ export default function DashboardPage({
   const [finishedcamOpen, setFinishedcamOpen] = useState(false);
   return (
     <div id={styles.dashboardpage}>
-      <Header
-        delay={0}
-        setBoxtubeOpen={setBoxtubeOpen}
-        setFinishedcamOpen={setFinishedcamOpen}
-        finishedcamOpen={finishedcamOpen}
-      />
-      <PartCatList partcats={partcats} />
-      <BoxTubes
-        boxtubes={boxtubes}
-        boxtubeOpen={boxtubeOpen}
-        setBoxtubeOpen={setBoxtubeOpen}
-      />
-      <FinishedCAM
-        finishedcam={finishedcam}
-        finishedcamOpen={finishedcamOpen}
-        setFinishedcamOpen={setFinishedcamOpen}
-      />
+      <DashboardEventsProvider>
+        <Header
+          delay={0}
+          setBoxtubeOpen={setBoxtubeOpen}
+          setFinishedcamOpen={setFinishedcamOpen}
+          finishedcamOpen={finishedcamOpen}
+        />
+        <PartCatList partcats={partcats} />
+        <BoxTubes
+          boxtubes={boxtubes}
+          boxtubeOpen={boxtubeOpen}
+          setBoxtubeOpen={setBoxtubeOpen}
+        />
+        <FinishedCAM
+          finishedcam={finishedcam}
+          finishedcamOpen={finishedcamOpen}
+          setFinishedcamOpen={setFinishedcamOpen}
+        />
+      </DashboardEventsProvider>
     </div>
   );
 }

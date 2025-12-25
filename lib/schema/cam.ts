@@ -1,5 +1,5 @@
 import { eq, getTableName, Many, relations, SQL, sql } from "drizzle-orm";
-import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
+import { decimal, foreignKey, integer, pgEnum, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
@@ -172,6 +172,17 @@ export const PartsToPlates = pgTable("parts_to_plates", {
   }).onDelete("cascade"),
 ]);
 
+const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
+
+export const PlateJobs = pgTable("part_jobs", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  status: JobStatus().notNull().default("pending"),
+  plate_id: integer().notNull().references(() => Plates.id),
+  machine_id: integer().notNull().references(() => Machines.id),
+  cam_download: text(),
+  screenshot_url: text()
+});
+
 export const PartsRelations = relations(Parts, ({ one }) => ({
   category: one(PartCategories, {
     fields: [Parts.category_id],
@@ -179,10 +190,22 @@ export const PartsRelations = relations(Parts, ({ one }) => ({
   })
 }));
 
-export const PlatesRelations = relations(Plates, ({ one }) => ({
+export const PlatesRelations = relations(Plates, ({ one, many }) => ({
   category: one(PartCategories, {
     fields: [Plates.category_id],
     references: [PartCategories.id]
+  }),
+  jobs: many(PlateJobs)
+}));
+
+export const PlateJobsRelations = relations(PlateJobs, ({ one }) => ({
+  plate: one(Plates, {
+    fields: [PlateJobs.plate_id],
+    references: [Plates.id]
+  }),
+  machine: one(Machines, {
+    fields: [PlateJobs.machine_id],
+    references: [Machines.id]
   })
 }));
 

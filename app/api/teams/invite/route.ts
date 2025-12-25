@@ -11,6 +11,26 @@ export async function POST(req: NextRequest) {
   return await inviteEmail(await req.json());
 }
 
+export async function GET() {
+  return await getInvites();
+}
+
+export async function getInvites(teamId?: number) {
+  const authType = await getAuthType();
+  try {
+    await validateAuthType(authType);
+    if (authType.keyDigest)
+      teamId = await teamIdFromDigest(authType.keyDigest);
+  } catch (err) { return err; }
+
+  return await withAuth(authType, async tx => {
+    return await tx.query.TeamInvites.findMany({
+      columns: { email: true, id: true },
+      where: eq(TeamInvites.team_id, teamId!)
+    });
+  });
+}
+
 const InviteInput = zod.object({
   email: zod.email()
 });
@@ -43,7 +63,7 @@ export async function inviteEmail(json: object, teamId?: number) {
       from: '"AutoCAM" <ishan.karmakar24@gmail.com>',
       to: data.data.email,
       subject: `Join ${teamName}`,
-      text: `Join the ${teamName} Team with this link: ${new URL(`/api/teams/accept/${id}`, `http://${process.env.BASE_URL}`)}`
+      text: `Join the ${teamName} Team with this link: ${new URL(`/api/user/invites/accept/${id}`, `http://${process.env.BASE_URL}`)}`
     });
     return routeResponse();
   } catch (err) {

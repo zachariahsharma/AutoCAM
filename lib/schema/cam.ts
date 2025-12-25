@@ -56,9 +56,6 @@ export const Plates = pgTable("plates", {
   length: decimal().notNull(),
   true_depth: decimal().notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
-  status: text({ enum: ["pending", "in progress", "completed"] }).default("pending").notNull(),
-  cam_download_url: text(),
-  screenshot_url: text(),
 }, table => [
   primaryKey({ columns: [table.id, table.category_id] }),
   pgPolicy('plates_query_key', { for: "select", using: KeyAuthorized(TeamFromCategoryId(table.category_id), scopes.plates.read) }),

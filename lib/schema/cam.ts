@@ -1,5 +1,5 @@
 import { eq, getTableName, Many, relations, SQL, sql } from "drizzle-orm";
-import { decimal, foreignKey, integer, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
+import { decimal, foreignKey, integer, pgEnum, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
@@ -56,9 +56,6 @@ export const Plates = pgTable("plates", {
   length: decimal().notNull(),
   true_depth: decimal().notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
-  status: text({ enum: ["pending", "in progress", "completed"] }).default("pending").notNull(),
-  cam_download_url: text(),
-  screenshot_url: text(),
 }, table => [
   primaryKey({ columns: [table.id, table.category_id] }),
   pgPolicy('plates_query_key', { for: "select", using: KeyAuthorized(TeamFromCategoryId(table.category_id), scopes.plates.read) }),
@@ -76,8 +73,6 @@ export const BoxTubes = pgTable("box_tubes", {
   name: text().notNull(),
   epic: text().notNull(),
   quantity: integer().default(1).notNull(),
-  status: text({ enum: ["pending", "in progress", "completed"] }).default("pending").notNull(),
-  cam_download_url: text(),
 });
 
 export const Materials = pgTable("materials", {
@@ -175,6 +170,26 @@ export const PartsToPlates = pgTable("parts_to_plates", {
   }).onDelete("cascade"),
 ]);
 
+const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
+
+export const PlateJobs = pgTable("part_jobs", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  status: JobStatus().notNull().default("pending"),
+  plate_id: integer().notNull().references(() => Plates.id),
+  tool_id: integer().notNull().references(() => Tools.id),
+  machine_id: integer().notNull().references(() => Machines.id),
+  cam_download: text(),
+  screenshot_url: text()
+});
+
+export const BoxTubeJobs = pgTable("box_tube_jobs", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  box_tube_id: integer().notNull().references(() => BoxTubes.id),
+  tool_id: integer().notNull().references(() => Tools.id),
+  machine_id: integer().notNull().references(() => Machines.id),
+  status: JobStatus().notNull().default("pending")
+});
+
 export const PartsRelations = relations(Parts, ({ one }) => ({
   category: one(PartCategories, {
     fields: [Parts.category_id],
@@ -182,10 +197,22 @@ export const PartsRelations = relations(Parts, ({ one }) => ({
   })
 }));
 
-export const PlatesRelations = relations(Plates, ({ one }) => ({
+export const PlatesRelations = relations(Plates, ({ one, many }) => ({
   category: one(PartCategories, {
     fields: [Plates.category_id],
     references: [PartCategories.id]
+  }),
+  jobs: many(PlateJobs)
+}));
+
+export const PlateJobsRelations = relations(PlateJobs, ({ one }) => ({
+  plate: one(Plates, {
+    fields: [PlateJobs.plate_id],
+    references: [Plates.id]
+  }),
+  machine: one(Machines, {
+    fields: [PlateJobs.machine_id],
+    references: [Machines.id]
   })
 }));
 
@@ -212,6 +239,17 @@ export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
     fields: [PartsToPlates.category_id],
     references: [PartCategories.id],
   }),
+}));
+
+export const BoxTubeJobsRelations = relations(BoxTubeJobs, ({ one }) => ({
+  boxTube: one(BoxTubes, {
+    fields: [BoxTubeJobs.box_tube_id],
+    references: [BoxTubes.id]
+  })
+}));
+
+export const BoxTubesRelations = relations(BoxTubes, ({ many }) => ({
+  jobs: many(BoxTubeJobs)
 }));
 
 export const MaterialsRelations = relations(Materials, ({ one, many }) => ({

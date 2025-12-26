@@ -241,6 +241,17 @@ export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
   }),
 }));
 
+export const BoxTubeJobsRelations = relations(BoxTubeJobs, ({ one }) => ({
+  boxTube: one(BoxTubes, {
+    fields: [BoxTubeJobs.box_tube_id],
+    references: [BoxTubes.id]
+  })
+}));
+
+export const BoxTubesRelations = relations(BoxTubes, ({ many }) => ({
+  jobs: many(BoxTubeJobs)
+}));
+
 export const MaterialsRelations = relations(Materials, ({ one, many }) => ({
   team: one(Teams, {
     fields: [Materials.team_id],

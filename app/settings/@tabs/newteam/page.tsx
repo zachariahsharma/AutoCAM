@@ -35,7 +35,7 @@ export default function NewteamSettingsPage() {
       const data = await response.json();
       console.log("Team created successfully:", data);
       notifyUpdate();
-      router.push("/settings/teams/" + (teams.length - 1));
+      router.push("/settings/teams/" + (teams.length));
     } else {
       console.error("Error creating team:", response.statusText);
     }

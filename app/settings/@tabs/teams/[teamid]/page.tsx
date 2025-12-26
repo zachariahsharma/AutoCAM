@@ -43,25 +43,23 @@ export function TeamName({
   );
 }
 
-export default function TeamSettingsPage({
-  teamApiKeys,
-}: {
-  teamApiKeys: ApiKey[];
-}) {
+export default function TeamSettingsPage() {
   const [teamName, setTeamName] = useState<string>("");
   const [materials, setMaterials] = useState<Material[]>([]);
   const [machines, setMachines] = useState<Machine[]>([]);
   const { teamid } = useParams();
-  const { teams } = useTabEvents();
+  const [teamDbId, setTeamDbId] = useState<number>(0);
+  const { teams, notifyUpdate } = useTabEvents();
   const [tools, setTools] = useState<Tool[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   useEffect(() => {
     const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
-    console.log("Loading team with id:", idStr);
     const teamIndex = parseInt(idStr, 10);
+    console.log("Loading team with id:", idStr, "and index:", teamIndex);
     const team = teams[teamIndex];
     if (team) {
       setTeamName(team.name);
+      setTeamDbId(team.id);
       setMaterials(team.materials || []);
       setMachines(team.machines || []);
       setTools(team.tools || []);
@@ -76,8 +74,20 @@ export default function TeamSettingsPage({
         {teamName ? (
           <TeamName
             oldTeamName={teamName}
-            handleFormSubmit={(newName) => {
-              // Handle team name change
+            handleFormSubmit={async (newName) => {
+              const response = await fetch("/api/teams/" + teamDbId, {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name: newName }),
+              });
+              if (response.ok) {
+                setTeamName(newName);
+                notifyUpdate();
+              } else {
+                console.error("Error renaming team:", await response.text());
+              }
             }}
           />
         ) : null}

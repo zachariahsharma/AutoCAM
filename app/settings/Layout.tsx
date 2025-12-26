@@ -66,7 +66,10 @@ function Sidebar() {
   const { updateCount, teams, setTeams } = useTabEvents();
   useEffect(() => {
     (async function () {
-      setTeams(await (await fetch("/api/teams")).json());
+      const teamsTemp = await (await fetch("/api/teams")).json();
+      teamsTemp.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
+      console.log("Fetched teams:", teamsTemp);
+      setTeams(teamsTemp);
     })();
   }, [updateCount]);
 
@@ -190,6 +193,24 @@ function Sidebar() {
 }
 
 export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
+  useEffect(() => {
+    try {
+      const perf: any = (globalThis as any).performance;
+      if (!perf || typeof perf.measure !== "function") return;
+      const orig = perf.measure.bind(perf);
+      perf.measure = (...args: any[]) => {
+        try {
+          return orig(...args);
+        } catch (err: any) {
+          if (err?.message?.includes("cannot have a negative time stamp"))
+            return;
+          throw err;
+        }
+      };
+    } catch {
+      /* noop */
+    }
+  }, []);
   return (
     <div className={styles.container}>
       <Header />

@@ -3,6 +3,7 @@ import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { PartCategories } from "@/lib/schema/cam";
 import { and, eq } from "drizzle-orm";
+import { createInsertSchema } from "drizzle-zod";
 import { NextRequest } from "next/server";
 import zod from "zod";
 
@@ -50,11 +51,6 @@ export async function getPartCategories(params: URLSearchParams, teamId?: number
   return routeResponse(200, partCategories);
 }
 
-const CreateInput = zod.object({
-  material: zod.string(),
-  thickness: zod.number().transform(x => x.toString()),
-});
-
 export async function createPartCategory(json: any, teamId?: number) {
   const authType = await getAuthType();
   try {
@@ -63,14 +59,15 @@ export async function createPartCategory(json: any, teamId?: number) {
       teamId = await teamIdFromDigest(authType.keyDigest);
   } catch (err) { return err; }
 
-  const data = await parseJsonBody(json, CreateInput);
+  const data = await parseJsonBody({
+    ...json,
+    team_id: teamId
+  }, createInsertSchema(PartCategories));
   if (!data.success)
     return data.response;
   return await withAuth(authType, async tx => {
     try {
-      const [id] = await tx.insert(PartCategories)
-        .values({ ...data.data, team_id: teamId! })
-        .returning({ id: PartCategories.id });
+      const [id] = await tx.insert(PartCategories).values(data.data).returning({ id: PartCategories.id });
       return routeResponse(201, { id });
     } catch (err) {
       return handleDatabaseError(err);

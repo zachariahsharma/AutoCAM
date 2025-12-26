@@ -1,4 +1,4 @@
-import { eq, getTableName, Many, relations, SQL, sql } from "drizzle-orm";
+import { and, eq, getTableName, Many, relations, SQL, sql } from "drizzle-orm";
 import { decimal, foreignKey, integer, pgEnum, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
@@ -134,11 +134,33 @@ export const ToolMachines = pgTable("tool_machines", {
 ])
 
 export const PartsToPlates = pgTable("parts_to_plates", {
-  category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
   plate_id: integer().notNull().references(() => Plates.id, { onDelete: "cascade" }),
   part_id: integer().notNull().references(() => Parts.id, { onDelete: "cascade" }),
   quantity: integer().notNull()
-});
+}, table => [
+  pgPolicy('parts_to_plates_insert', {
+    for: 'insert',
+    withCheck: sql`
+    EXISTS (
+      SELECT 1 FROM ${Plates}
+      INNER JOIN ${Parts} ON ${eq(Parts.id, table.part_id)}
+      WHERE ${eq(Plates.id, table.plate_id)}
+        AND ${eq(Plates.category_id, Parts.category_id)}
+    )
+    `
+  }),
+  pgPolicy('parts_to_plates_update', {
+    for: 'update',
+    using: sql`
+    EXISTS (
+      SELECT 1 FROM ${Plates}
+      INNER JOIN ${Parts} ON ${eq(Parts.id, table.part_id)}
+      WHERE ${eq(Plates.id, table.plate_id)}
+        AND ${eq(Plates.category_id, Parts.category_id)}
+    )
+    `
+  })
+]);
 
 export const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
 

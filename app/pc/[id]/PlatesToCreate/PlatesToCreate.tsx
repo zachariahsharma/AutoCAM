@@ -27,7 +27,7 @@ export default function PlatesToCreate({
               status: "pending",
               id: Math.random() * 1000000,
               cam_download_url: "",
-              screenshot_url: "",
+              screenshot: "",
             },
           ])
         }

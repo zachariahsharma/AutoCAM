@@ -54,7 +54,7 @@ const plates: Plate[] = [
     category_id: 1,
     status: "pending",
     cam_download_url: null,
-    screenshot_url: null,
+    screenshot: null,
   },
   {
     id: 2,
@@ -64,7 +64,7 @@ const plates: Plate[] = [
     category_id: 2,
     status: "in progress",
     cam_download_url: "https://example.com/cam/PLT-002.nc",
-    screenshot_url: null,
+    screenshot: null,
   },
   {
     id: 3,
@@ -74,7 +74,7 @@ const plates: Plate[] = [
     category_id: 3,
     status: "completed",
     cam_download_url: "https://example.com/cam/PLT-003.nc",
-    screenshot_url: "https://example.com/screenshots/PLT-003.png",
+    screenshot: "https://example.com/screenshots/PLT-003.png",
   },
 ];
 

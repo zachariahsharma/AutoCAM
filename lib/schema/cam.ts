@@ -171,7 +171,7 @@ export const PlateJobs = pgTable("part_jobs", {
   tool_id: integer().notNull().references(() => Tools.id),
   machine_id: integer().notNull().references(() => Machines.id),
   cam_download: text(),
-  screenshot_url: text()
+  screenshot: text()
 });
 
 export const BoxTubeJobs = pgTable("box_tube_jobs", {

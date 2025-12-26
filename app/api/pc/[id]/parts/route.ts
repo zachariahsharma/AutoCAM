@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: Props) {
       const [id] = await tx.insert(Parts)
         .values({ ...data.data, category_id: categoryId.data })
         .returning({ id: Parts.id });
-      return routeResponse(201, { id: id.id });
+      return routeResponse(201, { id });
     } catch (err) {
       return handleDatabaseError(err);
     }

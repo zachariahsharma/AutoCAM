@@ -19,7 +19,11 @@ const scopes = {
   },
   plates: {
     read: "plates:read",
-    write: "plates:write"
+    write: "plates:write",
+    jobs: {
+      read: "plates:jobs:read",
+      write: "plates:jobs:write"
+    }
   }
 };
 export default scopes;

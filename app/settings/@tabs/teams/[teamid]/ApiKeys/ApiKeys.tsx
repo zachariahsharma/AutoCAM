@@ -54,6 +54,7 @@ export default function ApiKeysPage() {
   const [updates, setUpdates] = useState(true);
   const [generatedapikey, setGeneratedapikey] = useState("");
   const id = teams[Number(teamid)];
+  const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (id) {
       let mounted = true;
@@ -88,6 +89,7 @@ export default function ApiKeysPage() {
     }
   }, [selectedScopes]);
   const [clipboardModalOpen, setClipboardModalOpen] = useState(false);
+  const [alertText, setAlertText] = useState("");
   async function handleModalSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSelectedOpen(false);
@@ -126,6 +128,22 @@ export default function ApiKeysPage() {
       setGeneratedapikey("");
     }
   }, [clipboardModalOpen]);
+
+  async function deleteApiKey(apiKeyId: number) {
+    if (apiKeyId == undefined) {
+      return;
+    }
+    const response = await fetch(`/api/keys/${apiKeyId}`, {
+      method: "DELETE",
+    });
+    if (response.ok) {
+      console.log("deleted successfully");
+      setUpdates(!updates);
+    } else {
+      console.log(await response.json());
+    }
+  }
+
   return (
     <div className={styles.apikeyspage}>
       <h1>API Keys</h1>
@@ -153,6 +171,17 @@ export default function ApiKeysPage() {
                   ? apiKey.scopes.map((scope) => `${scope}, `)
                   : apiKey.scopes[0]}
               </span>
+              <Image
+                src="/settings/teams/apikey/Remove.svg"
+                width={2000}
+                height={2000}
+                alt="remove"
+                className={styles.removeIcon}
+                onClick={(e) => {
+                  e.preventDefault();
+                  deleteApiKey(apiKey.id);
+                }}
+              />
             </div>
           ))}
         </div>
@@ -184,7 +213,7 @@ export default function ApiKeysPage() {
               />
               <div
                 onClick={() => setSelectedOpen(!selectedOpen)}
-                id={styles.scopeInput}
+                className={styles.scopeInput}
               >
                 <span id={styles.scopeTitle}>Scopes:</span>
                 <span id={styles.modalScope}>
@@ -300,13 +329,35 @@ export default function ApiKeysPage() {
                 <span id={styles.astericks}>
                   *************************************************************************************************************************************************************
                 </span>
-                <Image
-                  src="/settings/teams/apikey/Dropdown.svg"
-                  width={2000}
-                  height={2000}
-                  alt="dropdown"
-                  className={styles.dropdownIcon}
-                />
+                <div id={styles.copyIconContainer}>
+                  {copied ? (
+                    <Image
+                      src="/settings/teams/apikey/Check.svg"
+                      width={2000}
+                      height={2000}
+                      alt="copy"
+                      className={styles.copyIcon}
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedapikey);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src="/settings/teams/apikey/Copy.svg"
+                      width={2000}
+                      height={2000}
+                      alt="copy"
+                      className={styles.copyIcon}
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedapikey);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
             <button

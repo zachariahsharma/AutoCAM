@@ -217,6 +217,34 @@
   position: absolute;
   right: 10px;
 }
+
+#copyIconContainer {
+  width: 30px;
+  height: 100%; 
+  position: absolute;
+  right: 0px;
+  background-color: black;
+  height:40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.copyIcon {
+  width: 18px;
+  height: 18px; 
+  position: absolute;
+  left:5px;
+  cursor: pointer;
+}
+
+.removeIcon {
+  width: 15px;
+  height: 15px; 
+  margin-left: auto;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
 .checkboxIcon {
   width: 9px;
   height: 9px;

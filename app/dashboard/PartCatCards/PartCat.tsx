@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import styles from "./partcat.module.css";
-import { PartCategory } from "@/app/types";
+import { PartCategory, Team } from "@/app/types";
 import { redirect, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useDashboardEvents } from "../dashboardTeam";
 function countUniquePartsByEpicArray(category: PartCategory) {
   const map = category.parts!.reduce<Map<string, number>>((acc, part) => {
     acc.set(part.epic, (acc.get(part.epic) ?? 0) + 1);
@@ -69,7 +71,59 @@ function PartCatCard({
   );
 }
 
-export function PartCatList({ partcats }: { partcats: PartCategory[] }) {
+async function fetchPartCategories({
+  team,
+}: {
+  team: Team | null;
+}): Promise<PartCategory[] | undefined> {
+  if (team !== null) {
+    const response = await fetch(`/api/teams/${team.id}/pc`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      for (const cat of data) {
+        const partsResponse = await fetch(`/api/pc/${cat.id}/parts`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (partsResponse.ok) {
+          const partsData = await partsResponse.json();
+          cat.parts = partsData;
+        } else {
+          cat.parts = [];
+        }
+      }
+      return data;
+    }
+    return [];
+  }
+}
+
+export function PartCatList() {
+  const { team } = useDashboardEvents();
+  const [partcats, setCategories] = useState<PartCategory[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const categories = await fetchPartCategories({ team });
+      if (mounted && categories) {
+        console.log("categories", categories);
+        setCategories(categories);
+      }
+    };
+    if (team) {
+      load();
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [team]);
   return (
     <>
       {partcats.length === 0 ? (

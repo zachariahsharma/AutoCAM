@@ -1,11 +1,6 @@
 import DashboardPage from "./dashboard";
 import { BoxTube, Plate } from "../types";
 
-import db, { withAuth } from "@/lib/db";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { getUserId } from "@/lib/api-utils";
-
 const boxTubes: BoxTube[] = [
   {
     name: '1x1 Aluminum Box Tube - 1/16"',
@@ -79,16 +74,9 @@ const plates: Plate[] = [
 ];
 
 export default async function Dashboard() {
-  const partCategories = (await withAuth({ userId: await getUserId() }, async tx => {
-    return await tx.query.PartCategories.findMany({ with: { parts: true } })
-  })).map(cat => ({
-    ...cat,
-    thickness: Number(cat.thickness)
-  }));
-
+  
   return (
     <DashboardPage
-      partcats={partCategories}
       boxtubes={boxTubes}
       finishedcam={plates}
     />

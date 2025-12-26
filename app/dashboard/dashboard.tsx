@@ -52,11 +52,9 @@ export function AccountDropdown({ scope }: { scope: any }) {
 }
 
 export default function DashboardPage({
-  partcats,
   boxtubes,
   finishedcam,
 }: {
-  partcats: PartCategory[];
   boxtubes: BoxTube[];
   finishedcam: Plate[];
 }) {
@@ -71,7 +69,7 @@ export default function DashboardPage({
           setFinishedcamOpen={setFinishedcamOpen}
           finishedcamOpen={finishedcamOpen}
         />
-        <PartCatList partcats={partcats} />
+        <PartCatList />
         <BoxTubes
           boxtubes={boxtubes}
           boxtubeOpen={boxtubeOpen}

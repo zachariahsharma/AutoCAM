@@ -77,7 +77,7 @@ export interface Collaborator {
 export interface ApiKey {
   id: number;
   name: string;
-  startchars: string;
+  scopes: string[];
 }
 
 export interface TeamInvite {

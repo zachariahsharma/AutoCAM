@@ -8,6 +8,7 @@ import FusionInputs from "./FusionInputs/FusionInputs";
 import CollaboratorsSettingsPage from "./Collaborators/Collaborators";
 import { useTabEvents } from "@/app/settings/teamUpdate";
 import { useParams } from "next/navigation";
+import ApiKeys from "./ApiKeys/ApiKeys";
 export function TeamName({
   oldTeamName,
   rename = true,
@@ -92,6 +93,8 @@ export default function TeamSettingsPage({
         collaborators={collaborators}
         setCollaborators={setCollaborators}
       />
+      <br />
+      <ApiKeys />
     </div>
   );
 }

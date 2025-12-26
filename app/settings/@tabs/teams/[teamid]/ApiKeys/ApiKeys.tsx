@@ -1,0 +1,331 @@
+import styles from "./apikeys.module.css";
+import type { ApiKey } from "@/app/types";
+import { ReactNode, useEffect, useState } from "react";
+import Image from "next/image";
+import { useParams } from "next/navigation";
+import { useTabEvents } from "@/app/settings/teamUpdate";
+import { motion, AnimatePresence } from "framer-motion";
+import { Alert } from "@/app/signup/page";
+
+const scopes = [
+  "team:read",
+  "teams:invites:read",
+  "teams:invites:send",
+  "teams:invites:cancel",
+  "part_categories:read",
+  "part_categories:write",
+  "parts:read",
+  "parts:write",
+  "plates:read",
+  "plates:write",
+];
+
+export function Modal({
+  children,
+  open,
+}: {
+  children: ReactNode;
+  open: boolean;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          id={styles.newApiKeyModal}
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export default function ApiKeysPage() {
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const { teamid } = useParams();
+  const { teams } = useTabEvents();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
+  const [selectedOpen, setSelectedOpen] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [updates, setUpdates] = useState(true);
+  const [generatedapikey, setGeneratedapikey] = useState("");
+  const id = teams[Number(teamid)];
+  useEffect(() => {
+    if (id) {
+      let mounted = true;
+      async function loadApiKeys() {
+        try {
+          const response = await fetch(`/api/teams/${id.id}/keys`);
+          const data: ApiKey[] = await response.json();
+          if (mounted) {
+            console.log("Loaded API keys:", data);
+            setApiKeys(data);
+          }
+        } catch (error) {
+          console.error("Error loading API keys:", error);
+        }
+      }
+      loadApiKeys();
+      return () => {
+        mounted = false;
+      };
+    }
+  }, [id, updates]);
+  useEffect(() => {
+    if (modalOpen === false) {
+      setSelectedScopes([]);
+      setAlertOpen(false);
+      setSelectedOpen(false);
+    }
+  }, [modalOpen]);
+  useEffect(() => {
+    if (selectedScopes.length > 0) {
+      setAlertOpen(false);
+    }
+  }, [selectedScopes]);
+  const [clipboardModalOpen, setClipboardModalOpen] = useState(false);
+  async function handleModalSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSelectedOpen(false);
+    console.log("selected scopes ", selectedScopes);
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name");
+    if (id == undefined) {
+      return;
+    }
+    if (selectedScopes.length === 0) {
+      setAlertOpen(true);
+      return;
+    }
+    const response = await fetch(`/api/teams/${id.id}/keys`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: name,
+        scopes: selectedScopes,
+      }),
+    });
+    if (response.ok) {
+      console.log("all g");
+      setModalOpen(false);
+      setUpdates(!updates);
+      setGeneratedapikey((await response.json()).token);
+      setClipboardModalOpen(true);
+    } else {
+      console.log(await response.json());
+    }
+  }
+  useEffect(() => {
+    if (clipboardModalOpen === false) {
+      setGeneratedapikey("");
+    }
+  }, [clipboardModalOpen]);
+  return (
+    <div className={styles.apikeyspage}>
+      <h1>API Keys</h1>
+      <div id={styles.addApiKey} onClick={() => setModalOpen(true)}>
+        <Image
+          src="/settings/teams/Plus.svg"
+          width={2000}
+          height={2000}
+          alt="logo"
+          onClick={() => setModalOpen(true)}
+          className={styles.addIcon}
+        />
+      </div>
+      <div>
+        <div id={styles.apiKeysList}>
+          {apiKeys.map((apiKey, index) => (
+            <div key={index} className={styles.apiKeyItem}>
+              <span className={styles.apiKeyName}>
+                <span>{apiKey.name}</span>
+              </span>
+              <span className={styles.apiKeyValue}>
+                {apiKey.scopes === undefined
+                  ? ""
+                  : apiKey.scopes.length > 1
+                  ? apiKey.scopes.map((scope) => `${scope}, `)
+                  : apiKey.scopes[0]}
+              </span>
+            </div>
+          ))}
+        </div>
+        <Modal open={modalOpen}>
+          <form onSubmit={handleModalSubmit} id={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <div id={styles.headerImage}>
+                <Image
+                  src="/settings/teams/apikey/name.svg"
+                  width={2000}
+                  height={2000}
+                  alt="logo"
+                  className={styles.nameIcon}
+                />
+              </div>
+              <div id={styles.modalTitle}>
+                <h1>Name & Scope:</h1>
+                <span>Type the name and scope for your new API Key</span>
+              </div>
+            </div>
+            <hr className={styles.divider} />
+            <div id={styles.inputContainer}>
+              <input
+                type="text"
+                name="name"
+                placeholder="Name"
+                min={3}
+                required
+              />
+              <div
+                onClick={() => setSelectedOpen(!selectedOpen)}
+                id={styles.scopeInput}
+              >
+                <span id={styles.scopeTitle}>Scopes:</span>
+                <span id={styles.modalScope}>
+                  {selectedScopes.length} Selected
+                </span>
+                <Image
+                  src="/settings/teams/apikey/Dropdown.svg"
+                  width={2000}
+                  height={2000}
+                  alt="dropdown"
+                  className={styles.dropdownIcon}
+                />
+              </div>
+              <Alert
+                open={alertOpen}
+                message={"1+ Scopes Required"}
+                className={styles.alert}
+              />
+            </div>
+            <AnimatePresence>
+              {selectedOpen && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  id={styles.dropdownScopes}
+                >
+                  {scopes.map((scope, index) => (
+                    <div
+                      key={index}
+                      onClick={() => {
+                        setSelectedScopes((prev) => {
+                          const exists = prev.some((s) => s === scope);
+
+                          return exists
+                            ? prev.filter((s) => s !== scope)
+                            : [...prev, scope];
+                        });
+                      }}
+                    >
+                      <label className={styles.checkbox}>
+                        <input
+                          type="checkbox"
+                          name={`checkbox${scope}`}
+                          checked={selectedScopes.some((s) => s === scope)}
+                          onChange={() => {
+                            setSelectedScopes((prev) => {
+                              const exists = prev.some((s) => s === scope);
+
+                              return exists
+                                ? prev.filter((s) => s !== scope)
+                                : [...prev, scope];
+                            });
+                          }}
+                        />
+                        <span className={styles.checkboxBox}>
+                          <Image
+                            src="/settings/teams/apikey/X.svg"
+                            width={2000}
+                            height={2000}
+                            alt="logo"
+                            className={styles.checkboxIcon}
+                          />
+                        </span>
+                      </label>
+                      <span>{scope}</span>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button id={styles.modalClose} type="submit">
+              Done
+            </button>
+            <Image
+              src="/settings/teams/apikey/Close.svg"
+              width={2000}
+              height={2000}
+              alt="logo"
+              onClick={() => setModalOpen(false)}
+              className={styles.closeIcon}
+            />
+          </form>
+        </Modal>
+        <Modal open={clipboardModalOpen}>
+          <form id={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <div id={styles.headerImage}>
+                <Image
+                  src="/settings/teams/apikey/name.svg"
+                  width={2000}
+                  height={2000}
+                  alt="logo"
+                  className={styles.nameIcon}
+                />
+              </div>
+              <div id={styles.modalTitle}>
+                <h1>API Key</h1>
+                <span>Copy and save your new API Key</span>
+              </div>
+            </div>
+            <hr className={styles.divider} />
+            <div id={styles.inputContainer}>
+              <div
+                onClick={() => setSelectedOpen(!selectedOpen)}
+                className={styles.scopeInput}
+                id={styles.generatedInput}
+              >
+                <span id={styles.generatedKey}>
+                  {generatedapikey.slice(0, 5)}
+                </span>
+                <span id={styles.astericks}>
+                  *************************************************************************************************************************************************************
+                </span>
+                <Image
+                  src="/settings/teams/apikey/Dropdown.svg"
+                  width={2000}
+                  height={2000}
+                  alt="dropdown"
+                  className={styles.dropdownIcon}
+                />
+              </div>
+            </div>
+            <button
+              id={styles.modalClose}
+              onClick={() => setClipboardModalOpen(false)}
+            >
+              Done
+            </button>
+            <Image
+              src="/settings/teams/apikey/Close.svg"
+              width={2000}
+              height={2000}
+              alt="logo"
+              onClick={() => setClipboardModalOpen(false)}
+              className={styles.closeIcon}
+            />
+          </form>
+        </Modal>
+      </div>
+    </div>
+  );
+}

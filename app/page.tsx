@@ -106,7 +106,7 @@ export function Header({
 
 export default function Home() {
   return (
-    <div className={zalando.variable + " " + roboto.variable}>
+    <div className={zalando.variable + " " + roboto.variable} id={styles.container}>
       <Background />
 
       <Header />

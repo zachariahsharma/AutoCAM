@@ -44,6 +44,11 @@
   top: 13px;
   left:13px;
 }
+#container {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
 
 #loginbutton {
   font-family: var(--font-roboto);

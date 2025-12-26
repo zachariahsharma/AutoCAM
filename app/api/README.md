@@ -29,6 +29,9 @@
 - /api/parts/:id - PATCH - Update a part (everybody on team with verified email)
 - /api/plates/:id - DELETE - Delete a plate (everybody on team with verified email)
 - /api/plates/:id - PATCH - Update a plate (everybody on team with verified email)
+- /api/plates/:id/jobs - GET - Get all jobs (everybody on team)
+- /api/plates/:id/jobs - POST - Create a job (everybody on team with verified email)
+- /api/plates/jobs/:id - DELETE - Delete a job (everybody on team with verified email)
 
 ## API Key Scopes
 - teams:read - Able to read details about the teams that the key is assigned to
@@ -41,3 +44,5 @@
 - parts:write - Able to INSERT, UPDATE, and DELETE parts
 - plates:read - Able to read plates
 - plates:write - Able to INSERT, UPDATE, and DELETE plates
+- plates:jobs:read - Able to read plate jobs
+- plates:jobs:write - Able to INSERT and DELETE plate jobs

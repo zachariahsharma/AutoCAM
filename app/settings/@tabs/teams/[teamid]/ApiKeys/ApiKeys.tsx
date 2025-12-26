@@ -1,6 +1,12 @@
 import styles from "./apikeys.module.css";
 import type { ApiKey } from "@/app/types";
-import { ReactNode, useEffect, useState } from "react";
+import {
+  Dispatch,
+  ReactNode,
+  SetStateAction,
+  useEffect,
+  useState,
+} from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useTabEvents } from "@/app/settings/teamUpdate";
@@ -387,5 +393,57 @@ export default function ApiKeysPage() {
         </Modal>
       </div>
     </div>
+  );
+}
+
+export function ErrorModal({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  return (
+    <Modal open={open}>
+      <form id={styles.modalContent}>
+        <div className={styles.modalHeader}>
+          <div id={styles.headerImage}>
+            <Image
+              src="/auth/Error.svg"
+              width={2000}
+              height={2000}
+              alt="error"
+              className={styles.nameIcon}
+            />
+          </div>
+          <div id={styles.modalErrorTitle}>
+            <h1 id={styles.errorTitle}>OOPS!</h1>
+            <span>Looks like we had a problem</span>
+          </div>
+        </div>
+        <hr className={styles.divider} />
+        <div id={styles.inputContainer}>
+          <span>
+            Check your internet connection, reload, and try again. I'm sorry for
+            the inconvenience!{" "}
+          </span>
+        </div>
+        <button
+          id={styles.modalClose}
+          type="button"
+          onClick={() => window.location.reload()}
+        >
+          Reload
+        </button>
+        <Image
+          src="/auth/Close.svg"
+          width={2000}
+          height={2000}
+          alt="logo"
+          onClick={() => setOpen(false)}
+          className={styles.closeIcon}
+        />
+      </form>
+    </Modal>
   );
 }

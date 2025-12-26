@@ -97,6 +97,7 @@
   border-radius: 20px;
   box-shadow: 0 0 10px rgba(255,255,255,0.5);
   position: relative;
+  z-index: 20;
 }
 #modalTitle > h1{
   color: white;
@@ -107,16 +108,26 @@
   height: 15px;
 }
 
-#modalTitle > span {
+#errorTitle {
+  color: white;
+  font-family: var(--font-zalando);
+  font-size: 30px !important;
+  font-weight: 400;
+  margin: 0;
+  height: 30px !important;
+}
+
+#modalTitle > span, #modalErrorTitle > span {
   color: #808080;
-  font-family: var(--font-roboto);
+  font-family: var(--font-zalando);
   font-size: 12px;
   font-weight: 400;
   margin: 0;
   height: 15px;
 }
 
-#modalTitle {
+
+#modalTitle, #modalErrorTitle {
   height: auto;
   display: flex;
   flex-direction: column;
@@ -128,6 +139,13 @@
   width: 100%;
   height: 50px;
   margin-top: 10px;
+}
+
+#inputContainer > span {
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  margin-left: 20px;
 }
 
 .divider {

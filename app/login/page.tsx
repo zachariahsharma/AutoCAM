@@ -4,24 +4,41 @@ import { motion } from "framer-motion";
 import { SecondaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
 import { authClient } from "@/lib/auth-client";
-import { redirect, useRouter } from "next/navigation";
-import { FormEvent } from "react";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState, Dispatch, SetStateAction, use } from "react";
 import { RobotPic } from "../signup/page";
-function LoginContainer() {
+import { Alert } from "../signup/page";
+import { ErrorModal } from "../settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";
+
+function LoginContainer({
+  setErrorModalOpen,
+}: {
+  setErrorModalOpen: Dispatch<SetStateAction<boolean>>;
+}) {
   const router = useRouter();
+  const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
   const login = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
-    await authClient.signIn.email(
+    const result = await authClient.signIn.email(
       { email, password },
       {
         onSuccess: () => router.push("/dashboard"),
       }
     );
+    console.log("error: ", result.error);
+    if (result.error && result.error.message === "Invalid email or password") {
+      setPasswordAlertOpen(true);
+      setTimeout(() => {
+        setPasswordAlertOpen(false);
+      }, 3000);
+    } else if (result.error) {
+      setErrorModalOpen(true);
+    }
   };
+
   return (
     <motion.div
       initial={{ x: 100, opacity: 0 }}
@@ -54,6 +71,10 @@ function LoginContainer() {
           name="password"
           required
         />
+        <Alert
+          message={"Email or Password Incorrect"}
+          open={passwordAlertOpen}
+        />
         <SecondaryButton id={styles.loginbutton} type="submit">
           <span className={styles.loginbuttontext + " " + styles.textGradient}>
             LOG IN
@@ -61,7 +82,9 @@ function LoginContainer() {
         </SecondaryButton>
       </form>
       <div>
-        <span id={styles.alreadyHaveAccount}>Don&apos;t have an account yet?</span>
+        <span id={styles.alreadyHaveAccount}>
+          Don&apos;t have an account yet?
+        </span>
         <a href="/signup" id={styles.signup}>
           Sign Up
         </a>
@@ -71,11 +94,13 @@ function LoginContainer() {
 }
 
 export default function loginPage() {
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
   return (
     <div>
       <Header delay={0.5} duration={0.5} />
       <RobotPic />
-      <LoginContainer />
+      <LoginContainer setErrorModalOpen={setErrorModalOpen} />
+      <ErrorModal open={errorModalOpen} setOpen={setErrorModalOpen} />
     </div>
   );
 }

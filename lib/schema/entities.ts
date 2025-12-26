@@ -21,6 +21,7 @@ export const TeamInvites = pgTable("team_invites", {
   id: uuid().primaryKey().defaultRandom(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   email: text().notNull(),
+  admin: boolean().notNull()
 }, table => [
   unique().on(table.team_id, table.email),
   pgPolicy('team_invites_query_key', { for: 'select', using: KeyAuthorized(table.team_id, scopes.teams.invites.read) }),

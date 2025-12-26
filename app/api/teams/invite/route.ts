@@ -5,7 +5,7 @@ import mailer from "@/lib/mailer";
 import { TeamInvites, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
-import zod from "zod";
+import { createInsertSchema } from "drizzle-zod";
 
 export async function POST(req: NextRequest) {
   return await inviteEmail(await req.json());
@@ -31,10 +31,6 @@ export async function getInvites(teamId?: number) {
   });
 }
 
-const InviteInput = zod.object({
-  email: zod.email()
-});
-
 export async function inviteEmail(json: object, teamId?: number) {
   const authType = await getAuthType();
   try {
@@ -43,7 +39,10 @@ export async function inviteEmail(json: object, teamId?: number) {
       teamId = await teamIdFromDigest(authType.keyDigest);
   } catch (err) { return err; }
 
-  const data = await parseJsonBody(json, InviteInput);
+  const data = await parseJsonBody({
+    ...json,
+    team_id: teamId
+  }, createInsertSchema(TeamInvites));
   if (!data.success)
     return data.response;
 
@@ -51,7 +50,7 @@ export async function inviteEmail(json: object, teamId?: number) {
     const [id, teamName] = await withAuth(authType, async tx => {
       const [invite] = await tx
         .insert(TeamInvites)
-        .values({ team_id: teamId!, ...data.data })
+        .values(data.data)
         .returning({ id: TeamInvites.id });
       // Unless there is an egregious race condition this should never return nothing
       const team = (await tx.query.Teams.findFirst({

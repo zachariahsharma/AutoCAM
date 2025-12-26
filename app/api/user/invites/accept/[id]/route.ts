@@ -1,4 +1,4 @@
-import { getUserId, routeResponse } from "@/lib/api-utils";
+import { checkAnyChanges, getUserId, routeResponse } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
 import { TeamInvites, TeamMembers } from "@/lib/schema/entities";
@@ -18,12 +18,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // User is now authorized to join the team
   await db.transaction(async tx => {
-    await tx.delete(TeamInvites).where(eq(TeamInvites.id, inviteId));
+    const [admin] = await tx.delete(TeamInvites).where(eq(TeamInvites.id, inviteId)).returning({ admin: TeamInvites.admin });
     await tx.insert(TeamMembers).values({
       team_id: invite.team_id,
       user_id: session.user.id,
-      // TODO: This shouldn't be hardcoded
-      admin: false,
+      admin: admin.admin,
     });
   });
 

@@ -2,7 +2,6 @@ import { withAuth } from "@/lib/db";
 import { TeamKeys } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
-import zod from "zod";
 import {
   parseParamId,
   parseJsonBody,
@@ -11,7 +10,7 @@ import {
   getAuthType,
   validateAuthType
 } from "@/lib/api-utils";
-import { ScopeEnum } from "@/lib/scopes";
+import { createUpdateSchema } from "drizzle-zod";
 
 interface Props {
   params: Promise<{ id: string }>
@@ -22,14 +21,14 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const keyIdResult = await parseParamId((await params).id);
-  if (!keyIdResult.success) return keyIdResult.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
   
-  return await withAuth({ userId: authType.userId }, async tx => {
+  return await withAuth(authType, async tx => {
     try {
       return checkAnyChanges(await tx
         .delete(TeamKeys)
-        .where(eq(TeamKeys.id, keyIdResult.data))
+        .where(eq(TeamKeys.id, id.data))
         .returning({ id: TeamKeys.id }));
     } catch (err) {
       return handleDatabaseError(err);
@@ -37,27 +36,22 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   });
 }
 
-const UpdateInput = zod.object({
-  name: zod.string().optional(),
-  scopes: zod.array(ScopeEnum).optional()
-});
-
 export async function PATCH(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
   
-  const keyIdResult = await parseParamId((await params).id);
-  if (!keyIdResult.success) return keyIdResult.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
   
-  const bodyResult = await parseJsonBody(await req.json(), UpdateInput);
-  if (!bodyResult.success) return bodyResult.response;
+  const body = await parseJsonBody(await req.json(), createUpdateSchema(TeamKeys));
+  if (!body.success) return body.response;
 
-  return await withAuth({ userId: authType.userId }, async tx => {
+  return await withAuth(authType, async tx => {
     try {
       return checkAnyChanges(await tx.update(TeamKeys)
-        .set(bodyResult.data)
-        .where(eq(TeamKeys.id, keyIdResult.data))
+        .set(body.data)
+        .where(eq(TeamKeys.id, id.data))
         .returning({ id: TeamKeys.id }));
     } catch (err) {
       return handleDatabaseError(err);

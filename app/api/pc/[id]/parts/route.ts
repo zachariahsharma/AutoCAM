@@ -5,27 +5,22 @@ import { Parts } from "@/lib/schema/cam";
 import zod from "zod";
 import { eq } from "drizzle-orm";
 import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
-
-const CreateInput = zod.object({
-  name: zod.string(),
-  epic: zod.string(),
-  ticket: zod.string(),
-  quantity: zod.number(),
-});
+import { createInsertSchema } from "drizzle-zod";
 
 export async function POST(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const categoryId = await parseParamId((await params).id);
-  if (!categoryId.success) return categoryId.response;
-  const data = await parseJsonBody(await req.json(), CreateInput);
+  const data = await parseJsonBody({
+    ...await req.json(),
+    category_id: (await params).id
+  }, createInsertSchema(Parts));
   if (!data.success) return data.response;
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(Parts)
-        .values({ ...data.data, category_id: categoryId.data })
+        .values(data.data)
         .returning({ id: Parts.id });
       return routeResponse(201, { id });
     } catch (err) {
@@ -36,15 +31,15 @@ export async function POST(req: NextRequest, { params }: Props) {
 
 export async function GET(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
-  try { await validateAuthType(authType, true); }
+  try { await validateAuthType(authType); }
   catch (err) { return err; }
 
-  const categoryId = await parseParamId((await params).id);
-  if (!categoryId.success)
-    return categoryId.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success)
+    return id.response;
   return routeResponse(200, await withAuth(authType, async tx => {
     return await tx.query.Parts.findMany({
-      where: eq(Parts.category_id, categoryId.data),
+      where: eq(Parts.category_id, id.data),
       columns: {
         epic: true,
         name: true,

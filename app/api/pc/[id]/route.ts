@@ -27,17 +27,17 @@ export async function PATCH(req: NextRequest, { params }: Props) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const categoryIdResult = await parseParamId((await params).id);
-  if (!categoryIdResult.success) return categoryIdResult.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
   
-  const bodyResult = await parseJsonBody(await req.json(), UpdateInput);
-  if (!bodyResult.success) return bodyResult.response;
+  const body = await parseJsonBody(await req.json(), UpdateInput);
+  if (!body.success) return body.response;
 
   return withAuth(authType, async tx => {
     try {
       return checkAnyChanges(await tx.update(PartCategories)
-      .set(bodyResult.data)
-      .where(eq(PartCategories.id, categoryIdResult.data))
+      .set(body.data)
+      .where(eq(PartCategories.id, id.data))
       .returning({ id: PartCategories.id }));
     } catch (err) {
       return handleDatabaseError(err);
@@ -50,13 +50,13 @@ export async function DELETE(req: NextRequest, { params }: Props) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const categoryIdResult = await parseParamId((await params).id);
-  if (!categoryIdResult.success) return categoryIdResult.response;
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
   
   return await withAuth(authType, async tx => {
     try {
       return checkAnyChanges(await tx.delete(PartCategories)
-        .where(eq(PartCategories.id, categoryIdResult.data))
+        .where(eq(PartCategories.id, id.data))
         .returning({ id: PartCategories.id }));
     } catch (err) {
       return handleDatabaseError(err);

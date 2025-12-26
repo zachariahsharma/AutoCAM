@@ -73,8 +73,6 @@ export const BoxTubes = pgTable("box_tubes", {
   name: text().notNull(),
   epic: text().notNull(),
   quantity: integer().default(1).notNull(),
-  status: text({ enum: ["pending", "in progress", "completed"] }).default("pending").notNull(),
-  cam_download_url: text(),
 });
 
 export const Materials = pgTable("materials", {
@@ -178,9 +176,18 @@ export const PlateJobs = pgTable("part_jobs", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   status: JobStatus().notNull().default("pending"),
   plate_id: integer().notNull().references(() => Plates.id),
+  tool_id: integer().notNull().references(() => Tools.id),
   machine_id: integer().notNull().references(() => Machines.id),
   cam_download: text(),
   screenshot_url: text()
+});
+
+export const BoxTubeJobs = pgTable("box_tube_jobs", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  box_tube_id: integer().notNull().references(() => BoxTubes.id),
+  tool_id: integer().notNull().references(() => Tools.id),
+  machine_id: integer().notNull().references(() => Machines.id),
+  status: JobStatus().notNull().default("pending")
 });
 
 export const PartsRelations = relations(Parts, ({ one }) => ({

@@ -38,6 +38,9 @@
 - /api/plates/jobs/:id - DELETE - Delete a job (everybody on team with verified email)
 - /api/boxTubes/:id - DELETE - Delete a box tube (everybody on team with verified email)
 - /api/boxTubes/:id - PATCH - Update a box tube (everybody on team with verified email)
+- /api/boxTubes/:id/jobs - GET - Get all box tube jobs (everybody on team)
+- /api/boxTubes/:id/jobs - POST - Create a box tube job (everybody on team with verified email)
+- /api/boxTubes/jobs/:id - DELETE - Delete a box tube job (everybody on team with verified email)
 
 ## API Key Scopes
 - teams:read - Able to read details about the teams that the key is assigned to
@@ -54,3 +57,5 @@
 - plates:jobs:write - Able to INSERT and DELETE plate jobs
 - box_tubes:read - Able to read box tubes
 - box_tubes:write - Able to INSERT, UPDATE, and DELETE box tubes
+- box_tubes:jobs:read - Able to read box tube jobs
+- box_tubes:jobs:write - Able to INSERT and DELETE box tube jobs

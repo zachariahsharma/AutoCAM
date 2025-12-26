@@ -10,6 +10,8 @@
 - /api/keys/:id - DELETE - Delete key (only if admin and email is verified)
 - /api/teams/:id/pc - POST - Create a part category (everybody on team with verified email)
 - /api/teams/:id/pc - GET - Get all part categories (everybody on team)
+- /api/teams/:id/boxTubes - GET - Get all box tubes (everybody on team)
+- /api/teams/:id/boxTubes - POST - Create a box tube (everybody on team with verified email)
 - /api/user/invites - GET - Get all invites for a user
 
 ## API Key Routes
@@ -17,6 +19,8 @@
 - /api/teams/invite - POST - Invite email (in body) to team
 - /api/pc - POST - Create a part category
 - /api/pc - GET - Get all part categories
+- /api/boxTubes - GET - Get all box tubes
+- /api/boxTubes - POST - Create a box tube
 
 ## Common Routes
 - /api/pc/:id - DELETE - Delete a part category (everybody on team with verified email)
@@ -32,6 +36,8 @@
 - /api/plates/:id/jobs - GET - Get all jobs (everybody on team)
 - /api/plates/:id/jobs - POST - Create a job (everybody on team with verified email)
 - /api/plates/jobs/:id - DELETE - Delete a job (everybody on team with verified email)
+- /api/boxTubes/:id - DELETE - Delete a box tube (everybody on team with verified email)
+- /api/boxTubes/:id - PATCH - Update a box tube (everybody on team with verified email)
 
 ## API Key Scopes
 - teams:read - Able to read details about the teams that the key is assigned to
@@ -46,3 +52,5 @@
 - plates:write - Able to INSERT, UPDATE, and DELETE plates
 - plates:jobs:read - Able to read plate jobs
 - plates:jobs:write - Able to INSERT and DELETE plate jobs
+- box_tubes:read - Able to read box tubes
+- box_tubes:write - Able to INSERT, UPDATE, and DELETE box tubes

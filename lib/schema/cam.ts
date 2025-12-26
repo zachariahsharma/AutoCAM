@@ -71,6 +71,7 @@ export const BoxTubes = pgTable("box_tubes", {
   name: text().notNull(),
   epic: text().notNull(),
   quantity: integer().default(1).notNull(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 });
 
 export const Materials = pgTable("materials", {
@@ -235,8 +236,12 @@ export const BoxTubeJobsRelations = relations(BoxTubeJobs, ({ one }) => ({
   })
 }));
 
-export const BoxTubesRelations = relations(BoxTubes, ({ many }) => ({
-  jobs: many(BoxTubeJobs)
+export const BoxTubesRelations = relations(BoxTubes, ({ one, many }) => ({
+  jobs: many(BoxTubeJobs),
+  team: one(Teams, {
+    fields: [BoxTubes.team_id],
+    references: [Teams.id]
+  })
 }));
 
 export const MaterialsRelations = relations(Materials, ({ one, many }) => ({

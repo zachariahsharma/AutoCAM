@@ -244,7 +244,19 @@
   margin-right: 10px;
   cursor: pointer;
 }
-
+#noApiKeys {
+  color: #BBBBBB;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  font-style: italic;
+}
+#noApiKeysContainer {
+  width: 100%;
+  height: 39px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .checkboxIcon {
   width: 9px;
   height: 9px;

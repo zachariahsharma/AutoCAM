@@ -100,6 +100,7 @@ export default function ApiKeysPage() {
       return;
     }
     if (selectedScopes.length === 0) {
+      setAlertText("1+ Scopes Required");
       setAlertOpen(true);
       return;
     }
@@ -119,8 +120,11 @@ export default function ApiKeysPage() {
       setUpdates(!updates);
       setGeneratedapikey((await response.json()).token);
       setClipboardModalOpen(true);
+    } else if (response.status === 409) {
+      setAlertText("API Key Name Already Exists");
+      setAlertOpen(true);
     } else {
-      console.log(await response.json());
+      console.log(await response.text());
     }
   }
   useEffect(() => {
@@ -159,6 +163,11 @@ export default function ApiKeysPage() {
       </div>
       <div>
         <div id={styles.apiKeysList}>
+          {apiKeys.length === 0 && (
+            <div id={styles.noApiKeysContainer}>
+              <span id={styles.noApiKeys}>No API Keys Created</span>
+            </div>
+          )}
           {apiKeys.map((apiKey, index) => (
             <div key={index} className={styles.apiKeyItem}>
               <span className={styles.apiKeyName}>
@@ -229,7 +238,7 @@ export default function ApiKeysPage() {
               </div>
               <Alert
                 open={alertOpen}
-                message={"1+ Scopes Required"}
+                message={alertText}
                 className={styles.alert}
               />
             </div>

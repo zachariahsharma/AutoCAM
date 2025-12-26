@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: Props) {
           true_depth: data.data.trueDepth,
           category_id: categoryId.data
         }).returning({ id: Plates.id });
-      return routeResponse(201, { id: id.id });
+      return routeResponse(201, { id });
     } catch (err) {
       return handleDatabaseError(err);
     }

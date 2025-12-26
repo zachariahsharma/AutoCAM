@@ -71,7 +71,7 @@ export async function createPartCategory(json: any, teamId?: number) {
       const [id] = await tx.insert(PartCategories)
         .values({ ...data.data, team_id: teamId! })
         .returning({ id: PartCategories.id });
-      return routeResponse(201, { id: id.id });
+      return routeResponse(201, { id });
     } catch (err) {
       return handleDatabaseError(err);
     }

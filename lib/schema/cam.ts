@@ -211,7 +211,6 @@ export const PlateJobsRelations = relations(PlateJobs, ({ one }) => ({
 export const PartCategoriesRelations = relations(PartCategories, ({ many, one }) => ({
   parts: many(Parts),
   plates: many(Plates),
-  partsToPlates: many(PartsToPlates),
   team: one(Teams, {
     fields: [PartCategories.team_id],
     references: [Teams.id]
@@ -220,16 +219,12 @@ export const PartCategoriesRelations = relations(PartCategories, ({ many, one })
 
 export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
   part: one(Parts, {
-    fields: [PartsToPlates.part_id, PartsToPlates.category_id],
-    references: [Parts.id, Parts.category_id]
+    fields: [PartsToPlates.part_id],
+    references: [Parts.id]
   }),
   plate: one(Plates, {
-    fields: [PartsToPlates.plate_id, PartsToPlates.category_id],
-    references: [Plates.id, Plates.category_id]
-  }),
-  category: one(PartCategories, {
-    fields: [PartsToPlates.category_id],
-    references: [PartCategories.id],
+    fields: [PartsToPlates.plate_id],
+    references: [Plates.id]
   }),
 }));
 

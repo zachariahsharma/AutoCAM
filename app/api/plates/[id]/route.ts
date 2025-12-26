@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import zod from "zod";
 
-interface Props {
+export interface Props {
   params: Promise<{ id: string }>
 };
 

@@ -12,6 +12,7 @@
 - /api/teams/:id/pc - GET - Get all part categories (everybody on team)
 - /api/teams/:id/boxTubes - GET - Get all box tubes (everybody on team)
 - /api/teams/:id/boxTubes - POST - Create a box tube (everybody on team with verified email)
+- /api/teams/:id/members - GET - Get all members from team (everybody on team)
 - /api/user/invites - GET - Get all invites for a user
 
 ## API Key Routes
@@ -21,6 +22,7 @@
 - /api/pc - GET - Get all part categories
 - /api/boxTubes - GET - Get all box tubes
 - /api/boxTubes - POST - Create a box tube
+- /api/teams/members - GET - Get all members from team
 
 ## Common Routes
 - /api/pc/:id - DELETE - Delete a part category (everybody on team with verified email)
@@ -44,9 +46,10 @@
 
 ## API Key Scopes
 - teams:read - Able to read details about the teams that the key is assigned to
-- team:invites:read - Able to read outgoing invites
-- team:invites:send - Able to send invites
-- team:invites:cancel - Able to cancel invites
+- teams:members:read - Able to read all members of the team
+- teams:invites:read - Able to read outgoing invites
+- teams:invites:send - Able to send invites
+- teams:invites:cancel - Able to cancel invites
 - part_categories:read - Able to read part categories
 - part_categories:write - Able to INSERT, UPDATE, and DELETE part categories
 - parts:read - Able to read parts

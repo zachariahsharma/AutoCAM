@@ -24,10 +24,7 @@ export default function PlatesToCreate({
               length: 48,
               true_depth: 0.25,
               category_id: categoryId,
-              status: "pending",
               id: Math.random() * 1000000,
-              cam_download_url: "",
-              screenshot: "",
             },
           ])
         }

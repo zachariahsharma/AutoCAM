@@ -17,9 +17,11 @@ function countUniquePartsByEpicArray(category: PartCategory) {
 function PartCatCard({
   partcat,
   delay,
+  teamid,
 }: {
   partcat: PartCategory;
   delay: number;
+  teamid: number;
 }) {
   const router = useRouter();
   return (
@@ -28,7 +30,7 @@ function PartCatCard({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: delay, duration: 0.3 }}
       className={styles.platecard}
-      onClick={() => router.push(`/pc/${partcat.id}`)}
+      onClick={() => router.push(`/pc/${partcat.id}/${teamid}`)}
     >
       <div id={styles.platecardheader}>
         <span>{partcat.material}</span>{" "}
@@ -135,6 +137,7 @@ export function PartCatList() {
               key={index}
               partcat={partcat}
               delay={index * 0.2 + 0.3}
+              teamid={team ? team.id : 0}
             />
           ))}
         </div>

@@ -2,15 +2,14 @@
 import styles from "./availableparts.module.css";
 import { Part } from "@/app/types";
 import { useEffect, useState, ChangeEvent } from "react";
+import { useMaterialEvents } from "../materialEvents";
 
 export default function AvailableParts({
   epicsMap,
 }: {
   epicsMap: { [key: string]: Part[] };
 }) {
-  const [selectedParts, setSelectedParts] = useState<{
-    [key: number]: number;
-  }>({});
+  const { selectedParts, setSelectedParts } = useMaterialEvents();
   useEffect(() => {
     Object.entries(epicsMap).forEach(([epic, parts]) =>
       parts.forEach((part) => {

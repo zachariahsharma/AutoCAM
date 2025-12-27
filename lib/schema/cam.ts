@@ -1,8 +1,9 @@
 import { and, eq, getTableName, Many, relations, SQL, sql } from "drizzle-orm";
-import { decimal, foreignKey, integer, pgEnum, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
+import { customType, decimal, integer, pgEnum, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
+import { string } from "zod";
 
 function TeamFromCategoryId(cid: any) {
   return sql`
@@ -13,6 +14,12 @@ function TeamFromCategoryId(cid: any) {
   )
   `
 }
+
+const bytea = customType<{ data: string; }>({
+  dataType() { return "bytea"; },
+  toDriver(val) { return Buffer.from(val, "hex"); },
+  fromDriver(val) { return (val as Buffer).toString("hex"); }
+});
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -89,7 +96,6 @@ export const Materials = pgTable("materials", {
 export const Machines = pgTable("machines", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  file: text().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   unique().on(table.name, table.team_id),

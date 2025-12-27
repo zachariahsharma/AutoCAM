@@ -35,6 +35,7 @@ export async function inviteEmail(json: object, teamId?: number) {
   const authType = await getAuthType();
   try {
     await validateAuthType(authType, true);
+    console.log("test");
     if (authType.keyDigest)
       teamId = await teamIdFromDigest(authType.keyDigest);
   } catch (err) { return err; }

@@ -1,5 +1,5 @@
-import { and, eq, getTableName, Many, relations, SQL, sql } from "drizzle-orm";
-import { decimal, foreignKey, integer, pgEnum, pgPolicy, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
+import { eq, getTableName, relations, sql } from "drizzle-orm";
+import { customType, decimal, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
@@ -13,6 +13,10 @@ function TeamFromCategoryId(cid: any) {
   )
   `
 }
+
+const bytea = customType<{ data: ArrayBuffer; }>({
+  dataType() { return "bytea"; },
+});
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -36,6 +40,7 @@ export const Parts = pgTable("parts", {
   name: text().notNull(),
   epic: text().notNull(),
   ticket: text().notNull(),
+  file: bytea().notNull(),
   quantity: integer().default(1).notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
@@ -89,7 +94,7 @@ export const Materials = pgTable("materials", {
 export const Machines = pgTable("machines", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  file: text().notNull(),
+  file: bytea().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   unique().on(table.name, table.team_id),
@@ -102,7 +107,7 @@ export const Machines = pgTable("machines", {
 export const Tools = pgTable("tools", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  file: text().notNull(),
+  file: bytea().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   unique().on(table.name, table.team_id),
@@ -171,8 +176,8 @@ export const PlateJobs = pgTable("part_jobs", {
   plate_id: integer().notNull().references(() => Plates.id),
   tool_id: integer().notNull().references(() => Tools.id),
   machine_id: integer().notNull().references(() => Machines.id),
-  cam_download: text(),
-  screenshot: text()
+  cam: bytea(),
+  screenshot: bytea()
 });
 
 export const BoxTubeJobs = pgTable("box_tube_jobs", {

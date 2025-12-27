@@ -7,6 +7,9 @@ const scopes = {
       read: "teams:invites:read",
       send: "teams:invites:send",
       cancel: "teams:invites:cancel"
+    },
+    members: {
+      read: "teams:members:read"
     }
   },
   pc: {

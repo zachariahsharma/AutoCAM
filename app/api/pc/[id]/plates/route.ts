@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import zod from "zod";
 import { Props } from "../route";
 import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
 import { withAuth } from "@/lib/db";
@@ -15,11 +14,7 @@ export async function POST(req: NextRequest, { params }: Props) {
   const data = await parseJsonBody({
     ...await req.json(),
     category_id: (await params).id
-  }, createInsertSchema(Plates, {
-    width: zod.number().transform(x => x.toString()),
-    length: zod.number().transform(x => x.toString()),
-    true_depth: zod.number().transform(x => toString())
-  }));
+  }, createInsertSchema(Plates));
   if (!data.success) return data.response;
 
   return await withAuth(authType, async tx => {
@@ -32,13 +27,6 @@ export async function POST(req: NextRequest, { params }: Props) {
   });
 }
 
-const GetOutput = zod.array(zod.object({
-  id: zod.number(),
-  width: zod.coerce.number(),
-  length: zod.coerce.number(),
-  true_depth: zod.coerce.number(),
-}));
-
 export async function GET(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
   try { await validateAuthType(authType); }
@@ -48,11 +36,15 @@ export async function GET(req: NextRequest, { params }: Props) {
   if (!id.success)
     return id.response;
 
-  const result = await parseJsonBody(await withAuth(authType, async tx => {
-    return await tx.query.Plates.findMany({
+  await withAuth(authType, async tx => {
+    return routeResponse(200, await tx.query.Plates.findMany({
       where: eq(Plates.category_id, id.data),
-    });
-  }), GetOutput);
-  if (!result.success) return result.response;
-  return routeResponse(200, result.data);
+      columns: {
+        id: true,
+        true_depth: true,
+        width: true,
+        length: true
+      }
+    }));
+  });
 }

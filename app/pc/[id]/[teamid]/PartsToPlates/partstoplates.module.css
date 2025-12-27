@@ -9,3 +9,18 @@
     width: calc(50% - 5px);
     height: 100%;
 }
+
+.cardsContainer {
+  width: calc(100% - 20px);
+  position: absolute;
+  top: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card {
+  color:#979797;
+  background-color: #191919;
+  border: 1px solid #D9D9D9;
+  min-height: 100px;
+}

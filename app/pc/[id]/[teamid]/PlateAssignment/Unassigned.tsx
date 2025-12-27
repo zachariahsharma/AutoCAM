@@ -25,7 +25,10 @@ function UnassignedCard({ partId }: { partId: number }) {
   const part = parts.find((p) => p.id === partId);
   const quantity = selectedParts[partId];
   const [expanded, setExpanded] = useState(false);
-  const handleDragStart = (e: React.DragEvent<HTMLElement>) => {
+  const handleDragStart = (e: React.DragEvent<HTMLElement>, many: number) => {
+    const payload = { partId, quantity: many };
+    e.dataTransfer.setData("application/json", JSON.stringify(payload));
+    e.dataTransfer.effectAllowed = "move";
     const el = e.currentTarget;
     const clone = el.cloneNode(true) as HTMLElement;
     clone.style.position = "fixed";
@@ -42,7 +45,7 @@ function UnassignedCard({ partId }: { partId: number }) {
       <div
         className={styles.cardHeader}
         draggable
-        onDragStart={handleDragStart}
+        onDragStart={(e) => handleDragStart(e, quantity)}
       >
         <span>{part?.name}</span>
         <span className={styles.cardHeaderQuantity}>{quantity}</span>
@@ -66,7 +69,11 @@ function UnassignedCard({ partId }: { partId: number }) {
             transition={{ duration: 0.25, ease: "easeInOut" }}
           >
             {Array.from({ length: quantity }).map((_, i) => (
-              <div key={i} draggable onDragStart={handleDragStart}>
+              <div
+                key={i}
+                draggable
+                onDragStart={(e) => handleDragStart(e, 1)}
+              >
                 <span>{part?.name}</span>
                 <span className={styles.cardBodyQuantity}>1</span>
               </div>

@@ -1,5 +1,5 @@
 import { eq, getTableName, relations, sql } from "drizzle-orm";
-import { customType, decimal, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
+import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
@@ -21,7 +21,7 @@ const bytea = customType<{ data: ArrayBuffer; }>({
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   material: text().notNull(),
-  thickness: decimal({ scale: 3 }).notNull(),
+  thickness: doublePrecision().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
 }, table => [
   unique().on(table.team_id, table.material, table.thickness),
@@ -56,9 +56,9 @@ export const Parts = pgTable("parts", {
 
 export const Plates = pgTable("plates", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  width: decimal().notNull(),
-  length: decimal().notNull(),
-  true_depth: decimal().notNull(),
+  width: doublePrecision().notNull(),
+  length: doublePrecision().notNull(),
+  true_depth: doublePrecision().notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
 }, table => [
   pgPolicy('plates_query_key', { for: "select", using: KeyAuthorized(TeamFromCategoryId(table.category_id), scopes.plates.read) }),

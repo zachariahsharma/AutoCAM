@@ -52,7 +52,7 @@ export async function createBoxTube(json: any, teamId?: number) {
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(BoxTubes).values(data.data).returning({ id: BoxTubes.id });
-      return routeResponse(201, { id });
+      return routeResponse(201, id);
     } catch (err) {
       return handleDatabaseError(err);
     }

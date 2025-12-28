@@ -68,7 +68,7 @@ export async function createPartCategory(json: any, teamId?: number) {
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(PartCategories).values(data.data).returning({ id: PartCategories.id });
-      return routeResponse(201, { id });
+      return routeResponse(201, id);
     } catch (err) {
       return handleDatabaseError(err);
     }

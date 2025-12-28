@@ -5,6 +5,7 @@ import { withAuth } from "@/lib/db";
 import { Plates } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
+import zod from "zod";
 
 export async function POST(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest, { params }: Props) {
   const data = await parseJsonBody({
     ...await req.json(),
     category_id: (await params).id
-  }, createInsertSchema(Plates));
+  }, createInsertSchema(Plates, { category_id: zod.coerce.number().positive() }));
   if (!data.success) return data.response;
 
   return await withAuth(authType, async tx => {
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest, { params }: Props) {
   if (!id.success)
     return id.response;
 
-  await withAuth(authType, async tx => {
+  return await withAuth(authType, async tx => {
     return routeResponse(200, await tx.query.Plates.findMany({
       where: eq(Plates.category_id, id.data),
       columns: {

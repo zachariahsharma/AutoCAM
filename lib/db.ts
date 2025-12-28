@@ -11,7 +11,6 @@ const db = drizzle(process.env.DATABASE_URL!, {
 
 // Wrapper to ensure RLS functions correctly
 export async function withAuth<T>(auth: AuthType, fn: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<T>) {
-  // TODO: Switch to binary/bytea if better-auth supports a higher drizzle version that adds the bytea PG type
   // FIXME: Use proper SQL escaping - this looks a lot like SQL injection
   if (auth.userId) {
     return await db.transaction(async tx => {

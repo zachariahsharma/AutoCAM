@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: Props) {
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(BoxTubeJobs).values(body.data).returning({ id: BoxTubeJobs.id });
-      return routeResponse(201, { id });
+      return routeResponse(201, id);
     } catch (err) {
       return handleDatabaseError(err);
     }

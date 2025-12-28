@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: Props) {
   return await withAuth(authType, async tx => {
     try {
       const [id] = await tx.insert(Plates).values(data.data).returning({ id: Plates.id });
-      return routeResponse(201, { id });
+      return routeResponse(201, id);
     } catch (err) {
       return handleDatabaseError(err);
     }

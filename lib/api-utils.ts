@@ -1,4 +1,5 @@
 import { auth, AuthType, getKeyDigest } from "@/lib/auth";
+import { DrizzleQueryError } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { DatabaseError } from "pg";
@@ -30,7 +31,6 @@ export async function validateAuthType(authType: AuthType, emailVerifiedNeeded =
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session)
       throw routeResponse(401);
-    console.log("test");
     if (!session.user.emailVerified)
       throw routeResponse(403);
   }
@@ -63,9 +63,12 @@ export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T)
  * Converts DatabaseError codes to appropriate HTTP status codes
  */
 export function handleDatabaseError(err: unknown): NextResponse {
-  if (err instanceof DatabaseError) {
-    if (err.code === "42501") return routeResponse(403); // Permission denied
-    if (err.code === "23505") return routeResponse(409); // Unique violation
+  let cause = err;
+  if (err instanceof DrizzleQueryError)
+    cause = err.cause as DatabaseError;
+  if (cause instanceof DatabaseError) {
+    if (cause.code === "42501") return routeResponse(403); // Permission denied
+    if (cause.code === "23505") return routeResponse(409); // Unique violation
   }
   throw err;
 }

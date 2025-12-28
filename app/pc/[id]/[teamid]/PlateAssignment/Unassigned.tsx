@@ -5,12 +5,67 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Unassigned() {
-  const { selectedParts } = useMaterialEvents();
+  const {
+    unassignedParts,
+    setUnassignedParts,
+    partsToPlates,
+    setPartsToPlates,
+    plates,
+  } = useMaterialEvents();
+  function onReceive(data: {
+    partId: number;
+    quantity: number;
+    from?: number;
+  }) {
+    if (!partsToPlates || !setPartsToPlates) return;
+    console.log("Received data:", data);
+    if (data.from) {
+      const oldPlateId = data.from;
+      console.log("Removing from plate:", oldPlateId);
+      const oldPlate = partsToPlates[oldPlateId] || [];
+      partsToPlates[oldPlateId] = oldPlate.map((part) => {
+        if (part.partId === data.partId) {
+          return {
+            partId: part.partId,
+            quantity: part.quantity - data.quantity,
+          };
+        }
+        return part;
+      });
+      setPartsToPlates({ ...partsToPlates });
+    } else if (!data.from) {
+      return;
+    }
+
+    if (unassignedParts[data.partId] > 0) {
+      console.log("Adding back to unassigned:", data.partId, data.quantity);
+      unassignedParts[data.partId] =
+        unassignedParts[data.partId] + data.quantity;
+      setUnassignedParts({ ...unassignedParts });
+      return;
+    }
+    unassignedParts[data.partId] = data.quantity;
+    setUnassignedParts({ ...unassignedParts });
+  }
   return (
-    <div className={styles.container}>
+    <div
+      className={styles.container}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        const raw = e.dataTransfer.getData("application/json");
+        if (!raw) return;
+
+        const data = JSON.parse(raw);
+        onReceive(data);
+      }}
+    >
       <h1 className={styles.title}>Unassigned</h1>
       <div className={styles.cardsContainer}>
-        {Object.entries(selectedParts)
+        {Object.entries(unassignedParts)
           .filter(([partId, quantity]) => quantity > 0)
           .map(([partId, quantity]) => (
             <UnassignedCard key={partId} partId={Number(partId)} />
@@ -21,9 +76,9 @@ export function Unassigned() {
 }
 
 function UnassignedCard({ partId }: { partId: number }) {
-  const { parts, selectedParts } = useMaterialEvents();
+  const { parts, unassignedParts } = useMaterialEvents();
   const part = parts.find((p) => p.id === partId);
-  const quantity = selectedParts[partId];
+  const quantity = unassignedParts[partId];
   const [expanded, setExpanded] = useState(false);
   const handleDragStart = (e: React.DragEvent<HTMLElement>, many: number) => {
     const payload = { partId, quantity: many };
@@ -69,11 +124,7 @@ function UnassignedCard({ partId }: { partId: number }) {
             transition={{ duration: 0.25, ease: "easeInOut" }}
           >
             {Array.from({ length: quantity }).map((_, i) => (
-              <div
-                key={i}
-                draggable
-                onDragStart={(e) => handleDragStart(e, 1)}
-              >
+              <div key={i} draggable onDragStart={(e) => handleDragStart(e, 1)}>
                 <span>{part?.name}</span>
                 <span className={styles.cardBodyQuantity}>1</span>
               </div>

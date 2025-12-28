@@ -95,6 +95,8 @@
     height: 35px;
     width: 35px;
     padding: 10px;
+    position: absolute;
+    right: 10px;
     background-color: #242424;
     border-radius: 10px;
     border: 1px solid #FFFFFF;

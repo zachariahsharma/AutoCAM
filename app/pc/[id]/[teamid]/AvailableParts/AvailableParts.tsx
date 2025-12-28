@@ -9,10 +9,16 @@ export default function AvailableParts({
 }: {
   epicsMap: { [key: string]: Part[] };
 }) {
-  const { selectedParts, setSelectedParts } = useMaterialEvents();
+  const {
+    selectedParts,
+    setSelectedParts,
+    setUnassignedParts,
+    unassignedParts,
+  } = useMaterialEvents();
   useEffect(() => {
     Object.entries(epicsMap).forEach(([epic, parts]) =>
       parts.forEach((part) => {
+        setUnassignedParts((obj) => ({ ...obj, [part.id]: 0 }));
         setSelectedParts((obj) => ({ ...obj, [part.id]: 0 }));
       })
     );
@@ -22,7 +28,26 @@ export default function AvailableParts({
       <div className={styles.header}>
         <h1 id={styles.title}>Available Parts</h1>
         <button
-          onClick={() =>
+          onClick={() => {
+            setUnassignedParts((obj) => {
+              const newObj = { ...obj };
+              Object.keys(newObj).forEach((key) => {
+                const partId = Number(key);
+                let recommendedQuantity = 0;
+                Object.values(epicsMap).forEach((parts) => {
+                  parts.forEach((part) => {
+                    if (part.id === partId) {
+                      recommendedQuantity =
+                        part.quantity -
+                        selectedParts[partId] +
+                        unassignedParts[partId];
+                    }
+                  });
+                });
+                newObj[partId] = recommendedQuantity;
+              });
+              return newObj;
+            });
             setSelectedParts((obj) => {
               const newObj = { ...obj };
               Object.keys(newObj).forEach((key) => {
@@ -38,8 +63,8 @@ export default function AvailableParts({
                 newObj[partId] = recommendedQuantity;
               });
               return newObj;
-            })
-          }
+            });
+          }}
         >
           Select All
         </button>
@@ -59,12 +84,16 @@ export default function AvailableParts({
                 <div className={styles.counter}>
                   <button
                     className={styles.counterButtonMinus}
-                    onClick={() =>
+                    onClick={() => {
                       setSelectedParts((obj) => ({
                         ...obj,
                         [part.id]: Math.max((obj[part.id] || 0) - 1, 0),
-                      }))
-                    }
+                      }));
+                      setUnassignedParts((obj) => ({
+                        ...obj,
+                        [part.id]: Math.max((obj[part.id] || 0) - 1, 0),
+                      }));
+                    }}
                   >
                     -
                   </button>
@@ -72,21 +101,29 @@ export default function AvailableParts({
                     className={styles.counterValue}
                     type="number"
                     value={selectedParts[part.id] || 0}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
                       setSelectedParts((obj) => ({
                         ...obj,
                         [part.id]: Number(e.target.value),
-                      }))
-                    }
+                      }));
+                      setUnassignedParts((obj) => ({
+                        ...obj,
+                        [part.id]: Math.max((obj[part.id] || 0) - 1, 0),
+                      }));
+                    }}
                   />
                   <button
                     className={styles.counterButtonPlus}
-                    onClick={() =>
+                    onClick={() => {
                       setSelectedParts((obj) => ({
                         ...obj,
                         [part.id]: (obj[part.id] || 0) + 1,
-                      }))
-                    }
+                      }));
+                      setUnassignedParts((obj) => ({
+                        ...obj,
+                        [part.id]: Math.max((obj[part.id] || 0) + 1, 0),
+                      }));
+                    }}
                   >
                     +
                   </button>

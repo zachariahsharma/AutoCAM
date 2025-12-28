@@ -2,6 +2,12 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
 import type { Plate, Part } from "@/app/types";
 
+interface PartsToPlates {
+  [key: number]: {
+    partId: number;
+    quantity: number;
+  }[];
+}
 type materialEvents = {
   plates: Plate[];
   setPlates: React.Dispatch<React.SetStateAction<Plate[]>>;
@@ -11,6 +17,12 @@ type materialEvents = {
   >;
   parts: Part[];
   setParts: React.Dispatch<React.SetStateAction<Part[]>>;
+  partsToPlates: PartsToPlates;
+  setPartsToPlates: React.Dispatch<React.SetStateAction<PartsToPlates>>;
+  unassignedParts: { [key: number]: number };
+  setUnassignedParts: React.Dispatch<
+    React.SetStateAction<{ [key: number]: number }>
+  >;
 };
 
 const Ctx = createContext<materialEvents | null>(null);
@@ -25,6 +37,10 @@ export function MaterialEventsProvider({
     {}
   );
   const [parts, setParts] = useState<Part[]>([]);
+  const [partsToPlates, setPartsToPlates] = useState<PartsToPlates>({});
+  const [unassignedParts, setUnassignedParts] = useState<{
+    [key: number]: number;
+  }>({});
 
   const value = useMemo(
     () => ({
@@ -34,8 +50,12 @@ export function MaterialEventsProvider({
       setSelectedParts,
       parts,
       setParts,
+      partsToPlates,
+      setPartsToPlates,
+      unassignedParts,
+      setUnassignedParts,
     }),
-    [plates, selectedParts, parts]
+    [plates, selectedParts, parts, partsToPlates, unassignedParts]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

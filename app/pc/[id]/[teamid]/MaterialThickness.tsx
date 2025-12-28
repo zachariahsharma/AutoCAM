@@ -22,8 +22,27 @@ export default function MaterialThickness({
   const [partcategory, setPartcategory] = useState<PartCategory | null>(null);
   const [epicsMap, setEpicsMap] = useState<{ [key: string]: Part[] }>({});
   const router = useRouter();
-  const { setParts, setPlates, plates, selectedParts, setSelectedParts } =
-    useMaterialEvents();
+  const {
+    setParts,
+    setPlates,
+    plates,
+    selectedParts,
+    setSelectedParts,
+    partsToPlates,
+    setPartsToPlates,
+    unassignedParts,
+    setUnassignedParts,
+  } = useMaterialEvents();
+
+  useEffect(() => {
+    for (const plate of plates) {
+      if (!partsToPlates![plate.id]) {
+        partsToPlates![plate.id] = [];
+      }
+    }
+    setPartsToPlates!({ ...partsToPlates });
+  }, [plates]);
+
   useEffect(() => {
     let mounted = true;
     async function fetchData() {
@@ -58,6 +77,7 @@ export default function MaterialThickness({
         selectedPartsInit[part.id] = 0;
       }
       setSelectedParts(selectedPartsInit);
+      setUnassignedParts(selectedPartsInit);
       data.parts = partsData;
       console.log("Fetched Part Category:", data);
       setPartcategory(data);

@@ -18,7 +18,6 @@
     flex-direction: column;
     width: 100%;
     gap: 10px;
-    height: calc(100vh - 110px) !important;
   }
 }
 
@@ -29,5 +28,5 @@
   height: 100%;
   justify-content: space-between;
   padding: 0px 10px;
-  height: calc(50vh - 10px);
+  min-height: calc(50vh - 10px);
 }

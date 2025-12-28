@@ -1,6 +1,6 @@
 import { and, eq, getTableName, SQL, sql } from "drizzle-orm"
 import { TeamKeys, TeamMembers } from "./entities"
-import { PartCategories, Parts, PartsToPlates, Plates, Tools } from "./cam"
+import { Machines, Materials, PartCategories, Parts, PartsToPlates, Plates, ToolMachines, ToolMaterials, Tools } from "./cam"
 
 export function UserId() {
   return sql`current_setting('app.user_id', true)`
@@ -75,6 +75,28 @@ export function CheckPartsPlatesTeam(): SQL<boolean> {
     INNER JOIN ${Parts} ON ${eq(Parts.id, PartsToPlates.part_id)}
     WHERE ${eq(Plates.id, PartsToPlates.plate_id)}
       AND ${eq(Plates.category_id, Parts.category_id)}
+  )
+  `
+}
+
+export function CheckToolMaterialsTeam(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1 FROM ${Tools}
+    INNER JOIN ${Materials} ON ${eq(Materials.id, ToolMaterials.material_id)}
+    WHERE ${eq(Tools.id, ToolMaterials.tool_id)}
+      AND ${eq(Tools.team_id, Materials.team_id)}
+  )
+  `
+}
+
+export function CheckToolMachinesTeam(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1 FROM ${Tools}
+    INNER JOIN ${Machines} ON ${eq(Machines.id, ToolMachines.machine_id)}
+    WHERE ${eq(Tools.id, ToolMachines.tool_id)}
+      AND ${eq(Tools.team_id, Machines.team_id)}
   )
   `
 }

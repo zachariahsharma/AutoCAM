@@ -1,7 +1,7 @@
 import { eq, getTableName, relations, sql } from "drizzle-orm";
 import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
-import { CheckPartsPlatesTeam, KeyAuthorized, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { CheckPartsPlatesTeam, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
@@ -137,6 +137,8 @@ export const ToolMaterials = pgTable("tool_materials", {
   tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
   material_id: integer().notNull().references(() => Materials.id, { onDelete: "cascade" }),
 }, table => [
+  pgPolicy('tool_materials_insert', { for: 'insert', as: "restrictive", withCheck: CheckToolMaterialsTeam() }),
+  pgPolicy('tool_materials_update', { for: 'update', as: "restrictive", using: CheckToolMaterialsTeam() }),
   pgPolicy('tool_materials_query_user', { for: 'select', using: UserInTeam(TeamFromTool(table.tool_id)) }),
   pgPolicy('tool_materials_query_key', { for: 'select', using: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.read) }),
   pgPolicy('tool_materials_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromTool(table.tool_id)) }),
@@ -151,6 +153,8 @@ export const ToolMachines = pgTable("tool_machines", {
   tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
   machine_id: integer().notNull().references(() => Machines.id, { onDelete: "cascade" })
 }, table => [
+  pgPolicy('tool_machines_insert', { for: 'insert', as: "restrictive", withCheck: CheckToolMachinesTeam() }),
+  pgPolicy('tool_machines_update', { for: 'update', as: "restrictive", using: CheckToolMachinesTeam() }),
   pgPolicy('tool_machines_query_user', { for: 'select', using: UserInTeam(TeamFromTool(table.tool_id)) }),
   pgPolicy('tool_machines_query_key', { for: 'select', using: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.read) }),
   pgPolicy('tool_machines_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromTool(table.tool_id)) }),

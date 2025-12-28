@@ -1,4 +1,4 @@
-import { getAuthType, validateAuthType } from "@/lib/api-utils";
+import { getAuthType, routeResponse, validateAuthType } from "@/lib/api-utils";
 import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
 import { TeamMembers } from "@/lib/schema/entities";
@@ -17,12 +17,12 @@ export async function getTeamMembers(teamId?: number) {
   } catch (err) { return err; }
 
   return await withAuth(authType, async tx => {
-    return await tx.query.TeamMembers.findMany({
+    return routeResponse(200, (await tx.query.TeamMembers.findMany({
       where: eq(TeamMembers.team_id, teamId!),
       with: { user: true },
       columns: {
         admin: true,
       }
-    });
+    })).map(x => ({ ...x, user: x.user.email })));
   });
 }

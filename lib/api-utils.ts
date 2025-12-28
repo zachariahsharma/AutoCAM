@@ -58,7 +58,7 @@ export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T)
   return { success: true, data: result.data };
 }
 
-export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T, preprocess: (data: object, file: ArrayBuffer) => Promise<object>): ReturnType<typeof parseJsonBody<T>> {
+export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T, preprocess: (data: object, file: ArrayBuffer) => object | Promise<object>): ReturnType<typeof parseJsonBody<T>> {
   const json = formData.get("data");
   if (typeof json !== "string") {
     const error: zod.core.$ZodIssue = {

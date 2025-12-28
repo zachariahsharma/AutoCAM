@@ -1,6 +1,6 @@
 import { and, eq, getTableName, SQL, sql } from "drizzle-orm"
 import { TeamKeys, TeamMembers } from "./entities"
-import { PartCategories, Tools } from "./cam"
+import { PartCategories, Parts, PartsToPlates, Plates, Tools } from "./cam"
 
 export function UserId() {
   return sql`current_setting('app.user_id', true)`
@@ -38,7 +38,7 @@ export function KeyAuthorized(teamId: any, scope: string): SQL<boolean> {
   `
 }
 
-export function TeamFromCategoryId(cid: any) {
+export function TeamFromCategory(cid: any) {
   return sql`
   (
     SELECT ${PartCategories.team_id}
@@ -48,12 +48,33 @@ export function TeamFromCategoryId(cid: any) {
   `
 }
 
-export function TeamFromToolId(tid: any) {
+export function TeamFromTool(tid: any) {
   return sql`
   (
     SELECT ${Tools.team_id}
     FROM ${sql.identifier(getTableName(Tools))}
     WHERE ${eq(Tools.id, tid)}
+  )
+  `
+}
+
+export function TeamFromPlate(pid: any) {
+  return sql`
+  (
+    SELECT ${TeamFromCategory(Plates.category_id)}
+    FROM ${sql.identifier(getTableName(Plates))}
+    WHERE ${eq(Plates.id, pid)}
+  )
+  `
+}
+
+export function CheckPartsPlatesTeam(): SQL<boolean> {
+  return sql`
+  EXISTS (
+    SELECT 1 FROM ${Plates}
+    INNER JOIN ${Parts} ON ${eq(Parts.id, PartsToPlates.part_id)}
+    WHERE ${eq(Plates.id, PartsToPlates.plate_id)}
+      AND ${eq(Plates.category_id, Parts.category_id)}
   )
   `
 }

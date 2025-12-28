@@ -1,21 +1,25 @@
 import { NextRequest } from "next/server";
 import { Props } from "../route";
 import { withAuth } from "@/lib/db";
-import { Parts } from "@/lib/schema/cam";
-import zod from "zod";
+import { Parts, PartsInsertSchema } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
 import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
-import { createInsertSchema } from "drizzle-zod";
 
 export async function POST(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
+  const formData = await req.formData();
+  const json = formData.get("data");
+  const file = formData.get("file");
+  if (typeof json !== "string" || !(file instanceof File)) return routeResponse(422);
+
   const data = await parseJsonBody({
-    ...await req.json(),
+    ...JSON.parse(json),
+    file: await file.arrayBuffer(),
     category_id: (await params).id
-  }, createInsertSchema(Parts));
+  }, PartsInsertSchema);
   if (!data.success) return data.response;
   return await withAuth(authType, async tx => {
     try {

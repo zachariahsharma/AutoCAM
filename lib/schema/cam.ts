@@ -3,6 +3,8 @@ import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, 
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
+import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
+import zod from "zod";
 
 function TeamFromCategoryId(cid: any) {
   return sql`
@@ -63,6 +65,9 @@ export const Parts = pgTable("parts", {
   pgPolicy('parts_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromCategoryId(table.category_id), scopes.parts.write) }),
   pgPolicy('parts_insert_user', { for: 'insert', withCheck: UserInTeam(TeamFromCategoryId(table.category_id)) })
 ]);
+
+export const PartsInsertSchema = createInsertSchema(Parts, { file: zod.instanceof(ArrayBuffer) })
+export const PartsUpdateSchema = createUpdateSchema(Parts, { file: zod.instanceof(ArrayBuffer) });
 
 export const Plates = pgTable("plates", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

@@ -1,5 +1,5 @@
 import { eq, getTableName, relations, sql } from "drizzle-orm";
-import { customType, decimal, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
+import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
@@ -14,6 +14,16 @@ function TeamFromCategoryId(cid: any) {
   `
 }
 
+function TeamFromToolId(tid: any) {
+  return sql`
+  (
+    SELECT ${Tools.team_id}
+    FROM ${sql.identifier(getTableName(Tools))}
+    WHERE ${eq(Tools.id, tid)}
+  )
+  `
+}
+
 const bytea = customType<{ data: ArrayBuffer; }>({
   dataType() { return "bytea"; },
 });
@@ -21,7 +31,7 @@ const bytea = customType<{ data: ArrayBuffer; }>({
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   material: text().notNull(),
-  thickness: decimal({ scale: 3 }).notNull(),
+  thickness: doublePrecision().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
 }, table => [
   unique().on(table.team_id, table.material, table.thickness),
@@ -56,9 +66,9 @@ export const Parts = pgTable("parts", {
 
 export const Plates = pgTable("plates", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  width: decimal().notNull(),
-  length: decimal().notNull(),
-  true_depth: decimal().notNull(),
+  width: doublePrecision().notNull(),
+  length: doublePrecision().notNull(),
+  true_depth: doublePrecision().notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
 }, table => [
   pgPolicy('plates_query_key', { for: "select", using: KeyAuthorized(TeamFromCategoryId(table.category_id), scopes.plates.read) }),
@@ -118,25 +128,23 @@ export const Tools = pgTable("tools", {
 ]);
 
 export const ToolMaterials = pgTable("tool_materials", {
-  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
   material_id: integer().notNull().references(() => Materials.id, { onDelete: "cascade" }),
 }, table => [
-  pgPolicy('tool_materials_query', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('tool_materials_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('tool_materials_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('tool_materials_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
+  pgPolicy('tool_materials_query', { for: 'select', using: UserInTeam(TeamFromToolId(table.tool_id)) }),
+  pgPolicy('tool_materials_insert', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromToolId(table.tool_id)) }),
+  pgPolicy('tool_materials_update', { for: 'update', using: UserIsTeamAdmin(TeamFromToolId(table.tool_id)) }),
+  pgPolicy('tool_materials_delete', { for: 'delete', using: UserIsTeamAdmin(TeamFromToolId(table.tool_id)) })
 ]);
 
 export const ToolMachines = pgTable("tool_machines", {
-  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
   machine_id: integer().notNull().references(() => Machines.id, { onDelete: "cascade" })
 }, table => [
-  pgPolicy('tools_machines_query', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('tools_machines_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('tools_machines_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('tools_machines_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
+  pgPolicy('tools_machines_query', { for: 'select', using: UserInTeam(TeamFromToolId(table.tool_id)) }),
+  pgPolicy('tools_machines_insert', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromToolId(table.tool_id)) }),
+  pgPolicy('tools_machines_update', { for: 'update', using: UserIsTeamAdmin(TeamFromToolId(table.tool_id)) }),
+  pgPolicy('tools_machines_delete', { for: 'delete', using: UserIsTeamAdmin(TeamFromToolId(table.tool_id)) })
 ])
 
 export const PartsToPlates = pgTable("parts_to_plates", {

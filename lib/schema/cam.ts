@@ -6,8 +6,15 @@ import scopes from "../scopes";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 
-const bytea = customType<{ data: ArrayBuffer; }>({
+// Custom bytea type for PostgreSQL binary data
+const bytea = customType<{ data: ArrayBuffer; driverData: Buffer; }>({
   dataType() { return "bytea"; },
+  toDriver(value: ArrayBuffer): Buffer {
+    return Buffer.from(value);
+  },
+  fromDriver(value: Buffer): ArrayBuffer {
+    return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+  },
 });
 
 export const PartCategories = pgTable("part_categories", {

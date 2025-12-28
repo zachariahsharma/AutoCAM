@@ -3,7 +3,7 @@ import { Props } from "../route";
 import { withAuth } from "@/lib/db";
 import { Parts, PartsInsertSchema } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
-import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
+import { getAuthType, handleDatabaseError, parseJsonBody, parseJsonFile, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
 import zod from "zod";
 
 export async function POST(req: NextRequest, { params }: Props) {
@@ -11,16 +11,11 @@ export async function POST(req: NextRequest, { params }: Props) {
   try { await validateAuthType(authType, true); }
   catch (err) { return err; }
 
-  const formData = await req.formData();
-  const json = formData.get("data");
-  const file = formData.get("file");
-  if (typeof json !== "string" || !(file instanceof File)) return routeResponse(422);
-
-  const data = await parseJsonBody({
-    ...JSON.parse(json),
-    file: await file.arrayBuffer(),
-    category_id: (await params).id
-  }, PartsInsertSchema.extend({ category_id: zod.coerce.number().positive() }));
+  const data = await parseJsonFile(
+    await req.formData(),
+    PartsInsertSchema.extend({ category_id: zod.coerce.number().positive() }),
+    async (data, file) => ({ ...data, file, category_id: (await params).id })
+  )
   if (!data.success) return data.response;
   return await withAuth(authType, async tx => {
     try {

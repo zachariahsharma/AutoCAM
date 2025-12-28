@@ -1,7 +1,7 @@
 import { auth, AuthType, getKeyDigest } from "@/lib/auth";
 import { DrizzleQueryError } from "drizzle-orm";
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod, { ZodType } from "zod";
 
@@ -120,4 +120,14 @@ export function routeResponse(status = 200, data?: object) {
 
 export function checkAnyChanges(records: any[]) {
   return routeResponse(records.length === 0 ? 404 : 204);
+}
+
+export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType, params: T) => NextResponse) {
+  return async (req: NextRequest, { params }: { params: Promise<T> }) => {
+    const authType = await getAuthType();
+    try { await validateAuthType(authType); }
+    catch (err) { return err; }
+
+    return callback(req, authType, await params);
+  }
 }

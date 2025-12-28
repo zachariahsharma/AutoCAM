@@ -8,9 +8,10 @@ const scopes = {
       send: "teams:invites:send",
       cancel: "teams:invites:cancel"
     },
-    members: {
-      read: "teams:members:read"
-    }
+  },
+  materials: {
+    read: "materials:read",
+    write: "materials:write",
   },
   pc: {
     read: "part_categories:read",
@@ -27,7 +28,15 @@ const scopes = {
       read: "plates:jobs:read",
       write: "plates:jobs:write"
     }
-  }
+  },
+  boxTubes: {
+    read: "box_tubes:read",
+    write: "box_tubes:write",
+    jobs: {
+      read: "box_tubes:jobs:read",
+      write: "box_tubes:jobs:write"
+    }
+  },
 };
 export default scopes;
 

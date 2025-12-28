@@ -74,9 +74,13 @@ export const BoxTubes = pgTable("box_tubes", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   pgPolicy('box_tubes_query_user', { for: "select", using: UserInTeam(table.team_id) }),
+  pgPolicy('box_tubes_query_key', { for: "select", using: KeyAuthorized(table.team_id, scopes.boxTubes.read) }),
   pgPolicy('box_tubes_update_user', { for: "update", using: UserInTeam(table.team_id) }),
+  pgPolicy('box_tubes_update_key', { for: "update", using: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
   pgPolicy('box_tubes_delete_user', { for: "delete", using: UserInTeam(table.team_id) }),
-  pgPolicy('box_tubes_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) })
+  pgPolicy('box_tubes_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
+  pgPolicy('box_tubes_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) }),
+  pgPolicy('box_tubes_insert_key', { for: "insert", withCheck: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
 ]);
 
 export const Materials = pgTable("materials", {
@@ -85,10 +89,14 @@ export const Materials = pgTable("materials", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   unique().on(table.name, table.team_id),
-  pgPolicy('materials_query', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('materials_insert', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('materials_update', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('materials_delete', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
+  pgPolicy('materials_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
+  pgPolicy('materials_query_key', { for: 'select', using: KeyAuthorized(table.team_id, scopes.materials.read) }),
+  pgPolicy('materials_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('materials_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, scopes.materials.write) }),
+  pgPolicy('materials_update_user', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('materials_update_key', { for: 'update', using: KeyAuthorized(table.team_id, scopes.materials.write) }),
+  pgPolicy('materials_delete_user', { for: 'delete', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('materials_delete_key', { for: 'delete', using: KeyAuthorized(table.team_id, scopes.materials.write) }),
 ]);
 
 export const Machines = pgTable("machines", {

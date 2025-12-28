@@ -6,8 +6,14 @@ import scopes from "../scopes";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 
-const bytea = customType<{ data: ArrayBuffer; }>({
+const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
   dataType() { return "bytea"; },
+  toDriver(value) { return Buffer.from(value); },
+  fromDriver(value) {
+    if (value.buffer instanceof ArrayBuffer)
+      return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+    return new Uint8Array(value).buffer;
+  }
 });
 
 export const PartCategories = pgTable("part_categories", {

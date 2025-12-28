@@ -23,7 +23,11 @@ const scopes = {
   },
   pc: {
     read: "part_categories:read",
-    write: "part_categories:write"
+    write: "part_categories:write",
+    assignments: {
+      read: "part_categories:assignments:read",
+      write: "part_categories:assignments:write"
+    }
   },
   parts: {
     read: "parts:read",

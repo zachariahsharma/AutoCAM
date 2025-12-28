@@ -1,7 +1,7 @@
-import { eq, getTableName, relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
-import { CheckPartsPlatesTeam, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { CheckBoxTubeJobsTeams, CheckPartsPlatesTeam, CheckPlateJobsTeams, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
@@ -173,14 +173,18 @@ export const PartsToPlates = pgTable("parts_to_plates", {
   pgPolicy('parts_to_plates_insert', { for: 'insert', as: "restrictive", withCheck: CheckPartsPlatesTeam() }),
   pgPolicy('parts_to_plates_update', { for: 'update', as: "restrictive", using: CheckPartsPlatesTeam() }),
   pgPolicy('parts_to_plates_query_user', { for: 'select', using: UserInTeam(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('parts_to_plates_update_user', { for: 'update', using: UserInTeam(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('parts_to_plates_delete_user', { for: 'delete', using: UserInTeam(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('parts_to_plates_insert_user', { for: 'insert', using: UserInTeam(TeamFromPlate(table.plate_id)) }),
+  pgPolicy('parts_to_plates_query_key', { for: 'select', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.pc.assignments.read) }),
+  pgPolicy('parts_to_plates_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
+  pgPolicy('parts_to_plates_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.pc.assignments.write) }),
+  pgPolicy('parts_to_plates_update_user', { for: 'update', using: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
+  pgPolicy('parts_to_plates_update_key', { for: 'update', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.pc.assignments.write) }),
+  pgPolicy('parts_to_plates_delete_user', { for: 'delete', using: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
+  pgPolicy('parts_to_plates_delete_key', { for: 'delete', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.pc.assignments.write) }),
 ]);
 
 export const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
 
-export const PlateJobs = pgTable("part_jobs", {
+export const PlateJobs = pgTable("plate_jobs", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   status: JobStatus().notNull().default("pending"),
   plate_id: integer().notNull().references(() => Plates.id),
@@ -188,7 +192,18 @@ export const PlateJobs = pgTable("part_jobs", {
   machine_id: integer().notNull().references(() => Machines.id),
   cam: bytea(),
   screenshot: bytea()
-});
+}, table => [
+  pgPolicy('plate_jobs_insert', { for: 'insert', as: "restrictive", withCheck: CheckPlateJobsTeams() }),
+  pgPolicy('plate_jobs_update', { for: 'update', as: "restrictive", using: CheckPlateJobsTeams() }),
+  pgPolicy('plate_jobs_query_user', { for: 'select', using: UserInTeam(TeamFromPlate(table.plate_id)) }),
+  pgPolicy('plate_jobs_query_key', { for: 'select', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.plates.jobs.read) }),
+  pgPolicy('plate_jobs_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
+  pgPolicy('plate_jobs_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.plates.jobs.write) }),
+  pgPolicy('plate_jobs_update_user', { for: 'update', using: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
+  pgPolicy('plate_jobs_update_key', { for: 'update', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.plates.jobs.write) }),
+  pgPolicy('plate_jobs_delete_user', { for: 'delete', using: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
+  pgPolicy('plate_jobs_delete_key', { for: 'delete', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.plates.jobs.write) }),
+]);
 
 export const BoxTubeJobs = pgTable("box_tube_jobs", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -196,7 +211,18 @@ export const BoxTubeJobs = pgTable("box_tube_jobs", {
   tool_id: integer().notNull().references(() => Tools.id),
   machine_id: integer().notNull().references(() => Machines.id),
   status: JobStatus().notNull().default("pending")
-});
+}, table => [
+  pgPolicy('box_tube_jobs_insert', { for: 'insert', as: "restrictive", withCheck: CheckBoxTubeJobsTeams() }),
+  pgPolicy('box_tube_jobs_update', { for: 'update', as: "restrictive", using: CheckBoxTubeJobsTeams() }),
+  pgPolicy('box_tube_jobs_query_user', { for: 'select', using: UserInTeam(TeamFromBoxTube(table.box_tube_id)) }),
+  pgPolicy('box_tube_jobs_query_key', { for: 'select', using: KeyAuthorized(TeamFromBoxTube(table.box_tube_id), scopes.boxTubes.jobs.read) }),
+  pgPolicy('box_tube_jobs_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromBoxTube(table.box_tube_id)) }),
+  pgPolicy('box_tube_jobs_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromBoxTube(table.box_tube_id), scopes.boxTubes.jobs.write) }),
+  pgPolicy('box_tube_jobs_update_user', { for: 'update', using: UserIsTeamAdmin(TeamFromBoxTube(table.box_tube_id)) }),
+  pgPolicy('box_tube_jobs_update_key', { for: 'update', using: KeyAuthorized(TeamFromBoxTube(table.box_tube_id), scopes.boxTubes.jobs.write) }),
+  pgPolicy('box_tube_jobs_delete_user', { for: 'delete', using: UserIsTeamAdmin(TeamFromBoxTube(table.box_tube_id)) }),
+  pgPolicy('box_tube_jobs_delete_key', { for: 'delete', using: KeyAuthorized(TeamFromBoxTube(table.box_tube_id), scopes.boxTubes.jobs.write) }),
+]);
 
 export const PartsRelations = relations(Parts, ({ one }) => ({
   category: one(PartCategories, {

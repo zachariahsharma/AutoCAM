@@ -1,5 +1,6 @@
 import { and, eq, getTableName, SQL, sql } from "drizzle-orm"
 import { TeamKeys, TeamMembers } from "./entities"
+import { PartCategories, Tools } from "./cam"
 
 export function UserId() {
   return sql`current_setting('app.user_id', true)`
@@ -33,6 +34,26 @@ export function KeyAuthorized(teamId: any, scope: string): SQL<boolean> {
     SELECT 1
     FROM ${sql.identifier(getTableName(TeamKeys))}
     WHERE ${and(eq(TeamKeys.digest, KeyDigest()), eq(TeamKeys.team_id, teamId), eq(sql.raw(`'${scope}'`), sql`ANY(${TeamKeys.scopes})`))}
+  )
+  `
+}
+
+export function TeamFromCategoryId(cid: any) {
+  return sql`
+  (
+    SELECT ${PartCategories.team_id}
+    FROM ${sql.identifier(getTableName(PartCategories))}
+    WHERE ${eq(PartCategories.id, cid)}
+  )
+  `
+}
+
+export function TeamFromToolId(tid: any) {
+  return sql`
+  (
+    SELECT ${Tools.team_id}
+    FROM ${sql.identifier(getTableName(Tools))}
+    WHERE ${eq(Tools.id, tid)}
   )
   `
 }

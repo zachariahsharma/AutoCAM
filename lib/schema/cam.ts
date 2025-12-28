@@ -1,30 +1,10 @@
 import { eq, getTableName, relations, sql } from "drizzle-orm";
 import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
-import { KeyAuthorized, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { KeyAuthorized, TeamFromCategoryId, TeamFromToolId, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../scopes";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
-
-function TeamFromCategoryId(cid: any) {
-  return sql`
-  (
-    SELECT ${PartCategories.team_id}
-    FROM ${sql.identifier(getTableName(PartCategories))}
-    WHERE ${eq(PartCategories.id, cid)}
-  )
-  `
-}
-
-function TeamFromToolId(tid: any) {
-  return sql`
-  (
-    SELECT ${Tools.team_id}
-    FROM ${sql.identifier(getTableName(Tools))}
-    WHERE ${eq(Tools.id, tid)}
-  )
-  `
-}
 
 const bytea = customType<{ data: ArrayBuffer; }>({
   dataType() { return "bytea"; },
@@ -92,7 +72,12 @@ export const BoxTubes = pgTable("box_tubes", {
   epic: text().notNull(),
   quantity: integer().default(1).notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
-});
+}, table => [
+  pgPolicy('box_tubes_query_user', { for: "select", using: UserInTeam(table.team_id) }),
+  pgPolicy('box_tubes_update_user', { for: "update", using: UserInTeam(table.team_id) }),
+  pgPolicy('box_tubes_delete_user', { for: "delete", using: UserInTeam(table.team_id) }),
+  pgPolicy('box_tubes_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) })
+]);
 
 export const Materials = pgTable("materials", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

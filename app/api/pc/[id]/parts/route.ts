@@ -4,6 +4,7 @@ import { withAuth } from "@/lib/db";
 import { Parts, PartsInsertSchema } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
 import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
+import zod from "zod";
 
 export async function POST(req: NextRequest, { params }: Props) {
   const authType = await getAuthType();
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest, { params }: Props) {
     ...JSON.parse(json),
     file: await file.arrayBuffer(),
     category_id: (await params).id
-  }, PartsInsertSchema);
+  }, PartsInsertSchema.extend({ category_id: zod.coerce.number().positive() }));
   if (!data.success) return data.response;
   return await withAuth(authType, async tx => {
     try {

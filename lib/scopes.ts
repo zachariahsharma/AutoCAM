@@ -13,6 +13,14 @@ const scopes = {
     read: "materials:read",
     write: "materials:write",
   },
+  machines: {
+    read: "materials:read",
+    write: "materials:write",
+  },
+  tools: {
+    read: "materials:read",
+    write: "materials:write",
+  },
   pc: {
     read: "part_categories:read",
     write: "part_categories:write"

@@ -1,9 +1,8 @@
-import { getAuthType, handleDatabaseError, parseJsonBody, routeResponse, validateAuthType } from "@/lib/api-utils";
+import { getAuthType, handleDatabaseError, parseJsonFile, routeResponse, validateAuthType } from "@/lib/api-utils";
 import { teamIdFromDigest } from "@/lib/auth";
 import { withAuth } from "@/lib/db";
-import { BoxTubes } from "@/lib/schema/cam";
+import { BoxTubeInsertSchema, BoxTubes } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
 import { NextRequest } from "next/server";
 
 export async function GET() {
@@ -11,7 +10,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  return await createBoxTube(await req.json());
+  return await createBoxTube(await req.formData());
 }
 
 export async function getBoxTubes(teamId?: number) {
@@ -35,18 +34,19 @@ export async function getBoxTubes(teamId?: number) {
   }));
 }
 
-export async function createBoxTube(json: any, teamId?: number) {
+export async function createBoxTube(formData: FormData, team_id?: number) {
   const authType = await getAuthType();
   try {
     await validateAuthType(authType, true);
     if (authType.keyDigest)
-      teamId = await teamIdFromDigest(authType.keyDigest);
+      team_id = await teamIdFromDigest(authType.keyDigest);
   } catch (err) { return err; }
 
-  const data = await parseJsonBody({
-    ...json,
-    team_id: teamId
-  }, createInsertSchema(BoxTubes));
+  const data = await parseJsonFile(
+    formData,
+    BoxTubeInsertSchema,
+    (data, file) => ({ ...data, file, team_id })
+  );
   if (!data.success) return data.response;
 
   return await withAuth(authType, async tx => {

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod, { ZodType } from "zod";
+import db, { withAuth } from "./db";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
@@ -122,12 +123,12 @@ export function checkAnyChanges(records: any[]) {
   return routeResponse(records.length === 0 ? 404 : 204);
 }
 
-export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType, params: T) => NextResponse) {
+export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType, tx: Parameters<Parameters<typeof db.transaction>[0]>[0], params: T) => Promise<NextResponse>) {
   return async (req: NextRequest, { params }: { params: Promise<T> }) => {
     const authType = await getAuthType();
     try { await validateAuthType(authType); }
     catch (err) { return err; }
 
-    return callback(req, authType, await params);
+    return withAuth(authType, async tx => callback(req, authType, tx, await params));
   }
 }

@@ -89,8 +89,8 @@ export const BoxTubes = pgTable("box_tubes", {
   pgPolicy('box_tubes_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) }),
   pgPolicy('box_tubes_insert_key', { for: "insert", withCheck: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
 ]);
-export const BoxTubeInsertSchema = createInsertSchema(BoxTubes, { file: zod.instanceof(ArrayBuffer) })
-export const BoxTubeUpdateSchema = createUpdateSchema(BoxTubes, { file: zod.instanceof(ArrayBuffer) })
+export const BoxTubesInsertSchema = createInsertSchema(BoxTubes, { file: zod.instanceof(ArrayBuffer) })
+export const BoxTubesUpdateSchema = createUpdateSchema(BoxTubes, { file: zod.instanceof(ArrayBuffer) })
 
 export const Materials = pgTable("materials", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

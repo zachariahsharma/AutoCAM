@@ -1,7 +1,7 @@
 import { parseJsonFile, routeFactory, routeResponse } from "@/lib/api-utils";
 import { AuthType, teamIdFromDigest } from "@/lib/auth";
 import { Transaction } from "@/lib/db";
-import { BoxTubeInsertSchema, BoxTubes } from "@/lib/schema/cam";
+import { BoxTubesInsertSchema, BoxTubes } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
 
 export const GET = routeFactory((req, authType, tx) => getBoxTubes(authType, tx));
@@ -28,7 +28,7 @@ export async function getBoxTubes(authType: AuthType, tx: Transaction, teamId?: 
 export async function createBoxTube(authType: AuthType, tx: Transaction, formData: FormData, team_id?: number) {
   const data = await parseJsonFile(
     formData,
-    BoxTubeInsertSchema,
+    BoxTubesInsertSchema,
     (data, file) => ({ ...data, file, team_id })
   );
 

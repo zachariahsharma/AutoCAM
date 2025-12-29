@@ -12,7 +12,7 @@ import {
 } from "@/lib/api-utils";
 import zod from "zod";
 
-export interface Props { params: Promise<{ id: string }> };
+export interface Params { id: string };
 
 const UpdateInput = zod.object({
   name: zod.string().optional(),

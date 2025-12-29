@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod, { ZodType } from "zod";
-import db, { withAuth } from "./db";
+import db, { Transaction, withAuth } from "./db";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
@@ -40,12 +40,12 @@ export async function validateAuthType(authType: AuthType, emailVerifiedNeeded =
 /**
  * Validate and parse a parameter ID (converts to positive number)
  */
-export async function parseParamId(paramValue: string): Promise<{ success: true; data: number } | { success: false; response: NextResponse }> {
+export async function parseParamId(paramValue: string): Promise<number> {
   const result = await zod.coerce.number().positive().safeParseAsync(paramValue);
   if (!result.success) {
-    return { success: false, response: NextResponse.json(result.error.issues, { status: 422 }) };
+    throw NextResponse.json(result.error.issues, { status: 422 });
   }
-  return { success: true, data: result.data };
+  return result.data;
 }
 
 /**!==
@@ -123,7 +123,7 @@ export function checkAnyChanges(records: any[]) {
   return routeResponse(records.length === 0 ? 404 : 204);
 }
 
-export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType, tx: Parameters<Parameters<typeof db.transaction>[0]>[0], params: T) => Promise<NextResponse>) {
+export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType, tx: Transaction, params: T) => Promise<NextResponse>) {
   return async (req: NextRequest, { params }: { params: Promise<T> }) => {
     const authType = await getAuthType();
     try { await validateAuthType(authType); }

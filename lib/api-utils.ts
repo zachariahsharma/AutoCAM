@@ -51,12 +51,12 @@ export async function parseParamId(paramValue: string): Promise<{ success: true;
 /**!==
  * Validate and parse request body against a Zod schema
  */
-export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<{ success: true; data: zod.infer<typeof schema> } | { success: false; response: NextResponse }> {
+export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {
   const result = await schema.safeParseAsync(json);
   if (!result.success) {
-    return { success: false, response: NextResponse.json(result.error.issues, { status: 422 }) };
+    throw NextResponse.json(result.error.issues, { status: 422 });
   }
-  return { success: true, data: result.data };
+  return result.data;
 }
 
 export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T, preprocess: (data: object, file: ArrayBuffer) => object | Promise<object>): ReturnType<typeof parseJsonBody<T>> {
@@ -68,7 +68,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Form Data type for "data" is not a string'
     };
-    return { success: false, response: routeResponse(422, error) }
+    throw routeResponse(422, error);
   }
 
   const file = formData.get("file");
@@ -79,7 +79,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Form Data type for "file" is not a file'
     };
-    return { success: false, response: routeResponse(422, error) }
+    throw routeResponse(422, error);
   }
 
   let data: object;
@@ -92,7 +92,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Unable to parse JSON in "data"'
     };
-    return { success: false, response: routeResponse(422, error) }
+    throw routeResponse(422, error);
   }
 
   return await parseJsonBody(await preprocess(data, await file.arrayBuffer()), schema);
@@ -129,6 +129,15 @@ export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType,
     try { await validateAuthType(authType); }
     catch (err) { return err; }
 
-    return withAuth(authType, async tx => callback(req, authType, tx, await params));
+    return withAuth(authType, async tx => {
+      try {
+        callback(req, authType, tx, await params)
+      } catch (err) {
+        if (err instanceof NextResponse) return err;
+        if (err instanceof DatabaseError || err instanceof DrizzleQueryError)
+          return handleDatabaseError(err);
+        throw err;
+      }
+    });
   }
 }

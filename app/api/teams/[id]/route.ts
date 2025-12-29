@@ -9,9 +9,7 @@ import {
 import zod from "zod";
 import { createUpdateSchema } from "drizzle-zod";
 
-export interface Params { id: string };
-
-export const PATCH = routeFactory<Params>(async (req, authType, tx, params) => {
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const body = await parseJsonBody(await req.json(), createUpdateSchema(Teams, {
     owner: zod.email().optional()
   }));
@@ -19,15 +17,15 @@ export const PATCH = routeFactory<Params>(async (req, authType, tx, params) => {
   return checkAnyChanges(
     await tx.update(Teams)
       .set(body)
-      .where(eq(Teams.id, await parseParamId(params.id)))
+      .where(eq(Teams.id, id))
       .returning({ id: Teams.id })
   )
 }, { emailVerifiedNeeded: true })
 
-export const DELETE = routeFactory<Params>(async (req, authType, tx, params) => {
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
   return checkAnyChanges(
     await tx.delete(Teams)
-      .where(eq(Teams.id, await parseParamId(params.id)))
+      .where(eq(Teams.id, id))
       .returning({ id: Teams.id })
   )
 }, { emailVerifiedNeeded: true });

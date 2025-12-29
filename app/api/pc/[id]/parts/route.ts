@@ -1,45 +1,19 @@
-import { NextRequest } from "next/server";
-import { Props } from "../route";
-import { withAuth } from "@/lib/db";
 import { Parts, PartsInsertSchema } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
-import { getAuthType, handleDatabaseError, parseJsonBody, parseJsonFile, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
-import zod from "zod";
+import { parseJsonFile, routeFactory, routeResponse } from "@/lib/api-utils";
 
-export async function POST(req: NextRequest, { params }: Props) {
-  const authType = await getAuthType();
-  try { await validateAuthType(authType, true); }
-  catch (err) { return err; }
-
+export const POST = routeFactory(async (req, authType, tx, category_id) => {
   const data = await parseJsonFile(
-    await req.formData(),
-    PartsInsertSchema.extend({ category_id: zod.coerce.number().positive() }),
-    async (data, file) => ({ ...data, file, category_id: (await params).id })
-  )
-  if (!data.success) return data.response;
-  return await withAuth(authType, async tx => {
-    try {
-      const [id] = await tx.insert(Parts)
-        .values(data.data)
-        .returning({ id: Parts.id });
-      return routeResponse(201, id);
-    } catch (err) {
-      return handleDatabaseError(err);
-    }
-  });
-}
+    await req.formData(), PartsInsertSchema,
+    async (data, file) => ({ ...data, file, category_id })
+  );
+  const [id] = await tx.insert(Parts).values(data).returning({ id: Parts.id });
+  return routeResponse(201, id);
+}, { emailVerifiedNeeded: true });
 
-export async function GET(req: NextRequest, { params }: Props) {
-  const authType = await getAuthType();
-  try { await validateAuthType(authType); }
-  catch (err) { return err; }
-
-  const id = await parseParamId((await params).id);
-  if (!id.success)
-    return id.response;
-  return routeResponse(200, await withAuth(authType, async tx => {
-    return await tx.query.Parts.findMany({
-      where: eq(Parts.category_id, id.data),
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  return routeResponse(200, await tx.query.Parts.findMany({
+      where: eq(Parts.category_id, id),
       columns: {
         epic: true,
         name: true,
@@ -47,6 +21,5 @@ export async function GET(req: NextRequest, { params }: Props) {
         id: true,
         ticket: true,
       }
-    });
   }));
-}
+});

@@ -1,76 +1,46 @@
-import { getAuthType, handleDatabaseError, parseJsonBody, routeResponse, validateAuthType } from "@/lib/api-utils";
-import { teamIdFromDigest } from "@/lib/auth";
-import { withAuth } from "@/lib/db";
+import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api-utils";
+import { AuthType, teamIdFromDigest } from "@/lib/auth";
+import { Transaction } from "@/lib/db";
 import { PartCategories } from "@/lib/schema/cam";
 import { and, eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
-import { NextRequest } from "next/server";
 import zod from "zod";
 
-export async function GET(req: NextRequest) {
-  return await getPartCategories(req.nextUrl.searchParams);
-}
-
-export async function POST(req: NextRequest) {
-  return await createPartCategory(await req.json());
-}
+export const GET = routeFactory((req, authType, tx) => getPartCategories(authType, tx, req.nextUrl.searchParams));
+export const POST = routeFactory(
+  async (req, authType, tx) => createPartCategory(tx, await req.json()),
+  { emailVerifiedNeeded: true }
+);
 
 const SearchParams = zod.object({
   material: zod.string().optional(),
   thickness: zod.coerce.number().positive().optional(),
 });
 
-export async function getPartCategories(params: URLSearchParams, teamId?: number) {
-  const authType = await getAuthType();
-  try {
-    await validateAuthType(authType);
-    if (authType.keyDigest)
-      teamId = await teamIdFromDigest(authType.keyDigest);
-  }
-  catch (err) { return err; }
+export async function getPartCategories(authType: AuthType, tx: Transaction, params: URLSearchParams, teamId?: number) {
+  if (authType.keyDigest)
+    teamId = await teamIdFromDigest(authType.keyDigest);
 
   const data = await parseJsonBody({
-    material: params.get("material")?.toString(),
-    thickness: params.get("thickness")?.toString()
+    material: params.get("material"),
+    thickness: params.get("thickness")
   }, SearchParams);
-  if (!data.success) return data.response;
-  const partCategories = await withAuth(authType, async tx => {
-    return (await tx.query.PartCategories.findMany({
-      where: and(
-        eq(PartCategories.team_id, teamId!),
-        data.data.material !== undefined ? eq(PartCategories.material, data.data.material) : undefined,
-        data.data.thickness ? eq(PartCategories.thickness, data.data.thickness) : undefined
-      ),
-      columns: {
-        id: true,
-        material: true,
-        thickness: true,
-      }
-    })).map(c => ({ ...c, thickness: Number(c.thickness) }));
-  });
-  return routeResponse(200, partCategories);
+  return routeResponse(200, await tx.query.PartCategories.findMany({
+    where: and(
+      eq(PartCategories.team_id, teamId!),
+      data.material !== undefined ? eq(PartCategories.material, data.material) : undefined,
+      data.thickness ? eq(PartCategories.thickness, data.thickness) : undefined
+    ),
+    columns: {
+      id: true,
+      material: true,
+      thickness: true,
+    }
+  }));
 }
 
-export async function createPartCategory(json: any, teamId?: number) {
-  const authType = await getAuthType();
-  try {
-    await validateAuthType(authType, true);
-    if (authType.keyDigest)
-      teamId = await teamIdFromDigest(authType.keyDigest);
-  } catch (err) { return err; }
-
-  const data = await parseJsonBody({
-    ...json,
-    team_id: teamId
-  }, createInsertSchema(PartCategories));
-  if (!data.success)
-    return data.response;
-  return await withAuth(authType, async tx => {
-    try {
-      const [id] = await tx.insert(PartCategories).values(data.data).returning({ id: PartCategories.id });
-      return routeResponse(201, id);
-    } catch (err) {
-      return handleDatabaseError(err);
-    }
-  });
+export async function createPartCategory(tx: Transaction, json: any, team_id?: number) {
+  const data = await parseJsonBody({ ...json, team_id }, createInsertSchema(PartCategories));
+  const [id] = await tx.insert(PartCategories).values(data).returning({ id: PartCategories.id });
+  return routeResponse(201, id);
 }

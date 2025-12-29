@@ -53,7 +53,7 @@ export const Parts = pgTable("parts", {
 ]);
 
 export const PartsInsertSchema = createInsertSchema(Parts, { file: zod.instanceof(ArrayBuffer) })
-export const PartsUpdateSchema = createUpdateSchema(Parts, { file: zod.instanceof(ArrayBuffer) });
+export const PartsUpdateSchema = createUpdateSchema(Parts).omit({ file: true });
 
 export const Plates = pgTable("plates", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -90,7 +90,7 @@ export const BoxTubes = pgTable("box_tubes", {
   pgPolicy('box_tubes_insert_key', { for: "insert", withCheck: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
 ]);
 export const BoxTubesInsertSchema = createInsertSchema(BoxTubes, { file: zod.instanceof(ArrayBuffer) })
-export const BoxTubesUpdateSchema = createUpdateSchema(BoxTubes, { file: zod.instanceof(ArrayBuffer) })
+export const BoxTubesUpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true })
 
 export const Materials = pgTable("materials", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

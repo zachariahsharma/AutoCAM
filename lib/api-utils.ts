@@ -123,10 +123,14 @@ export function checkAnyChanges(records: any[]) {
   return routeResponse(records.length === 0 ? 404 : 204);
 }
 
-export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType, tx: Transaction, params: T) => Promise<NextResponse>) {
+export interface RouteFactoryConfig {
+  emailVerifiedNeeded?: boolean;
+}
+
+export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType, tx: Transaction, params: T) => Promise<NextResponse>, config?: RouteFactoryConfig) {
   return async (req: NextRequest, { params }: { params: Promise<T> }) => {
     const authType = await getAuthType();
-    try { await validateAuthType(authType); }
+    try { await validateAuthType(authType, config?.emailVerifiedNeeded ?? false); }
     catch (err) { return err; }
 
     return withAuth(authType, async tx => {

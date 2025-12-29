@@ -1,71 +1,50 @@
-import { getAuthType, handleDatabaseError, parseJsonBody, routeResponse, validateAuthType } from "@/lib/api-utils";
-import { teamIdFromDigest } from "@/lib/auth";
-import { withAuth } from "@/lib/db";
+import { getAuthType, handleDatabaseError, parseJsonBody, routeFactory, routeResponse, validateAuthType } from "@/lib/api-utils";
+import { AuthType, teamIdFromDigest } from "@/lib/auth";
+import { Transaction, withAuth } from "@/lib/db";
 import mailer from "@/lib/mailer";
 import { TeamInvites, Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { createInsertSchema } from "drizzle-zod";
 
-export async function POST(req: NextRequest) {
-  return await inviteEmail(await req.json());
+export const POST = routeFactory(async (req, authType, tx) => inviteEmail(authType, tx, await req.json()));
+export const GET = routeFactory((req, authType, tx) => getInvites(authType, tx));
+
+export async function getInvites(authType: AuthType, tx: Transaction, teamId?: number) {
+  if (authType.keyDigest)
+    teamId = await teamIdFromDigest(authType.keyDigest);
+
+  return routeResponse(200, await tx.query.TeamInvites.findMany({
+    columns: { email: true, id: true },
+    where: eq(TeamInvites.team_id, teamId!)
+  }));
 }
 
-export async function GET() {
-  return await getInvites();
-}
-
-export async function getInvites(teamId?: number) {
-  const authType = await getAuthType();
-  try {
-    await validateAuthType(authType);
-    if (authType.keyDigest)
-      teamId = await teamIdFromDigest(authType.keyDigest);
-  } catch (err) { return err; }
-
-  return await withAuth(authType, async tx => {
-    return await tx.query.TeamInvites.findMany({
-      columns: { email: true, id: true },
-      where: eq(TeamInvites.team_id, teamId!)
-    });
-  });
-}
-
-export async function inviteEmail(json: object, teamId?: number) {
-  const authType = await getAuthType();
-  try {
-    await validateAuthType(authType, true);
-    if (authType.keyDigest)
-      teamId = await teamIdFromDigest(authType.keyDigest);
-  } catch (err) { return err; }
+export async function inviteEmail(authType: AuthType, tx: Transaction, json: object, teamId?: number) {
+  if (authType.keyDigest)
+    teamId = await teamIdFromDigest(authType.keyDigest);
 
   const data = await parseJsonBody({
     ...json,
     team_id: teamId
   }, createInsertSchema(TeamInvites));
-  if (!data.success)
-    return data.response;
 
-  try {
-    const [id, teamName] = await withAuth(authType, async tx => {
-      const [invite] = await tx
-        .insert(TeamInvites)
-        .values(data.data)
-        .returning({ id: TeamInvites.id });
-      // Unless there is an egregious race condition this should never return nothing
-      const team = (await tx.query.Teams.findFirst({
-        where: eq(Teams.id, teamId!)
-      }))!;
-      return [invite.id, team.name];
-    });
-    await mailer.sendMail({
-      from: '"AutoCAM" <ishan.karmakar24@gmail.com>',
-      to: data.data.email,
-      subject: `Join ${teamName}`,
-      text: `Join the ${teamName} Team with this link: ${new URL(`/api/user/invites/accept/${id}`, `http://${process.env.BASE_URL}`)}`
-    });
-    return routeResponse();
-  } catch (err) {
-    return handleDatabaseError(err);
-  }
+  const [id, teamName] = await withAuth(authType, async tx => {
+    const [invite] = await tx
+      .insert(TeamInvites)
+      .values(data)
+      .returning({ id: TeamInvites.id });
+    // Unless there is an egregious race condition this should never return nothing
+    const team = (await tx.query.Teams.findFirst({
+      where: eq(Teams.id, teamId!)
+    }))!;
+    return [invite.id, team.name];
+  });
+  await mailer.sendMail({
+    from: '"AutoCAM" <ishan.karmakar24@gmail.com>',
+    to: data.email,
+    subject: `Join ${teamName}`,
+    text: `Join the ${teamName} Team with this link: ${new URL(`/api/user/invites/accept/${id}`, `http://${process.env.BASE_URL}`)}`
+  });
+  return routeResponse();
 }

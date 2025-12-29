@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Props } from "../route";
+import { Params } from "../route";
 import { getInvites, inviteEmail } from "../../invite/route";
-import { getUserId, parseParamId, routeResponse } from "@/lib/api-utils";
+import { getUserId, parseParamId, routeFactory, routeResponse } from "@/lib/api-utils";
 
-export async function POST(req: NextRequest, { params }: Props) {
-  if (!await getUserId())
-    return routeResponse(401);
-  const id = await parseParamId((await params).id);
-  if (!id.success) return id.response;
-  return await inviteEmail(await req.json(), id.data);
-}
+export const POST = routeFactory<Params>(
+  async (req, authType, tx, params) => inviteEmail(authType, tx, await req.json(), await parseParamId(params.id))
+);
 
-export async function GET(req: NextRequest, { params }: Props) {
-  if (!await getUserId())
-    return routeResponse(401);
-  const id = await parseParamId((await params).id);
-  if (!id.success) return id.response;
-  return await getInvites(id.data);
-}
+export const GET = routeFactory<Params>(
+  async (req, authType, tx, params) => getInvites(authType, tx, await parseParamId(params.id))
+)

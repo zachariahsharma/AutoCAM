@@ -127,15 +127,20 @@ export interface RouteFactoryConfig {
   emailVerifiedNeeded?: boolean;
 }
 
-export function routeFactory<T>(callback: (req: NextRequest, authType: AuthType, tx: Transaction, params: T) => Promise<NextResponse>, config?: RouteFactoryConfig) {
-  return async (req: NextRequest, { params }: { params: Promise<T> }) => {
+type RouteFactoryCallback =
+  | ((req: NextRequest, authType: AuthType, tx: Transaction, id: number) => Promise<NextResponse>)
+  | ((req: NextRequest, authType: AuthType, tx: Transaction) => Promise<NextResponse>);
+export function routeFactory(callback: RouteFactoryCallback, config?: RouteFactoryConfig) {
+  return async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     const authType = await getAuthType();
     try { await validateAuthType(authType, config?.emailVerifiedNeeded ?? false); }
     catch (err) { return err; }
 
     return withAuth(authType, async tx => {
       try {
-        callback(req, authType, tx, await params)
+        if (callback.length > 3) // Has an id field
+          return callback(req, authType, tx, await parseParamId((await params).id))
+        return callback(req, authType, tx);
       } catch (err) {
         if (err instanceof NextResponse) return err;
         if (err instanceof DatabaseError || err instanceof DrizzleQueryError)

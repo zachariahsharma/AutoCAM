@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "./lib/api-utils";
+import { getUserId } from "./lib/api";
 
 export async function proxy(request: NextRequest) {
   const userId = await getUserId();

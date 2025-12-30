@@ -1,15 +1,8 @@
-import { getAuthType, routeResponse, validateAuthType } from "@/lib/api-utils";
-import db, { withAuth } from "@/lib/db";
+import { routeFactory, routeResponse } from "@/lib/api";
 
-export async function GET() {
-  const authType = await getAuthType();
-  try { await validateAuthType(authType); }
-  catch (err) { return err; }
-
-  return routeResponse(200, (await withAuth(authType, async tx => {
-    return await tx.query.TeamInvites.findMany({
-      with: { team: true },
-      columns: { id: true }
-    });
-  })).map(x => ({ id: x.id, teamName: x.team.name })));
-}
+export const GET = routeFactory(async (req, authType, tx) => {
+  return routeResponse(200, (await tx.query.TeamInvites.findMany({
+    with: { team: true },
+    columns: { id: true }
+  })).map(x => ({ ...x, team: x.team.name })))
+});

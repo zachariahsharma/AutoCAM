@@ -4,8 +4,8 @@ import {
   PartsToPlates,
   Plates,
   BoxTubes,
-} from "@/lib/schema/cam";
-import { Teams } from "@/lib/schema/entities";
+} from "@/lib/db/schema/cam";
+import { Teams } from "@/lib/db/schema/entities";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 export type PartCategory = Omit<
@@ -30,7 +30,10 @@ export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
   plate?: Plate;
   part?: Part;
 };
-export type BoxTube = InferInsertModel<typeof BoxTubes>;
+export type BoxTube = InferInsertModel<typeof BoxTubes> & {
+  id: number;
+  status?: "pending" | "in progress" | "completed";
+};
 
 export type Team = InferSelectModel<typeof Teams>;
 

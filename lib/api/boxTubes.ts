@@ -38,7 +38,7 @@ registry.registerPath({
           schema: zod.object({
             data: zod.string().openapi({ description: "JSON data as string" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "File upload" })
-          }).openapi("BoxTubesFormData")
+          })
         }
       }
     }
@@ -48,7 +48,7 @@ registry.registerPath({
       description: "Box tube created",
       content: {
         "application/json": {
-          schema: zod.object({ id: zod.number() }) //.openapi("BoxTubeIdResponse")
+          schema: zod.object({ id: zod.number() })
         }
       }
     }

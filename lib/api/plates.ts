@@ -29,7 +29,7 @@ registry.registerPath({
       description: "Plate updated",
       content: {
         "application/json": {
-          schema: zod.object({ id: zod.number() }).openapi("PlateIdResponse")
+          schema: zod.object({ id: zod.number() })
         }
       }
     }
@@ -49,7 +49,7 @@ registry.registerPath({
       description: "Plate deleted",
       content: {
         "application/json": {
-          schema: zod.object({ id: zod.number() }).openapi("PlateIdResponse")
+          schema: zod.object({ id: zod.number() })
         }
       }
     }

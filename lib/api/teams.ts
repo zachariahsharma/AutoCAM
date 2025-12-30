@@ -44,7 +44,7 @@ registry.registerPath({
       description: "Team created",
       content: {
         "application/json": {
-          schema: zod.object({ id: zod.number() }) // .openapi("TeamIdResponse")
+          schema: zod.object({ id: zod.number() })
         }
       }
     }

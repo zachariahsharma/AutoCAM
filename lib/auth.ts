@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import db, { withAuth } from "./db";
+import db, { Transaction } from "./db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from './schema/auth';
 import transporter from "./mailer";
@@ -43,12 +43,10 @@ export async function getKeyDigest() {
 }
 export const APIKeyInvalidResponse = new NextResponse(null, { status: 401 });
 
-export async function teamIdFromDigest(digest: string) {
-  const teamId = await withAuth({ keyDigest: digest }, async tx => {
-    return (await tx.query.TeamKeys.findFirst({
-      where: eq(TeamKeys.digest, digest)
-    }))?.team_id;
-  });
+export async function teamIdFromDigest(tx: Transaction, digest: string) {
+  const teamId = (await tx.query.TeamKeys.findFirst({
+    where: eq(TeamKeys.digest, digest)
+  }))?.team_id;
   if (!teamId) throw routeResponse(401);
   return teamId;
 }

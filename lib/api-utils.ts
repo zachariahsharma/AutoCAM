@@ -25,7 +25,6 @@ export async function getAuthType(): Promise<AuthType> {
 }
 
 export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
-  console.log(authType);
   if (!(authType.userId || authType.keyDigest))
     throw routeResponse(401);
   if (emailVerifiedNeeded && authType.userId) {
@@ -140,7 +139,7 @@ export function routeFactory(callback: RouteFactoryCallback, config?: RouteFacto
         let id = 0;
         if (callback.length === 4)
           id = await parseParamId((await params).id)
-        const result = callback(req, authType, tx, id)
+        const result = await callback(req, authType, tx, id);
         if (Array.isArray(result))
           return checkAnyChanges(result);
         return result;

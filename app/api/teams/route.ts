@@ -18,7 +18,7 @@ export const POST = routeFactory(async (req, authType, tx) => {
     admin: true,
   });
   return routeResponse(201, id);
-});
+}, { emailVerifiedNeeded: true });
 
 export const GET = routeFactory(async (req, authType, tx) => {
   if (authType.userId)

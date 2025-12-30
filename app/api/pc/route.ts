@@ -19,11 +19,11 @@ const SearchParams = zod.object({
 
 export async function getPartCategories(authType: AuthType, tx: Transaction, params: URLSearchParams, teamId?: number) {
   if (authType.keyDigest)
-    teamId = await teamIdFromDigest(authType.keyDigest);
+    teamId = await teamIdFromDigest(tx, authType.keyDigest);
 
   const data = await parseJsonBody({
-    material: params.get("material"),
-    thickness: params.get("thickness")
+    material: params.get("material")?.toString(),
+    thickness: params.get("thickness")?.toString()
   }, SearchParams);
   return routeResponse(200, await tx.query.PartCategories.findMany({
     where: and(

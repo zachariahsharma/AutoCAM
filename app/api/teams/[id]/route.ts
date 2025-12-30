@@ -1,8 +1,6 @@
 import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import {
-  parseParamId,
-  checkAnyChanges,
   parseJsonBody,
   routeFactory
 } from "@/lib/api-utils";
@@ -14,18 +12,14 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     owner: zod.email().optional()
   }));
 
-  return checkAnyChanges(
-    await tx.update(Teams)
-      .set(body)
-      .where(eq(Teams.id, id))
-      .returning({ id: Teams.id })
-  )
+  return await tx.update(Teams)
+    .set(body)
+    .where(eq(Teams.id, id))
+    .returning({ id: Teams.id });
 }, { emailVerifiedNeeded: true })
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
-  return checkAnyChanges(
-    await tx.delete(Teams)
-      .where(eq(Teams.id, id))
-      .returning({ id: Teams.id })
-  )
+  return await tx.delete(Teams)
+    .where(eq(Teams.id, id))
+    .returning({ id: Teams.id });
 }, { emailVerifiedNeeded: true });

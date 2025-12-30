@@ -12,7 +12,7 @@ export const POST = routeFactory(
 
 export async function getBoxTubes(authType: AuthType, tx: Transaction, teamId?: number) {
   if (authType.keyDigest)
-    teamId = await teamIdFromDigest(authType.keyDigest);
+    teamId = await teamIdFromDigest(tx, authType.keyDigest);
 
   return routeResponse(200, await tx.query.BoxTubes.findMany({
       where: eq(BoxTubes.team_id, teamId!),

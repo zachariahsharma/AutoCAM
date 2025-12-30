@@ -8,7 +8,7 @@ export const GET = routeFactory((req, authType, tx) => getTeamMembers(authType, 
 
 export async function getTeamMembers(authType: AuthType, tx: Transaction, teamId?: number) {
   if (authType.keyDigest)
-    teamId = await teamIdFromDigest(authType.keyDigest);
+    teamId = await teamIdFromDigest(tx, authType.keyDigest);
 
   return routeResponse(200, (await tx.query.TeamMembers.findMany({
     where: eq(TeamMembers.team_id, teamId!),

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
-import { TeamKeys } from "@/lib/schema/entities";
-import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api-utils";
+import { TeamKeys } from "@/lib/db/schema/entities";
+import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api";
 import { createInsertSchema } from "drizzle-zod";
 
 export const GET = routeFactory(async (req, authType, tx, id) => {

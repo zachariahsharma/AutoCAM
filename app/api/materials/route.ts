@@ -1,7 +1,7 @@
-import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api-utils";
-import { AuthType, teamIdFromDigest } from "@/lib/auth";
+import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api";
+import { AuthType, teamIdFromDigest } from "@/lib/auth/server";
 import { Transaction } from "@/lib/db";
-import { Materials } from "@/lib/schema/cam";
+import { Materials } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 

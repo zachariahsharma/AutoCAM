@@ -1,14 +1,14 @@
 import { betterAuth } from "better-auth";
-import db, { Transaction } from "./db";
+import db, { Transaction } from "../db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import * as schema from './schema/auth';
-import transporter from "./mailer";
+import * as schema from '../db/schema/auth';
+import transporter from "../mailer";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
-import { TeamKeys } from "./schema/entities";
-import { routeResponse } from "./api-utils";
+import { TeamKeys } from "../db/schema/entities";
+import { routeResponse } from "../api";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {

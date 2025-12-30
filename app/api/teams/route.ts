@@ -1,9 +1,9 @@
-import { TeamMembers, Teams } from "@/lib/schema/entities";
+import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import {
   parseJsonBody,
   routeResponse,
   routeFactory
-} from "@/lib/api-utils";
+} from "@/lib/api";
 import { createInsertSchema } from "drizzle-zod";
 
 export const POST = routeFactory(async (req, authType, tx) => {

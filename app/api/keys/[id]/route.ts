@@ -1,9 +1,9 @@
-import { TeamKeys } from "@/lib/schema/entities";
+import { TeamKeys } from "@/lib/db/schema/entities";
 import { eq } from "drizzle-orm";
 import {
   parseJsonBody,
   routeFactory
-} from "@/lib/api-utils";
+} from "@/lib/api";
 import { createUpdateSchema } from "drizzle-zod";
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

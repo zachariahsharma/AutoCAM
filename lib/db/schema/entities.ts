@@ -3,7 +3,7 @@ import { user } from "./auth";
 import { getTableName, relations, sql } from "drizzle-orm";
 import { Machines, Materials, PartCategories, Tools, BoxTubes } from "./cam";
 import { KeyAuthorized, KeyDigest, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
-import scopes from "../scopes";
+import scopes from "../../scopes";
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

@@ -1,7 +1,7 @@
-import { parseJsonFile, routeFactory, routeResponse } from "@/lib/api-utils";
-import { AuthType, teamIdFromDigest } from "@/lib/auth";
+import { parseJsonFile, routeFactory, routeResponse } from "@/lib/api";
+import { AuthType, teamIdFromDigest } from "@/lib/auth/server";
 import { Transaction } from "@/lib/db";
-import { BoxTubesInsertSchema, BoxTubes } from "@/lib/schema/cam";
+import { BoxTubesInsertSchema, BoxTubes } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 
 export const GET = routeFactory((req, authType, tx) => getBoxTubes(authType, tx));

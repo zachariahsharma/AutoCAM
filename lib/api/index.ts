@@ -1,10 +1,10 @@
-import { auth, AuthType, getKeyDigest } from "@/lib/auth";
+import { auth, AuthType, getKeyDigest } from "@/lib/auth/server";
 import { DrizzleQueryError } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod, { ZodType } from "zod";
-import db, { Transaction, withAuth } from "./db";
+import db, { Transaction, withAuth } from "../db";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)

@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { CheckBoxTubeJobsTeams, CheckPartsPlatesTeam, CheckPlateJobsTeams, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
-import scopes from "../scopes";
+import scopes from "../../scopes";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 

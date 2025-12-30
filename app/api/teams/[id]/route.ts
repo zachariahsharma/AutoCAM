@@ -1,13 +1,13 @@
-import { Teams } from "@/lib/schema/entities";
+import { Teams } from "@/lib/db/schema/entities";
 import { eq } from "drizzle-orm";
 import {
   parseJsonBody,
   routeFactory,
   routeResponse
-} from "@/lib/api-utils";
+} from "@/lib/api";
 import zod from "zod";
 import { createUpdateSchema } from "drizzle-zod";
-import { user } from "@/lib/schema/auth";
+import { user } from "@/lib/db/schema/auth";
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const body = await parseJsonBody(await req.json(), createUpdateSchema(Teams, {

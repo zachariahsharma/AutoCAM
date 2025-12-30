@@ -4,7 +4,7 @@ import { motion, useAnimate, AnimatePresence } from "framer-motion";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
 import { FormEvent, useEffect } from "react";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState } from "react";

@@ -1,9 +1,9 @@
-import { PartCategories } from "@/lib/schema/cam";
+import { PartCategories } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 import {
   parseJsonBody,
   routeFactory
-} from "@/lib/api-utils";
+} from "@/lib/api";
 import { createUpdateSchema } from "drizzle-zod";
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {

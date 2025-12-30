@@ -19,7 +19,8 @@ export async function getBoxTubes(authType: AuthType, tx: Transaction, teamId?: 
         id: true,
         epic: true,
         name: true,
-        quantity: true
+        quantity: true,
+        ticket: true
       }
   }));
 }

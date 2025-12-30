@@ -30,7 +30,10 @@ export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
   plate?: Plate;
   part?: Part;
 };
-export type BoxTube = InferInsertModel<typeof BoxTubes>;
+export type BoxTube = InferInsertModel<typeof BoxTubes> & {
+  id: number;
+  status?: "pending" | "in progress" | "completed";
+};
 
 export type Team = InferSelectModel<typeof Teams>;
 

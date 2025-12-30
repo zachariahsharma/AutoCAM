@@ -70,6 +70,7 @@ export const Plates = pgTable("plates", {
 export const BoxTubes = pgTable("box_tubes", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
+  ticket: text().notNull(),
   epic: text().notNull(),
   file: bytea().notNull(),
   quantity: integer().default(1).notNull(),

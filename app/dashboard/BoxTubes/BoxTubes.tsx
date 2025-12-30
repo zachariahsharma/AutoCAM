@@ -2,8 +2,9 @@ import styles from "./boxtubes.module.css";
 import { BoxTube } from "@/app/types";
 import Marquee from "react-fast-marquee";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useDashboardEvents } from "../dashboardTeam";
 
 function BoxTubeCard({ boxtube }: { boxtube: BoxTube }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -83,14 +84,62 @@ function BoxTubeCard({ boxtube }: { boxtube: BoxTube }) {
 }
 
 export function BoxTubes({
-  boxtubes,
   boxtubeOpen,
   setBoxtubeOpen,
 }: {
-  boxtubes: BoxTube[];
   boxtubeOpen: boolean;
   setBoxtubeOpen: (open: boolean) => void;
 }) {
+  const [boxtubes, setBoxtubes] = useState<BoxTube[]>([]);
+  const { team } = useDashboardEvents();
+  useEffect(() => {
+    let mounted = true;
+    const loadBoxTubes = async () => {
+      if (team === null) return;
+      const response = await fetch(`/api/teams/${team.id}/boxTubes`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (mounted) {
+          let statusedData = await Promise.all(
+            data.map(async (bt: BoxTube) => {
+              const response = await fetch(`/api/boxTubes/${bt.id}/jobs`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              });
+              if (response.ok) {
+                const jobs = await response.json();
+                console.log("Jobs for box tube", bt.id, ":", jobs);
+                if (jobs.length === 0) {
+                  bt.status = "pending";
+                  return bt;
+                }
+                const allCompleted = jobs.every(
+                  (job: any) => job.status === "completed"
+                );
+                return {
+                  ...bt,
+                  status: allCompleted ? "completed" : "in progress",
+                };
+              }
+            })
+          );
+          setBoxtubes(statusedData);
+          console.log("Loaded box tubes:", data);
+        }
+      }
+    };
+    loadBoxTubes();
+    return () => {
+      mounted = false;
+    };
+  }, [team]);
   return (
     <motion.div
       id={styles.boxtubesblur}

@@ -10,8 +10,7 @@ export const POST = routeFactory(async (req, authType, tx) => inviteEmail(authTy
 export const GET = routeFactory((req, authType, tx) => getInvites(authType, tx));
 
 export async function getInvites(authType: AuthType, tx: Transaction, teamId?: number) {
-  if (authType.keyDigest)
-    teamId = await teamIdFromDigest(tx, authType.keyDigest);
+  teamId ??= await teamIdFromDigest(tx, authType);
 
   return routeResponse(200, await tx.query.TeamInvites.findMany({
     columns: { email: true, id: true },
@@ -20,8 +19,7 @@ export async function getInvites(authType: AuthType, tx: Transaction, teamId?: n
 }
 
 export async function inviteEmail(authType: AuthType, tx: Transaction, json: object, team_id?: number) {
-  if (authType.keyDigest)
-    team_id = await teamIdFromDigest(tx, authType.keyDigest);
+  team_id ??= await teamIdFromDigest(tx, authType);
 
   const data = await parseJsonBody({ ...json, team_id }, createInsertSchema(TeamInvites));
 

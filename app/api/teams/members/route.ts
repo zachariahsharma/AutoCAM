@@ -7,8 +7,7 @@ import { eq } from "drizzle-orm";
 export const GET = routeFactory((req, authType, tx) => getTeamMembers(authType, tx));
 
 export async function getTeamMembers(authType: AuthType, tx: Transaction, teamId?: number) {
-  if (authType.keyDigest)
-    teamId = await teamIdFromDigest(tx, authType.keyDigest);
+  teamId ??= await teamIdFromDigest(tx, authType);
 
   return routeResponse(200, (await tx.query.TeamMembers.findMany({
     where: eq(TeamMembers.team_id, teamId!),

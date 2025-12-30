@@ -1,11 +1,16 @@
-import { routeFactory } from "@/lib/api";
+import { NextRequest } from "next/server";
+import { Props } from "../route";
 import { createPartCategory, getPartCategories } from "@/app/api/pc/route";
+import { parseParamId } from "@/lib/api-utils";
 
-export const GET = routeFactory(
-  async (req, authType, tx, id) => getPartCategories(authType, tx, req.nextUrl.searchParams, id)
-);
+export async function GET(req: NextRequest, { params }: Props) {
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
+  return await getPartCategories(req.nextUrl.searchParams, id.data);
+}
 
-export const POST = routeFactory(
-  async (req, authType, tx, id) => createPartCategory(tx, await req.json(), id),
-  { emailVerifiedNeeded: true }
-);
+export async function POST(req: NextRequest, { params }: Props) {
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
+  return await createPartCategory(await req.json(), id.data);
+}

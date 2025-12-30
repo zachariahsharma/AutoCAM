@@ -3,7 +3,7 @@ import styles from "./login.module.css";
 import { motion } from "framer-motion";
 import { SecondaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
-import { authClient } from "@/lib/auth/client";
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, Dispatch, SetStateAction, use } from "react";
 import { RobotPic } from "../signup/page";

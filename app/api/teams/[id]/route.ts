@@ -1,32 +1,62 @@
-import { Teams } from "@/lib/db/schema/entities";
+import { withAuth } from "@/lib/db";
+import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
+import { NextRequest } from "next/server";
 import {
-  parseJsonBody,
-  routeFactory,
-  routeResponse
-} from "@/lib/api";
+  parseParamId,
+  handleDatabaseError,
+  checkAnyChanges,
+  validateAuthType,
+  getAuthType,
+  parseJsonBody
+} from "@/lib/api-utils";
 import zod from "zod";
-import { createUpdateSchema } from "drizzle-zod";
-import { user } from "@/lib/db/schema/auth";
 
-export const PATCH = routeFactory(async (req, authType, tx, id) => {
-  const body = await parseJsonBody(await req.json(), createUpdateSchema(Teams, {
-    owner: zod.email().optional().transform(async owner => {
-      if (!owner) return;
-      const newOwner = await tx.query.user.findFirst({ where: eq(user.email, owner) });
-      if (!newOwner) throw routeResponse(404);
-      return newOwner.id;
-    })
-  }));
+export interface Props { params: Promise<{ id: string }> };
 
-  return await tx.update(Teams)
-    .set(body)
-    .where(eq(Teams.id, id))
-    .returning({ id: Teams.id });
-}, { emailVerifiedNeeded: true })
+const UpdateInput = zod.object({
+  name: zod.string().optional(),
+  owner: zod.email().optional(),
+});
 
-export const DELETE = routeFactory(async (req, authType, tx, id) => {
-  return await tx.delete(Teams)
-    .where(eq(Teams.id, id))
-    .returning({ id: Teams.id });
-}, { emailVerifiedNeeded: true });
+export async function PATCH(req: NextRequest, { params }: Props) {
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
+
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
+
+  const body = await parseJsonBody(await req.json(), UpdateInput);
+  if (!body.success) return body.response;
+
+  return await withAuth(authType, async tx => {
+    try {
+      return checkAnyChanges(await tx.update(Teams)
+        .set(body.data)
+        .where(eq(Teams.id, id.data))
+        .returning({ id: Teams.id }));
+    } catch (err) {
+      return handleDatabaseError(err);
+    }
+  });
+}
+
+export async function DELETE(req: NextRequest, { params }: Props) {
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
+
+  const id = await parseParamId((await params).id);
+  if (!id.success) return id.response;
+
+  return await withAuth(authType, async tx => {
+    try {
+      return checkAnyChanges(await tx.delete(Teams)
+        .where(eq(Teams.id, id.data))
+        .returning({ id: Teams.id }));
+    } catch (err) {
+      return handleDatabaseError(err);
+    }
+  });
+}

@@ -1,14 +1,14 @@
 import { betterAuth } from "better-auth";
-import db, { Transaction } from "../db";
+import db, { withAuth } from "./db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import * as schema from '../db/schema/auth';
-import transporter from "../mailer";
+import * as schema from './schema/auth';
+import transporter from "./mailer";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
-import { TeamKeys } from "../db/schema/entities";
-import { routeResponse } from "../api";
+import { TeamKeys } from "./schema/entities";
+import { routeResponse } from "./api-utils";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -43,11 +43,12 @@ export async function getKeyDigest() {
 }
 export const APIKeyInvalidResponse = new NextResponse(null, { status: 401 });
 
-export async function teamIdFromDigest(tx: Transaction, authType: AuthType) {
-  if (!authType.keyDigest) throw routeResponse(401);
-  const teamId = (await tx.query.TeamKeys.findFirst({
-    where: eq(TeamKeys.digest, authType.keyDigest)
-  }))?.team_id;
+export async function teamIdFromDigest(digest: string) {
+  const teamId = await withAuth({ keyDigest: digest }, async tx => {
+    return (await tx.query.TeamKeys.findFirst({
+      where: eq(TeamKeys.digest, digest)
+    }))?.team_id;
+  });
   if (!teamId) throw routeResponse(401);
   return teamId;
 }

@@ -1,18 +1,9 @@
-import { auth, AuthType, getKeyDigest } from "@/lib/auth/server";
+import { auth, AuthType, getKeyDigest } from "@/lib/auth";
 import { DrizzleQueryError } from "drizzle-orm";
 import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod, { ZodType } from "zod";
-import { Transaction, withAuth } from "../db";
-
-import "./teams";
-import "./machines";
-import "./materials";
-import "./parts";
-import "./pc";
-import "./plates";
-import "./boxTubes";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
@@ -33,6 +24,7 @@ export async function getAuthType(): Promise<AuthType> {
 }
 
 export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
+  console.log(authType);
   if (!(authType.userId || authType.keyDigest))
     throw routeResponse(401);
   if (emailVerifiedNeeded && authType.userId) {
@@ -47,26 +39,26 @@ export async function validateAuthType(authType: AuthType, emailVerifiedNeeded =
 /**
  * Validate and parse a parameter ID (converts to positive number)
  */
-export async function parseParamId(paramValue: string): Promise<number> {
+export async function parseParamId(paramValue: string): Promise<{ success: true; data: number } | { success: false; response: NextResponse }> {
   const result = await zod.coerce.number().positive().safeParseAsync(paramValue);
   if (!result.success) {
-    throw NextResponse.json(result.error.issues, { status: 422 });
+    return { success: false, response: NextResponse.json(result.error.issues, { status: 422 }) };
   }
-  return result.data;
+  return { success: true, data: result.data };
 }
 
 /**!==
  * Validate and parse request body against a Zod schema
  */
-export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {
+export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<{ success: true; data: zod.infer<typeof schema> } | { success: false; response: NextResponse }> {
   const result = await schema.safeParseAsync(json);
   if (!result.success) {
-    throw NextResponse.json(result.error.issues, { status: 422 });
+    return { success: false, response: NextResponse.json(result.error.issues, { status: 422 }) };
   }
-  return result.data;
+  return { success: true, data: result.data };
 }
 
-export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T, preprocess: (data: object, file: ArrayBuffer) => object | Promise<object>): ReturnType<typeof parseJsonBody<T>> {
+export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T, preprocess: (data: object, file: ArrayBuffer) => Promise<object>): ReturnType<typeof parseJsonBody<T>> {
   const json = formData.get("data");
   if (typeof json !== "string") {
     const error: zod.core.$ZodIssue = {
@@ -75,7 +67,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Form Data type for "data" is not a string'
     };
-    throw routeResponse(422, error);
+    return { success: false, response: routeResponse(422, error) }
   }
 
   const file = formData.get("file");
@@ -86,7 +78,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Form Data type for "file" is not a file'
     };
-    throw routeResponse(422, error);
+    return { success: false, response: routeResponse(422, error) }
   }
 
   let data: object;
@@ -99,7 +91,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Unable to parse JSON in "data"'
     };
-    throw routeResponse(422, error);
+    return { success: false, response: routeResponse(422, error) }
   }
 
   return await parseJsonBody(await preprocess(data, await file.arrayBuffer()), schema);
@@ -128,35 +120,4 @@ export function routeResponse(status = 200, data?: object) {
 
 export function checkAnyChanges(records: any[]) {
   return routeResponse(records.length === 0 ? 404 : 204);
-}
-
-export interface RouteFactoryConfig {
-  emailVerifiedNeeded?: boolean;
-}
-
-export type RouteFactoryCallback = (req: NextRequest, authType: AuthType, tx: Transaction, id: number) => Promise<any>;
-
-export function routeFactory(callback: RouteFactoryCallback, config?: RouteFactoryConfig) {
-  return async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    const authType = await getAuthType();
-    try { await validateAuthType(authType, config?.emailVerifiedNeeded ?? false); }
-    catch (err) { return err; }
-
-    return withAuth(authType, async tx => {
-      try {
-        let id = 0;
-        if (callback.length === 4)
-          id = await parseParamId((await params).id)
-        const result = await callback(req, authType, tx, id);
-        if (Array.isArray(result))
-          return checkAnyChanges(result);
-        return result;
-      } catch (err) {
-        if (err instanceof NextResponse) return err;
-        if (err instanceof DatabaseError || err instanceof DrizzleQueryError)
-          return handleDatabaseError(err);
-        throw err;
-      }
-    });
-  }
 }

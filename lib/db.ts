@@ -1,17 +1,16 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import * as authSchemas from "./schema/auth";
+import * as authSchemas from "./schema/cam";
 import * as camSchemas from './schema/auth';
 import * as entitiesSchemas from './schema/entities';
-import { AuthType } from "../auth/server";
+import { sql } from "drizzle-orm";
+import { AuthType } from "./auth";
 
 const db = drizzle(process.env.DATABASE_URL!, {
   schema: { ...authSchemas, ...camSchemas, ...entitiesSchemas },
 });
 
-export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
 // Wrapper to ensure RLS functions correctly
-export async function withAuth<T>(auth: AuthType, fn: (tx: Transaction) => Promise<T>) {
+export async function withAuth<T>(auth: AuthType, fn: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<T>) {
   // FIXME: Use proper SQL escaping - this looks a lot like SQL injection
   if (auth.userId) {
     return await db.transaction(async tx => {

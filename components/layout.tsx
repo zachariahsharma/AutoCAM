@@ -1,7 +1,7 @@
 "use client";
 import { ReactNode } from "react";
 import { redirect, useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth/client";
+import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
 export default function Layout({ children }: { children: ReactNode }) {

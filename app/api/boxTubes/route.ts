@@ -1,39 +1,60 @@
-import { parseJsonFile, routeFactory, routeResponse } from "@/lib/api";
-import { AuthType, teamIdFromDigest } from "@/lib/auth/server";
-import { Transaction } from "@/lib/db";
-import { BoxTubesInsertSchema, BoxTubes } from "@/lib/db/schema/cam";
+import { getAuthType, handleDatabaseError, parseJsonBody, routeResponse, validateAuthType } from "@/lib/api-utils";
+import { teamIdFromDigest } from "@/lib/auth";
+import { withAuth } from "@/lib/db";
+import { BoxTubes } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
+import { createInsertSchema } from "drizzle-zod";
+import { NextRequest } from "next/server";
 
-export const GET = routeFactory((req, authType, tx) => getBoxTubes(authType, tx));
-export const POST = routeFactory(
-  async (req, authType, tx) => createBoxTube(authType, tx, await req.formData()),
-  { emailVerifiedNeeded: true }
-);
+export async function GET() {
+  return await getBoxTubes();
+}
 
-export async function getBoxTubes(authType: AuthType, tx: Transaction, teamId?: number) {
-  teamId ??= await teamIdFromDigest(tx, authType);
+export async function POST(req: NextRequest) {
+  return await createBoxTube(await req.json());
+}
 
-  return routeResponse(200, await tx.query.BoxTubes.findMany({
+export async function getBoxTubes(teamId?: number) {
+  const authType = await getAuthType();
+  try {
+    await validateAuthType(authType);
+    if (authType.keyDigest)
+      teamId = await teamIdFromDigest(authType.keyDigest);
+  } catch (err) { return err; }
+
+  return routeResponse(200, await withAuth(authType, async tx => {
+    return (await tx.query.BoxTubes.findMany({
       where: eq(BoxTubes.team_id, teamId!),
       columns: {
         id: true,
         epic: true,
         name: true,
-        quantity: true,
-        ticket: true
+        quantity: true
       }
+    }))
   }));
 }
 
-export async function createBoxTube(authType: AuthType, tx: Transaction, formData: FormData, team_id?: number) {
-  team_id ??= await teamIdFromDigest(tx, authType);
+export async function createBoxTube(json: any, teamId?: number) {
+  const authType = await getAuthType();
+  try {
+    await validateAuthType(authType, true);
+    if (authType.keyDigest)
+      teamId = await teamIdFromDigest(authType.keyDigest);
+  } catch (err) { return err; }
 
-  const data = await parseJsonFile(
-    formData,
-    BoxTubesInsertSchema,
-    (data, file) => ({ ...data, file, team_id })
-  );
+  const data = await parseJsonBody({
+    ...json,
+    team_id: teamId
+  }, createInsertSchema(BoxTubes));
+  if (!data.success) return data.response;
 
-  const [id] = await tx.insert(BoxTubes).values(data).returning({ id: BoxTubes.id });
-  return routeResponse(201, id);
+  return await withAuth(authType, async tx => {
+    try {
+      const [id] = await tx.insert(BoxTubes).values(data.data).returning({ id: BoxTubes.id });
+      return routeResponse(201, id);
+    } catch (err) {
+      return handleDatabaseError(err);
+    }
+  });
 }

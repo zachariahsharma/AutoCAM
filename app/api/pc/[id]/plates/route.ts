@@ -1,23 +1,51 @@
-import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api";
-import { Plates } from "@/lib/db/schema/cam";
+import { NextRequest } from "next/server";
+import { Props } from "../route";
+import { getAuthType, handleDatabaseError, parseJsonBody, parseParamId, routeResponse, validateAuthType } from "@/lib/api-utils";
+import { withAuth } from "@/lib/db";
+import { Plates } from "@/lib/schema/cam";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import zod from "zod";
 
-export const POST = routeFactory(async (req, authType, tx, category_id) => {
-  const data = await parseJsonBody({ ...await req.json(), category_id }, createInsertSchema(Plates));
-  const [id] = await tx.insert(Plates).values(data).returning({ id: Plates.id });
-  return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+export async function POST(req: NextRequest, { params }: Props) {
+  const authType = await getAuthType();
+  try { await validateAuthType(authType, true); }
+  catch (err) { return err; }
 
-export const GET = routeFactory(async (req, authType, tx, id) => {
-  return await tx.query.Plates.findMany({
-    where: eq(Plates.category_id, id),
-    columns: {
-      id: true,
-      true_depth: true,
-      width: true,
-      length: true
+  const data = await parseJsonBody({
+    ...await req.json(),
+    category_id: (await params).id
+  }, createInsertSchema(Plates, { category_id: zod.coerce.number().positive() }));
+  if (!data.success) return data.response;
+
+  return await withAuth(authType, async tx => {
+    try {
+      const [id] = await tx.insert(Plates).values(data.data).returning({ id: Plates.id });
+      return routeResponse(201, id);
+    } catch (err) {
+      return handleDatabaseError(err);
     }
   });
-});
+}
+
+export async function GET(req: NextRequest, { params }: Props) {
+  const authType = await getAuthType();
+  try { await validateAuthType(authType); }
+  catch (err) { return err; }
+
+  const id = await parseParamId((await params).id);
+  if (!id.success)
+    return id.response;
+
+  return await withAuth(authType, async tx => {
+    return routeResponse(200, await tx.query.Plates.findMany({
+      where: eq(Plates.category_id, id.data),
+      columns: {
+        id: true,
+        true_depth: true,
+        width: true,
+        length: true
+      }
+    }));
+  });
+}

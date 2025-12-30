@@ -29,7 +29,8 @@ export async function getBoxTubes(teamId?: number) {
         id: true,
         epic: true,
         name: true,
-        quantity: true
+        quantity: true,
+        ticket: true
       }
     }))
   }));

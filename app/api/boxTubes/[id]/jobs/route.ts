@@ -14,11 +14,11 @@ export async function GET(req: NextRequest, { params }: Props) {
   const id = await parseParamId((await params).id);
   if (!id.success) return id.response;
 
-  return await withAuth(authType, async tx => {
+  return routeResponse(200, await withAuth(authType, async tx => {
     return await tx.query.BoxTubeJobs.findMany({
       where: eq(BoxTubeJobs.box_tube_id, id.data)
     });
-  });
+  }));
 }
 
 export async function POST(req: NextRequest, { params }: Props) {

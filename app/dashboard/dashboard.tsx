@@ -5,13 +5,13 @@ import { PartCategory, BoxTube, Plate } from "@/app/types";
 import { Header } from "./header/header";
 import { PartCatList } from "@/app/dashboard/PartCatCards/PartCat";
 import { BoxTubes } from "@/app/dashboard/BoxTubes/BoxTubes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FinishedCAM } from "./FinishedCAM/FinishedCAM";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { DashboardEventsProvider } from "./dashboardTeam";
+import { DashboardEventsProvider, useDashboardEvents } from "./dashboardTeam";
 
 export function AccountDropdown({ scope }: { scope: any }) {
   const router = useRouter();
@@ -52,14 +52,14 @@ export function AccountDropdown({ scope }: { scope: any }) {
 }
 
 export default function DashboardPage({
-  boxtubes,
   finishedcam,
 }: {
-  boxtubes: BoxTube[];
   finishedcam: Plate[];
 }) {
+
   const [boxtubeOpen, setBoxtubeOpen] = useState(false);
   const [finishedcamOpen, setFinishedcamOpen] = useState(false);
+  
   return (
     <div id={styles.dashboardpage}>
       <DashboardEventsProvider>
@@ -71,7 +71,6 @@ export default function DashboardPage({
         />
         <PartCatList />
         <BoxTubes
-          boxtubes={boxtubes}
           boxtubeOpen={boxtubeOpen}
           setBoxtubeOpen={setBoxtubeOpen}
         />

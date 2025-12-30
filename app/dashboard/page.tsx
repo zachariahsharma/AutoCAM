@@ -1,45 +1,6 @@
 import DashboardPage from "./dashboard";
 import { BoxTube, Plate } from "../types";
 
-const boxTubes: BoxTube[] = [
-  {
-    name: '1x1 Aluminum Box Tube - 1/16"',
-    quantity: 6,
-    epic: "Drivetrain",
-    status: "pending",
-  },
-  {
-    name: '1x1 Aluminum Box Tube - 1/8"',
-    quantity: 4,
-    epic: "Drivetrain",
-    status: "pending",
-  },
-  {
-    name: '1x2 Aluminum Box Tube - 1/16"',
-    quantity: 8,
-    epic: "Structure",
-    status: "pending",
-  },
-  {
-    name: '1x2 Aluminum Box Tube - 1/8"',
-    quantity: 3,
-    epic: "Structure",
-    status: "pending",
-  },
-  {
-    name: '2x2 Aluminum Box Tube - 1/8"',
-    quantity: 2,
-    epic: "Manipulator",
-    status: "in progress",
-  },
-  {
-    name: '1x3 Aluminum Box Tube - 1/8"',
-    quantity: 1,
-    epic: "Superstructure",
-    status: "completed",
-  },
-];
-
 const plates: Plate[] = [
   {
     id: 1,
@@ -74,10 +35,8 @@ const plates: Plate[] = [
 ];
 
 export default async function Dashboard() {
-  
   return (
     <DashboardPage
-      boxtubes={boxTubes}
       finishedcam={plates}
     />
   );

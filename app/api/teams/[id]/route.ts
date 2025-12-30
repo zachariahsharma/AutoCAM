@@ -2,14 +2,21 @@ import { Teams } from "@/lib/schema/entities";
 import { eq } from "drizzle-orm";
 import {
   parseJsonBody,
-  routeFactory
+  routeFactory,
+  routeResponse
 } from "@/lib/api-utils";
 import zod from "zod";
 import { createUpdateSchema } from "drizzle-zod";
+import { user } from "@/lib/schema/auth";
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const body = await parseJsonBody(await req.json(), createUpdateSchema(Teams, {
-    owner: zod.email().optional()
+    owner: zod.email().optional().transform(async owner => {
+      if (!owner) return;
+      const newOwner = await tx.query.user.findFirst({ where: eq(user.email, owner) });
+      if (!newOwner) throw routeResponse(404);
+      return newOwner.id;
+    })
   }));
 
   return await tx.update(Teams)

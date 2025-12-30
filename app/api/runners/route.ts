@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { TeamRunners } from "@/lib/schema/entities";
+import { TeamRunners } from "@/lib/db/schema/entities";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";

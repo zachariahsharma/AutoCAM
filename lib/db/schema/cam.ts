@@ -2,9 +2,7 @@ import { relations } from "drizzle-orm";
 import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { CheckBoxTubeJobsTeams, CheckPartsPlatesTeam, CheckPlateJobsTeams, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
-import scopes from "../scopes";
-import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
-import zod from "zod";
+import scopes from "../../scopes";
 
 const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
   dataType() { return "bytea"; },
@@ -52,9 +50,6 @@ export const Parts = pgTable("parts", {
   pgPolicy('parts_insert_user', { for: 'insert', withCheck: UserInTeam(TeamFromCategory(table.category_id)) })
 ]);
 
-export const PartsInsertSchema = createInsertSchema(Parts, { file: zod.instanceof(ArrayBuffer) })
-export const PartsUpdateSchema = createUpdateSchema(Parts, { file: zod.instanceof(ArrayBuffer) });
-
 export const Plates = pgTable("plates", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   width: doublePrecision().notNull(),
@@ -75,8 +70,8 @@ export const Plates = pgTable("plates", {
 export const BoxTubes = pgTable("box_tubes", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  ticket: text().notNull(),
   epic: text().notNull(),
+  file: bytea().notNull(),
   quantity: integer().default(1).notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [

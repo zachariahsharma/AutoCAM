@@ -2,7 +2,7 @@
 - /api/teams - POST - Create a team (only if email is verified)
 - /api/teams - GET - Get all teams
 - /api/teams/:id - PATCH - Update team details (only if admin and email is verified)
-- /api/teams/:id - DELETE - DELETE team (only if admin and email is verified)
+- /api/teams/:id - DELETE - DELETE team (only if owner and email is verified)
 - /api/teams/:id/invite - POST - Invite email (in body) to team (only if admin and email is verified)
 - /api/teams/accept/:id - GET - Accept invite sent to email (must be signed in as the same user as the invite)
 - /api/teams/:id/keys - POST - Create an API key (only if admin and email is verified)
@@ -13,16 +13,20 @@
 - /api/teams/:id/boxTubes - GET - Get all box tubes (everybody on team)
 - /api/teams/:id/boxTubes - POST - Create a box tube (everybody on team with verified email)
 - /api/teams/:id/members - GET - Get all members from team (everybody on team)
+- /api/teams/:id/materials - GET - Get all materials from team (everybody on team)
+- /api/teams/:id/materials - POST - Add a material (only if admin with verified email)
 - /api/user/invites - GET - Get all invites for a user
 
 ## API Key Routes
 - /api/teams - GET - Get team details
 - /api/teams/invite - POST - Invite email (in body) to team
+- /api/teams/members - GET - Get all members from team
 - /api/pc - POST - Create a part category
 - /api/pc - GET - Get all part categories
 - /api/boxTubes - GET - Get all box tubes
 - /api/boxTubes - POST - Create a box tube
-- /api/teams/members - GET - Get all members from team
+- /api/materials - GET - Get all materials
+- /api/materials - POST - Create a material
 
 ## Common Routes
 - /api/pc/:id - DELETE - Delete a part category (everybody on team with verified email)
@@ -43,3 +47,5 @@
 - /api/boxTubes/:id/jobs - GET - Get all box tube jobs (everybody on team)
 - /api/boxTubes/:id/jobs - POST - Create a box tube job (everybody on team with verified email)
 - /api/boxTubes/jobs/:id - DELETE - Delete a box tube job (everybody on team with verified email)
+- /api/materials/:id - PATCH - Update a material (only if admin and email is verified)
+- /api/materials/:id - DELETE - Delete a material (only if admin and email is verified)

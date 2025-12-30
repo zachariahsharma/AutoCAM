@@ -4,14 +4,15 @@ import {
   routeResponse,
   routeFactory
 } from "@/lib/api";
-import { createInsertSchema } from "drizzle-zod";
+import { TeamsCreateSchema, TeamsGetSchema } from "@/lib/api/teams";
+import { registry } from "@/lib/openapi/registry";
 
 export const POST = routeFactory(async (req, authType, tx) => {
-  const body = await parseJsonBody({
-    ...await req.json(),
-    owner: authType.userId
-  }, createInsertSchema(Teams));
-  const [id] = await tx.insert(Teams).values(body).returning({ id: Teams.id });
+  const body = await parseJsonBody(await req.json(), TeamsCreateSchema);
+  const [id] = await tx.insert(Teams).values({
+    ...body,
+    owner: authType.userId!
+  }).returning({ id: Teams.id });
   await tx.insert(TeamMembers).values({
     user_id: authType.userId!,
     team_id: id.id,

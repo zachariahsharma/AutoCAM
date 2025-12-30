@@ -4,7 +4,16 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod, { ZodType } from "zod";
-import db, { Transaction, withAuth } from "../db";
+import { Transaction, withAuth } from "../db";
+
+import "./teams";
+import "./machines";
+import "./materials";
+import "./parts";
+import "./pc";
+import "./plates";
+import "./tools";
+import "./boxTubes";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)

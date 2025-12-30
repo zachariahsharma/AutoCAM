@@ -10,7 +10,7 @@ import { FinishedCAM } from "./FinishedCAM/FinishedCAM";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/client";
 import { DashboardEventsProvider } from "./dashboardTeam";
 
 export function AccountDropdown({ scope }: { scope: any }) {

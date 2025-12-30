@@ -1,7 +1,7 @@
-import { routeResponse } from "@/lib/api-utils";
-import { auth } from "@/lib/auth";
+import { routeResponse } from "@/lib/api";
+import { auth } from "@/lib/auth/server";
 import db from "@/lib/db";
-import { TeamInvites, TeamMembers } from "@/lib/schema/entities";
+import { TeamInvites, TeamMembers } from "@/lib/db/schema/entities";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";

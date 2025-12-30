@@ -1,9 +1,8 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import * as authSchemas from "./schema/cam";
+import * as authSchemas from "./schema/auth";
 import * as camSchemas from './schema/auth';
 import * as entitiesSchemas from './schema/entities';
-import { sql } from "drizzle-orm";
-import { AuthType } from "./auth";
+import { AuthType } from "../auth/server";
 
 const db = drizzle(process.env.DATABASE_URL!, {
   schema: { ...authSchemas, ...camSchemas, ...entitiesSchemas },

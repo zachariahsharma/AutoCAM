@@ -4,8 +4,8 @@ import {
   PartsToPlates,
   Plates,
   BoxTubes,
-} from "@/lib/schema/cam";
-import { Teams } from "@/lib/schema/entities";
+} from "@/lib/db/schema/cam";
+import { Teams } from "@/lib/db/schema/entities";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 export type PartCategory = Omit<

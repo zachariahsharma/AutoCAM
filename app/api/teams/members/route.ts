@@ -1,7 +1,7 @@
-import { routeFactory, routeResponse } from "@/lib/api-utils";
-import { AuthType, teamIdFromDigest } from "@/lib/auth";
+import { routeFactory, routeResponse } from "@/lib/api";
+import { AuthType, teamIdFromDigest } from "@/lib/auth/server";
 import { Transaction } from "@/lib/db";
-import { TeamMembers } from "@/lib/schema/entities";
+import { TeamMembers } from "@/lib/db/schema/entities";
 import { eq } from "drizzle-orm";
 
 export const GET = routeFactory((req, authType, tx) => getTeamMembers(authType, tx));

@@ -1,6 +1,6 @@
-import { Parts, PartsInsertSchema } from "@/lib/schema/cam";
+import { Parts, PartsInsertSchema } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
-import { parseJsonFile, routeFactory, routeResponse } from "@/lib/api-utils";
+import { parseJsonFile, routeFactory, routeResponse } from "@/lib/api";
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   const data = await parseJsonFile(

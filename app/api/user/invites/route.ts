@@ -1,4 +1,4 @@
-import { routeFactory, routeResponse } from "@/lib/api-utils";
+import { routeFactory, routeResponse } from "@/lib/api";
 
 export const GET = routeFactory(async (req, authType, tx) => {
   return routeResponse(200, (await tx.query.TeamInvites.findMany({

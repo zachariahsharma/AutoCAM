@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import localFont from "next/font/local";
 import { Roboto } from "next/font/google";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/client";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";

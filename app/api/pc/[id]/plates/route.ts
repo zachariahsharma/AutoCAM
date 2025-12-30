@@ -1,5 +1,5 @@
-import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api-utils";
-import { Plates } from "@/lib/schema/cam";
+import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api";
+import { Plates } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 

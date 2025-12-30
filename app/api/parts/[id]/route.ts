@@ -1,9 +1,9 @@
-import { Parts, PartsUpdateSchema } from "@/lib/schema/cam";
+import { Parts, PartsUpdateSchema } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 import {
   parseJsonBody,
   routeFactory
-} from "@/lib/api-utils";
+} from "@/lib/api";
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const body = await parseJsonBody(await req.json(), PartsUpdateSchema);

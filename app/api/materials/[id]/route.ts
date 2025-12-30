@@ -1,5 +1,5 @@
-import { parseJsonBody, routeFactory } from "@/lib/api-utils";
-import { Materials } from "@/lib/schema/cam";
+import { parseJsonBody, routeFactory } from "@/lib/api";
+import { Materials } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 import { createUpdateSchema } from "drizzle-zod";
 

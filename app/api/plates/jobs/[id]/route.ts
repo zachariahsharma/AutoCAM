@@ -1,5 +1,5 @@
-import { routeFactory } from "@/lib/api-utils";
-import { PlateJobs } from "@/lib/schema/cam";
+import { routeFactory } from "@/lib/api";
+import { PlateJobs } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

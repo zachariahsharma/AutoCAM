@@ -1,6 +1,6 @@
-import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api-utils";
+import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api";
 import { eq } from "drizzle-orm";
-import { BoxTubeJobs } from "@/lib/schema/cam";
+import { BoxTubeJobs } from "@/lib/db/schema/cam";
 import { createInsertSchema } from "drizzle-zod";
 
 export const GET = routeFactory(async (req, authType, tx, id) => {

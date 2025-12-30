@@ -1,4 +1,4 @@
-import { routeFactory } from "@/lib/api-utils";
+import { routeFactory } from "@/lib/api";
 import { createPartCategory, getPartCategories } from "@/app/api/pc/route";
 
 export const GET = routeFactory(

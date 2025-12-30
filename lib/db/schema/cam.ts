@@ -3,8 +3,6 @@ import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, 
 import { Teams } from "./entities";
 import { CheckBoxTubeJobsTeams, CheckPartsPlatesTeam, CheckPlateJobsTeams, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
 import scopes from "../../scopes";
-import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
-import zod from "zod";
 
 const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
   dataType() { return "bytea"; },
@@ -52,9 +50,6 @@ export const Parts = pgTable("parts", {
   pgPolicy('parts_insert_user', { for: 'insert', withCheck: UserInTeam(TeamFromCategory(table.category_id)) })
 ]);
 
-export const PartsInsertSchema = createInsertSchema(Parts, { file: zod.instanceof(ArrayBuffer) })
-export const PartsUpdateSchema = createUpdateSchema(Parts).omit({ file: true });
-
 export const Plates = pgTable("plates", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   width: doublePrecision().notNull(),
@@ -89,8 +84,6 @@ export const BoxTubes = pgTable("box_tubes", {
   pgPolicy('box_tubes_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) }),
   pgPolicy('box_tubes_insert_key', { for: "insert", withCheck: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
 ]);
-export const BoxTubesInsertSchema = createInsertSchema(BoxTubes, { file: zod.instanceof(ArrayBuffer) })
-export const BoxTubesUpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true })
 
 export const Materials = pgTable("materials", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

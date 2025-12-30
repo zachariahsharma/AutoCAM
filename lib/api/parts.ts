@@ -4,8 +4,8 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from "driz
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 
-export const PartsCreateSchema = createInsertSchema(Parts).openapi("PartsCreate");
-export const PartsUpdateSchema = createUpdateSchema(Parts).openapi("PartsUpdate");
+export const PartsCreateSchema = createInsertSchema(Parts).extend({ file: zod.instanceof(ArrayBuffer) }).openapi("PartsCreate");
+export const PartsUpdateSchema = createUpdateSchema(Parts).omit({ file: true }).openapi("PartsUpdate");
 export const PartsGetSchema = createSelectSchema(Parts).omit({ file: true }).openapi("PartsGet");
 
 // OpenAPI route definitions

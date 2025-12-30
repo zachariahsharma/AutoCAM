@@ -37,7 +37,7 @@ registry.registerPath({
         "multipart/form-data": {
           schema: zod.object({
             data: zod.string().openapi({ description: "JSON data as string" }),
-            file: zod.instanceof(File).openapi({ description: "File upload" })
+            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "File upload" })
           }).openapi("BoxTubesFormData")
         }
       }

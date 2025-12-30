@@ -5,12 +5,10 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 
 export const MachinesCreateSchema = createInsertSchema(Machines, { 
-  file: zod.instanceof(ArrayBuffer) 
-}).omit({ id: true, team_id: true }).openapi("MachinesCreate");
-
-export const MachinesUpdateSchema = createUpdateSchema(Machines, {
   file: zod.instanceof(ArrayBuffer)
-}).omit({ id: true, team_id: true }).openapi("MachinesUpdate");
+}).omit({ team_id: true }).openapi("MachinesCreate");
+
+export const MachinesUpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true }).openapi("MachinesUpdate");
 
 export const MachinesGetSchema = createSelectSchema(Machines).openapi("MachinesGet");
 
@@ -47,8 +45,8 @@ registry.registerPath({
         "multipart/form-data": {
           schema: zod.object({
             data: zod.string().openapi({ description: "JSON data as string" }),
-            file: zod.instanceof(File).openapi({ description: "File upload" })
-          }).openapi("MachinesFormData")
+            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "File to upload" })
+          })
         }
       }
     }
@@ -58,7 +56,7 @@ registry.registerPath({
       description: "Machine created",
       content: {
         "application/json": {
-          schema: zod.object({ id: zod.number() }) //.openapi("MachineIdResponse")
+          schema: zod.object({ id: zod.number() })
         }
       }
     }

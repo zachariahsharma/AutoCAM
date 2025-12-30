@@ -12,7 +12,6 @@ import "./materials";
 import "./parts";
 import "./pc";
 import "./plates";
-import "./tools";
 import "./boxTubes";
 
 /**

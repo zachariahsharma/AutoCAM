@@ -4,8 +4,8 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from "driz
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 
-export const MaterialsCreateSchema = createInsertSchema(Materials).omit({ id: true, team_id: true }).openapi("MaterialsCreate");
-export const MaterialsUpdateSchema = createUpdateSchema(Materials).omit({ id: true, team_id: true }).openapi("MaterialsUpdate");
+export const MaterialsCreateSchema = createInsertSchema(Materials).omit({ team_id: true }).openapi("MaterialsCreate");
+export const MaterialsUpdateSchema = createUpdateSchema(Materials).omit({ team_id: true }).openapi("MaterialsUpdate");
 export const MaterialsGetSchema = createSelectSchema(Materials).openapi("MaterialsGet");
 
 // OpenAPI route definitions

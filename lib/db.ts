@@ -9,8 +9,10 @@ const db = drizzle(process.env.DATABASE_URL!, {
   schema: { ...authSchemas, ...camSchemas, ...entitiesSchemas },
 });
 
+export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 // Wrapper to ensure RLS functions correctly
-export async function withAuth<T>(auth: AuthType, fn: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<T>) {
+export async function withAuth<T>(auth: AuthType, fn: (tx: Transaction) => Promise<T>) {
   // FIXME: Use proper SQL escaping - this looks a lot like SQL injection
   if (auth.userId) {
     return await db.transaction(async tx => {

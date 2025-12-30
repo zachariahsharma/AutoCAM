@@ -1,64 +1,23 @@
-import { withAuth } from "@/lib/db";
-import { NextRequest } from "next/server";
-import { Props } from "../route";
+import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "@/lib/schema/entities";
-import crypto from "crypto";
-import zod from "zod";
-import {
-  parseParamId,
-  parseJsonBody,
-  handleDatabaseError,
-  routeResponse,
-  getAuthType,
-  validateAuthType
-} from "@/lib/api-utils";
-import { ScopeEnum } from "@/lib/scopes";
+import { parseJsonBody, routeFactory, routeResponse } from "@/lib/api-utils";
+import { createInsertSchema } from "drizzle-zod";
 
-export async function GET(req: NextRequest, { params }: Props) {
-  const authType = await getAuthType();
-  try { await validateAuthType(authType, true); }
-  catch (err) { return err; }
-  
-  const id = await parseParamId((await params).id);
-  if (!id.success) return id.response;
-
-  const keys = (await withAuth(authType, async tx => {
-    return await tx.query.TeamKeys.findMany({
-      where: eq(TeamKeys.team_id, id.data),
-      columns: { name: true, id: true, scopes: true }
-    });
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  return routeResponse(200, await tx.query.TeamKeys.findMany({
+    where: eq(TeamKeys.team_id, id),
+    columns: { name: true, id: true, scopes: true }
   }));
-  return routeResponse(200, keys);
-}
+}, { emailVerifiedNeeded: true });
 
-const CreateInput = zod.object({
-  name: zod.string(),
-  scopes: zod.array(ScopeEnum)
-})
-
-export async function POST(req: NextRequest, { params }: Props) {
-  const authType = await getAuthType();
-  try { await validateAuthType(authType, true); }
-  catch (err) { return err; }
-  
-  const id = await parseParamId((await params).id);
-  if (!id.success) return id.response;
-  
-  const body = await parseJsonBody(await req.json(), CreateInput);
-  if (!body.success) return body.response;
-
+export const POST = routeFactory(async (req, authType, tx, team_id) => {
   const token = crypto.randomBytes(32).toString("hex");
+  const body = await parseJsonBody({
+    ...await req.json(), team_id,
+    digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
+  }, createInsertSchema(TeamKeys));
 
-  return await withAuth({ userId: authType.userId }, async tx => {
-    try {
-      await tx.insert(TeamKeys).values({
-        digest: crypto.createHmac("sha256", "key").update(token).digest("hex"),
-        ...body.data, team_id: id.data
-      });
-      return routeResponse(201, { token });
-    } catch (err) {
-      return handleDatabaseError(err);
-    }
-  });
-}
+  await tx.insert(TeamKeys).values(body);
+  return routeResponse(201, { token });
+}, { emailVerifiedNeeded: true });

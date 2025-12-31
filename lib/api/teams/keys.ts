@@ -6,8 +6,8 @@ import { userSession } from "../auth";
 import { CommonAuthorization, ValidationError } from "../codes";
 import { ScopeEnum } from "@/lib/scopes";
 
-export const KeysCreateSchema = createInsertSchema(TeamKeys).extend({ scopes: ScopeEnum }).omit({ team_id: true, digest: true });
-export const KeysUpdateSchema = createUpdateSchema(TeamKeys).extend({ scopes: ScopeEnum.optional() }).omit({ team_id: true, digest: true });
+export const KeysCreateSchema = createInsertSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum) }).omit({ team_id: true, digest: true });
+export const KeysUpdateSchema = createUpdateSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum).optional() }).omit({ team_id: true, digest: true });
 export const Key = createSelectSchema(TeamKeys).omit({ team_id: true, digest: true }).meta({ id: "API Key" });
 
 registry.registerPath({

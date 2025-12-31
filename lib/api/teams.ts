@@ -3,22 +3,26 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from "driz
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 
-export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true }).openapi("TeamsCreate");
-export const TeamsUpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() }).openapi("TeamsUpdate");
-export const TeamsGetSchema = createSelectSchema(Teams).openapi("TeamsGet");
+export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true });
+export const TeamsUpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
+
+const Team = createSelectSchema(Teams).meta({ id: "Team", description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
 // OpenAPI route definitions
 registry.registerPath({
   method: "get",
   path: "/api/teams",
   tags: ["Teams"],
-  description: "Get all teams",
+  summary: "Get Teams",
   responses: {
     200: {
-      description: "List of teams",
+      description: "If this endpoint is called with an API Key, a single team that the key corresponds to is returned. If the endpoint is called with a user session, a list of teams that the user is a part of is returned.",
       content: {
         "application/json": {
-          schema: TeamsGetSchema
+          schema: zod.union([
+            Team,
+            zod.array(Team)
+          ])
         }
       }
     }
@@ -29,7 +33,7 @@ registry.registerPath({
   method: "post",
   path: "/api/teams",
   tags: ["Teams"],
-  description: "Create a new team",
+  summary: "Create Team",
   request: {
     body: {
       content: {
@@ -41,7 +45,7 @@ registry.registerPath({
   },
   responses: {
     201: {
-      description: "Team created",
+      description: "Returns the id of the created team",
       content: {
         "application/json": {
           schema: zod.object({ id: zod.number() })
@@ -55,9 +59,9 @@ registry.registerPath({
   method: "patch",
   path: "/api/teams/{id}",
   tags: ["Teams"],
-  description: "Update a team",
+  summary: "Update Team",
   request: {
-    params: zod.object({ id: zod.number() }),
+    params: zod.object({ id: zod.number().meta({ description: "ID of the team that is being updated" }) }),
     body: {
       content: {
         "application/json": {
@@ -68,7 +72,7 @@ registry.registerPath({
   },
   responses: {
     204: {
-      description: "Team updated - no content",
+      description: "Team updated successfully",
     }
   }
 });
@@ -77,13 +81,13 @@ registry.registerPath({
   method: "delete",
   path: "/api/teams/{id}",
   tags: ["Teams"],
-  description: "Delete a team",
+  summary: "Delete Team",
   request: {
-    params: zod.object({ id: zod.number() }),
+    params: zod.object({ id: zod.number().meta({ description: "ID of the team that is being deleted" }) }),
   },
   responses: {
     204: {
-      description: "Team deleted - no content",
+      description: "Team deleted successfully",
     }
   }
 });

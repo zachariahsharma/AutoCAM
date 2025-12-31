@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as authSchemas from "./schema/auth";
-import * as camSchemas from './schema/auth';
+import * as camSchemas from './schema/cam';
 import * as entitiesSchemas from './schema/entities';
 import { AuthType } from "../auth/server";
 

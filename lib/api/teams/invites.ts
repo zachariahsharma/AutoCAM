@@ -6,8 +6,8 @@ import { CommonAuthorization, ValidationError } from "../codes";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 
-export const InvitesCreateSchema = createInsertSchema(TeamInvites);
-export const Invite = createSelectSchema(TeamInvites).meta({ id: "Team Invite" });
+export const InvitesCreateSchema = createInsertSchema(TeamInvites).omit({ team_id: true, id: true });
+export const Invite = createSelectSchema(TeamInvites).omit({ team_id: true, id: true }).meta({ id: "Team Invite" });
 
 registry.registerPath({
   method: "get",

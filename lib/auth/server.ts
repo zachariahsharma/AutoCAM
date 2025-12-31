@@ -9,6 +9,7 @@ import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "../db/schema/entities";
 import { routeResponse } from "../api";
+import { openAPI } from "better-auth/plugins";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -33,6 +34,7 @@ export const auth = betterAuth({
     changeEmail: { enabled: true }
   },
   baseURL: process.env.BASE_URL,
+  plugins: [openAPI()],
 })
 
 export async function getKeyDigest() {

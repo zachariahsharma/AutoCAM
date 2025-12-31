@@ -1,14 +1,13 @@
 "use client";
 import styles from "./dashboard.module.css";
 
-import { PartCategory, BoxTube, Plate } from "@/app/types";
+import { Plate } from "@/app/types";
 import { Header } from "./header/header";
 import { PartCatList } from "@/app/dashboard/PartCatCards/PartCat";
 import { BoxTubes } from "@/app/dashboard/BoxTubes/BoxTubes";
 import { useEffect, useState } from "react";
 import { FinishedCAM } from "./FinishedCAM/FinishedCAM";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import { DashboardEventsProvider } from "./dashboardTeam";

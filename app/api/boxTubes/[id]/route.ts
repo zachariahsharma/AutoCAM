@@ -1,5 +1,5 @@
 import { parseJsonBody, routeFactory } from "@/lib/api";
-import { BoxTubes, BoxTubesUpdateSchema } from "@/lib/db/schema/cam";
+import { BoxTubes } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {

@@ -7,6 +7,7 @@ import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, ValidationError } from "../codes";
 
 import "./invites";
+import "./keys";
 
 export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true });
 export const TeamsUpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });

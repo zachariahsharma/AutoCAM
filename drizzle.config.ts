@@ -3,7 +3,7 @@ import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
   out: './drizzle',
-  schema: './lib/schema/*',
+  schema: './lib/db/schema/*',
   dialect: "postgresql",
   schemaFilter: ['public'],
   dbCredentials: {

@@ -7,7 +7,7 @@ import zod from "zod";
 
 const PartCategoriesCreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
 const PartCategoriesUpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
-const PartCategory = createSelectSchema(PartCategories).meta({ id: "Part Category" });
+const PartCategory = createSelectSchema(PartCategories).omit({ team_id: true }).meta({ id: "Part Category" });
 
 registry.registerPath({
   method: "get",

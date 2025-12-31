@@ -38,7 +38,9 @@ export async function getPartCategories(authType: AuthType, tx: Transaction, par
   }));
 }
 
-export async function createPartCategory(tx: Transaction, json: any, team_id?: number) {
+export async function createPartCategory(authType: AuthType, tx: Transaction, json: any, team_id?: number) {
+  team_id ??= await teamIdFromDigest(tx, authType);
+
   const data = await parseJsonBody({ ...json, team_id }, createInsertSchema(PartCategories));
   const [id] = await tx.insert(PartCategories).values(data).returning({ id: PartCategories.id });
   return routeResponse(201, id);

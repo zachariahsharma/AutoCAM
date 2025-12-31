@@ -33,12 +33,3 @@ export const apiKey = registry.registerComponent("securitySchemes", "apiKey", {
   },
   description: "API Key authentication. Clients must provide a valid API key using the Authorization header"
 });
-
-export const CommonAuthorization: Record<string, ResponseConfig> = {
-  401: {
-    description: "Unauthorized. Due to missing or invalid authentication"
-  },
-  403: {
-    description: "Forbidden. You do not have permission to access this resource or perform this action. This includes not having your email verified"
-  }
-};

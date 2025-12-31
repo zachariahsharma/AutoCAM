@@ -2,8 +2,9 @@ import { Plates } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, CommonAuthorization, userSession } from "./auth";
+import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
+import { CommonAuthorization, ValidationError } from "./codes";
 
 export const PlatesCreateSchema = createInsertSchema(Plates).omit({ category_id: true });
 export const PlatesUpdateSchema = createUpdateSchema(Plates).omit({ category_id: true });
@@ -63,7 +64,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -91,7 +93,8 @@ registry.registerPath({
     204: {
       description: "Plate updated successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 

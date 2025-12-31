@@ -2,8 +2,9 @@ import { Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, CommonAuthorization, userSession } from "./auth";
+import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
+import { CommonAuthorization, ValidationError } from "./codes";
 
 export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true });
 export const TeamsUpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
@@ -61,7 +62,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -85,7 +87,8 @@ registry.registerPath({
     204: {
       description: "Team updated successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 

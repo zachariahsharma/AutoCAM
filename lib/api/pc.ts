@@ -1,9 +1,10 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { registry } from "../openapi/registry";
-import { apiKey, CommonAuthorization, userSession } from "./auth";
+import { apiKey, userSession } from "./auth";
 import { PartCategories } from "../db/schema/cam";
 import { scopeNames as scopes } from "../scopes";
 import zod from "zod";
+import { CommonAuthorization, ValidationError } from "./codes";
 
 const PartCategoriesCreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
 const PartCategoriesUpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
@@ -16,7 +17,11 @@ registry.registerPath({
   security: [{ [userSession.name]: [] }],
   summary: "Get Part Categories (User)",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
+    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
+    query: zod.object({
+      material: zod.string().optional(),
+      thickness: zod.number().optional()
+    })
   },
   responses: {
     200: {
@@ -27,7 +32,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -37,6 +43,12 @@ registry.registerPath({
   tags: ["Part Categories"],
   security: [{ [apiKey.name]: [scopes.pc.read] }],
   summary: "Get Part Categories (API Key)",
+  request: {
+    query: zod.object({
+      material: zod.string().optional(),
+      thickness: zod.number().optional()
+    })
+  },
   responses: {
     200: {
       description: "This endpoint returns the part categories from the api key's team",
@@ -46,7 +58,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -76,7 +89,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -104,7 +118,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -131,7 +146,8 @@ registry.registerPath({
     204: {
       description: "Part category successfully updated",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 

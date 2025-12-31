@@ -2,8 +2,9 @@ import { Machines } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, CommonAuthorization, userSession } from "./auth";
+import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
+import { CommonAuthorization, ValidationError } from "./codes";
 
 export const MachinesCreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
 export const MachinesUpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
@@ -79,7 +80,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -111,7 +113,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -138,7 +141,8 @@ registry.registerPath({
     204: {
       description: "Machine successfully updated",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 

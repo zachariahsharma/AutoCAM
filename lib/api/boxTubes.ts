@@ -2,8 +2,9 @@ import { BoxTubes } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, CommonAuthorization, userSession } from "./auth";
+import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
+import { CommonAuthorization, ValidationError } from "./codes";
 
 export const BoxTubesCreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
 export const BoxTubesUpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
@@ -78,7 +79,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -109,7 +111,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -137,7 +140,8 @@ registry.registerPath({
     204: {
       description: "Box tube updated successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 

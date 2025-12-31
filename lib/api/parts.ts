@@ -2,8 +2,9 @@ import { Parts } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, CommonAuthorization, userSession } from "./auth";
+import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
+import { CommonAuthorization, ValidationError } from "./codes";
 
 export const PartsCreateSchema = createInsertSchema(Parts).omit({ file: true, category_id: true });
 export const PartsUpdateSchema = createUpdateSchema(Parts).omit({ file: true, category_id: true });
@@ -67,7 +68,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -95,7 +97,8 @@ registry.registerPath({
     204: {
       description: "Part updated successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 

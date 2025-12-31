@@ -1,6 +1,6 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { registry } from "../openapi/registry";
-import { apiKey, userSession } from "./auth";
+import { apiKey, CommonAuthorization, userSession } from "./auth";
 import { PartCategories } from "../db/schema/cam";
 import { scopeNames as scopes } from "../scopes";
 import zod from "zod";
@@ -26,7 +26,8 @@ registry.registerPath({
           schema: zod.array(PartCategory)
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -44,7 +45,8 @@ registry.registerPath({
           schema: zod.array(PartCategory)
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -73,7 +75,8 @@ registry.registerPath({
           schema: zod.object({ id: zod.number() })
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -100,7 +103,8 @@ registry.registerPath({
           schema: zod.object({ id: zod.number() })
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -126,7 +130,8 @@ registry.registerPath({
   responses: {
     204: {
       description: "Part category successfully updated",
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -145,6 +150,7 @@ registry.registerPath({
   responses: {
     204: {
       description: "Part category successfully deleted",
-    }
+    },
+    ...CommonAuthorization
   }
 });

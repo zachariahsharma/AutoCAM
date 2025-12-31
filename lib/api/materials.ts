@@ -2,7 +2,7 @@ import { Materials } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, userSession } from "./auth";
+import { apiKey, CommonAuthorization, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 
 export const MaterialsCreateSchema = createInsertSchema(Materials).omit({ team_id: true });
@@ -26,7 +26,8 @@ registry.registerPath({
           schema: zod.array(Material)
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -44,7 +45,8 @@ registry.registerPath({
           schema: zod.array(Material)
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -76,7 +78,8 @@ registry.registerPath({
           schema: zod.object({ id: zod.number() })
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -107,7 +110,8 @@ registry.registerPath({
           schema: zod.object({ id: zod.number() })
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -133,7 +137,8 @@ registry.registerPath({
   responses: {
     204: {
       description: "Material successfully updated",
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -152,6 +157,7 @@ registry.registerPath({
   responses: {
     204: {
       description: "Material successfully deleted",
-    }
+    },
+    ...CommonAuthorization
   }
 });

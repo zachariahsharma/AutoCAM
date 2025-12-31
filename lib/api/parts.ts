@@ -2,7 +2,7 @@ import { Parts } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, userSession } from "./auth";
+import { apiKey, CommonAuthorization, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 
 export const PartsCreateSchema = createInsertSchema(Parts).omit({ file: true, category_id: true });
@@ -30,7 +30,8 @@ registry.registerPath({
           schema: zod.array(Part)
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -65,7 +66,8 @@ registry.registerPath({
           schema: zod.object({ id: zod.number() })
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -92,7 +94,8 @@ registry.registerPath({
   responses: {
     204: {
       description: "Part updated successfully",
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -112,6 +115,7 @@ registry.registerPath({
   responses: {
     204: {
       description: "Part deleted successfully",
-    }
+    },
+    ...CommonAuthorization
   }
 });

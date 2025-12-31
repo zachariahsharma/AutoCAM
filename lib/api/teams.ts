@@ -2,7 +2,7 @@ import { Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, userSession } from "./auth";
+import { apiKey, CommonAuthorization, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 
 export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true });
@@ -31,7 +31,8 @@ registry.registerPath({
           ])
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -59,7 +60,8 @@ registry.registerPath({
           schema: zod.object({ id: zod.number() })
         }
       }
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -82,7 +84,8 @@ registry.registerPath({
   responses: {
     204: {
       description: "Team updated successfully",
-    }
+    },
+    ...CommonAuthorization
   }
 });
 
@@ -98,6 +101,7 @@ registry.registerPath({
   responses: {
     204: {
       description: "Team deleted successfully",
-    }
+    },
+    ...CommonAuthorization
   }
 });

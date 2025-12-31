@@ -1,5 +1,7 @@
+import { ResponseConfig } from "@asteasolutions/zod-to-openapi";
 import { registry } from "../openapi/registry";
 import { ScopeLeaf, scopes, ScopeTree } from "../scopes";
+import zod from "zod";
 
 function scopesToDict<T extends ScopeTree>(tree: T): Record<string, string> {
   let result: Record<string, string> = {};
@@ -32,3 +34,11 @@ export const apiKey = registry.registerComponent("securitySchemes", "apiKey", {
   description: "API Key authentication. Clients must provide a valid API key using the Authorization header"
 });
 
+export const CommonAuthorization: Record<string, ResponseConfig> = {
+  401: {
+    description: "Unauthorized. Due to missing or invalid authentication"
+  },
+  403: {
+    description: "Forbidden. You do not have permission to access this resource or perform this action. This includes not having your email verified"
+  }
+};

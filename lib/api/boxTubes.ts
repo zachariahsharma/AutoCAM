@@ -1,4 +1,3 @@
-import "@/lib/openapi/registry";
 import { BoxTubes } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";

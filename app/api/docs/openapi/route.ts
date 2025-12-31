@@ -5,7 +5,8 @@ import "@/lib/api";
 
 export async function GET() {
   const generator = new OpenApiGeneratorV31(registry.definitions, {
-    unionPreferredType: "oneOf"
+    unionPreferredType: "oneOf",
+    sortComponents: "alphabetically"
   });
   return NextResponse.json(generator.generateDocument({
     openapi: "3.1.2",

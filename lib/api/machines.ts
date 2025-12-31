@@ -1,4 +1,3 @@
-import "@/lib/openapi/registry";
 import { Machines } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";

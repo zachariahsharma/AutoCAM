@@ -5,7 +5,6 @@ export default defineConfig({
   out: './drizzle',
   schema: './lib/db/schema/*',
   dialect: "postgresql",
-  schemaFilter: ['public'],
   dbCredentials: {
     url: process.env.ADMIN_DB_URL!,
   }

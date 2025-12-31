@@ -6,9 +6,9 @@ import { scopeNames as scopes } from "../scopes";
 import zod from "zod";
 import { CommonAuthorization, ValidationError } from "./codes";
 
-const PartCategoriesCreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
-const PartCategoriesUpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
-const PartCategory = createSelectSchema(PartCategories).omit({ team_id: true }).meta({ id: "Part Category" });
+export const PartCategoriesCreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
+export const PartCategoriesUpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
+export const PartCategory = createSelectSchema(PartCategories).omit({ team_id: true }).meta({ id: "Part Category" });
 
 registry.registerPath({
   method: "get",

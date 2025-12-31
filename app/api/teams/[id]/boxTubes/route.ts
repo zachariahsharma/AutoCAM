@@ -1,4 +1,4 @@
-import { parseParamId, routeFactory } from "@/lib/api";
+import { routeFactory } from "@/lib/api";
 import { createBoxTube, getBoxTubes } from "@/app/api/boxTubes/route";
 
 export const GET = routeFactory(async (req, authType, tx, id) => getBoxTubes(authType, tx, id));

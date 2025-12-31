@@ -67,7 +67,7 @@ export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T)
   return result.data;
 }
 
-export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T, preprocess: (data: object, file: ArrayBuffer) => object | Promise<object>): ReturnType<typeof parseJsonBody<T>> {
+export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T): Promise<{ data: Awaited<ReturnType<typeof parseJsonBody<T>>>, file: ArrayBuffer }> {
   const json = formData.get("data");
   if (typeof json !== "string") {
     const error: zod.core.$ZodIssue = {
@@ -76,7 +76,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Form Data type for "data" is not a string'
     };
-    throw routeResponse(422, error);
+    throw routeResponse(422, [error]);
   }
 
   const file = formData.get("file");
@@ -87,7 +87,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Form Data type for "file" is not a file'
     };
-    throw routeResponse(422, error);
+    throw routeResponse(422, [error]);
   }
 
   let data: object;
@@ -100,10 +100,10 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       path: [],
       message: 'Unable to parse JSON in "data"'
     };
-    throw routeResponse(422, error);
+    throw routeResponse(422, [error]);
   }
 
-  return await parseJsonBody(await preprocess(data, await file.arrayBuffer()), schema);
+  return { data: await parseJsonBody(data, schema), file: await file.arrayBuffer() };
 }
 
 /**

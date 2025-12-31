@@ -8,7 +8,7 @@ import { CommonAuthorization, ValidationError } from "./codes";
 
 export const BoxTubesCreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
 export const BoxTubesUpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
-const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).meta({ id: "Box Tube" });
+export const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).meta({ id: "Box Tube" });
 
 registry.registerPath({
   method: "get",

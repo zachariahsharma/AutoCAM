@@ -1,4 +1,5 @@
 import { parseJsonBody, routeFactory } from "@/lib/api";
+import { BoxTubesUpdateSchema } from "@/lib/api/boxTubes";
 import { BoxTubes } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 

@@ -8,8 +8,7 @@ import { CommonAuthorization, ValidationError } from "./codes";
 
 export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true });
 export const TeamsUpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
-
-const Team = createSelectSchema(Teams).meta({ id: "Team", description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
+export const Team = createSelectSchema(Teams).meta({ id: "Team", description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
 // OpenAPI route definitions
 registry.registerPath({

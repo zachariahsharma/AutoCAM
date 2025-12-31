@@ -6,11 +6,11 @@ import {
   routeResponse
 } from "@/lib/api";
 import zod from "zod";
-import { createUpdateSchema } from "drizzle-zod";
 import { user } from "@/lib/db/schema/auth";
+import { TeamsUpdateSchema } from "@/lib/api/teams";
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
-  const body = await parseJsonBody(await req.json(), createUpdateSchema(Teams, {
+  const body = await parseJsonBody(await req.json(), TeamsUpdateSchema.extend({
     owner: zod.email().optional().transform(async owner => {
       if (!owner) return;
       const newOwner = await tx.query.user.findFirst({ where: eq(user.email, owner) });

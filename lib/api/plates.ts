@@ -8,7 +8,7 @@ import { CommonAuthorization, ValidationError } from "./codes";
 
 export const PlatesCreateSchema = createInsertSchema(Plates).omit({ category_id: true });
 export const PlatesUpdateSchema = createUpdateSchema(Plates).omit({ category_id: true });
-const Plate = createSelectSchema(Plates).omit({ category_id: true }).meta({ id: "Plate" });
+export const Plate = createSelectSchema(Plates).omit({ category_id: true }).meta({ id: "Plate" });
 
 registry.registerPath({
   method: "get",

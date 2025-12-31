@@ -31,7 +31,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -118,6 +119,7 @@ registry.registerPath({
     204: {
       description: "Part deleted successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });

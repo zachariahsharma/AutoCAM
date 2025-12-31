@@ -2,9 +2,11 @@ import { Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, userSession } from "./auth";
-import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, ValidationError } from "./codes";
+import { apiKey, userSession } from "../auth";
+import { scopeNames as scopes } from "../../scopes";
+import { CommonAuthorization, ValidationError } from "../codes";
+
+import "./invites";
 
 export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true });
 export const TeamsUpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });

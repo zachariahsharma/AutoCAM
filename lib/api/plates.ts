@@ -31,7 +31,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -115,6 +116,7 @@ registry.registerPath({
     204: {
       description: "Plate deleted successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });

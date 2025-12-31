@@ -167,6 +167,7 @@ registry.registerPath({
     204: {
       description: "Part category successfully deleted",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });

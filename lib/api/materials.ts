@@ -28,7 +28,8 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -162,6 +163,7 @@ registry.registerPath({
     204: {
       description: "Material successfully deleted",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });

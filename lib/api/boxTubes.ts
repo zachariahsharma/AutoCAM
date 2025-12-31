@@ -27,7 +27,9 @@ registry.registerPath({
           schema: zod.array(BoxTube)
         }
       }
-    }
+    },
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });
 
@@ -162,6 +164,7 @@ registry.registerPath({
     204: {
       description: "Box tube deleted successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError
   }
 });

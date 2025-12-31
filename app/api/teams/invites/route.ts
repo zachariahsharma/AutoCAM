@@ -37,5 +37,5 @@ export async function inviteEmail(authType: AuthType, tx: Transaction, json: obj
     subject: `Join ${team.name}`,
     text: `Join the ${team.name} Team with this link: ${new URL(`/api/user/invites/accept/${invite.id}`, `http://${process.env.BASE_URL}`)}`
   });
-  return routeResponse();
+  return routeResponse(204);
 }

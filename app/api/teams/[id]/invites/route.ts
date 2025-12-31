@@ -1,4 +1,4 @@
-import { getInvites, inviteEmail } from "../../invite/route";
+import { getInvites, inviteEmail } from "../../invites/route";
 import { routeFactory } from "@/lib/api";
 
 export const POST = routeFactory(async (req, authType, tx, id) => inviteEmail(authType, tx, await req.json(), id));

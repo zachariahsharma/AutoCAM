@@ -1,4 +1,4 @@
-import { Parts, PartsInsertSchema } from "@/lib/db/schema/cam";
+import { Parts } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
 import { parseJsonFile, routeFactory, routeResponse } from "@/lib/api";
 

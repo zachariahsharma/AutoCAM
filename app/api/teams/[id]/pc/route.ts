@@ -6,6 +6,6 @@ export const GET = routeFactory(
 );
 
 export const POST = routeFactory(
-  async (req, authType, tx, id) => createPartCategory(tx, await req.json(), id),
+  async (req, authType, tx, id) => createPartCategory(authType, tx, await req.json(), id),
   { emailVerifiedNeeded: true }
 );

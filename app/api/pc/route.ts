@@ -8,7 +8,7 @@ import zod from "zod";
 
 export const GET = routeFactory((req, authType, tx) => getPartCategories(authType, tx, req.nextUrl.searchParams));
 export const POST = routeFactory(
-  async (req, authType, tx) => createPartCategory(tx, await req.json()),
+  async (req, authType, tx) => createPartCategory(authType, tx, await req.json()),
   { emailVerifiedNeeded: true }
 );
 

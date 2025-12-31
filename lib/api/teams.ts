@@ -40,6 +40,8 @@ registry.registerPath({
   path: "/api/teams",
   tags: ["Teams"],
   summary: "Create Team",
+  description: "This endpoint requires the user's email to be verified",
+  security: [{ [userSession.name]: [] }],
   request: {
     body: {
       content: {
@@ -66,6 +68,7 @@ registry.registerPath({
   path: "/api/teams/{id}",
   tags: ["Teams"],
   summary: "Update Team",
+  description: "This endpoint requires the user's email to be verified",
   request: {
     params: zod.object({ id: zod.number().meta({ description: "ID of the team that is being updated" }) }),
     body: {
@@ -88,6 +91,7 @@ registry.registerPath({
   path: "/api/teams/{id}",
   tags: ["Teams"],
   summary: "Delete Team",
+  description: "This endpoint requires the user's email to be verified. The user must be the owner of the team",
   request: {
     params: zod.object({ id: zod.number().meta({ description: "ID of the team that is being deleted" }) }),
   },

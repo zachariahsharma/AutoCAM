@@ -2,6 +2,8 @@ import { Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
+import { apiKey, userSession } from "./auth";
+import { scopeNames as scopes } from "../scopes";
 
 export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true });
 export const TeamsUpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
@@ -14,6 +16,10 @@ registry.registerPath({
   path: "/api/teams",
   tags: ["Teams"],
   summary: "Get Teams",
+  security: [
+    { [userSession.name]: [] },
+    { [apiKey.name]: [scopes.teams.read] }
+  ],
   responses: {
     200: {
       description: "If this endpoint is called with an API Key, a single team that the key corresponds to is returned. If the endpoint is called with a user session, a list of teams that the user is a part of is returned.",

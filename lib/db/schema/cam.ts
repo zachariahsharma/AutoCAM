@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
 import { CheckBoxTubeJobsTeams, CheckPartsPlatesTeam, CheckPlateJobsTeams, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
-import scopes from "../../scopes";
+import { scopeNames as scopes } from "../../scopes";
 
 const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
   dataType() { return "bytea"; },

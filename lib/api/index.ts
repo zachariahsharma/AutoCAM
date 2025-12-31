@@ -13,6 +13,7 @@ import "./parts";
 import "./pc";
 import "./plates";
 import "./boxTubes";
+import "./auth";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)

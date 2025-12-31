@@ -4,10 +4,10 @@ import {
   parseJsonBody,
   routeFactory
 } from "@/lib/api";
-import { createUpdateSchema } from "drizzle-zod";
+import { PartCategoriesUpdateSchema } from "@/lib/api/pc";
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
-  const body = await parseJsonBody(await req.json(), createUpdateSchema(PartCategories));
+  const body = await parseJsonBody(await req.json(), PartCategoriesUpdateSchema);
 
   return await tx.update(PartCategories)
   .set(body)

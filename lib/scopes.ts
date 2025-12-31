@@ -1,66 +1,160 @@
 import zod from "zod";
 
-const scopes = {
+export const scopes = {
   teams: {
-    read: "team:read",
-    invites: {
-      read: "teams:invites:read",
-      send: "teams:invites:send",
-      cancel: "teams:invites:cancel"
+    read: {
+      name: "teams:read",
+      description: "Read team information"
     },
+    invites: {
+      read: {
+        name: "teams:invites:read",
+        description: "Get all pending team invites"
+      },
+      send: {
+        name: "teams:invites:send",
+        description: "Send a team invite"
+      },
+      cancel: {
+        name: "teams:invites:cancel",
+        description: "Cancel a team invite"
+      }
+    }
   },
   materials: {
-    read: "materials:read",
-    write: "materials:write",
+    read: {
+      name: "materials:read",
+      description: "Read team materials"
+    },
+    write: {
+      name: "materials:write",
+      description: "Create, update, or delete a team material"
+    }
   },
   machines: {
-    read: "materials:read",
-    write: "materials:write",
+    read: {
+      name: "machines:read",
+      description: "Read team machines"
+    },
+    write: {
+      name: "machines:write",
+      description: "Create, update, or delete a team machine"
+    }
   },
   tools: {
-    read: "materials:read",
-    write: "materials:write",
+    read: {
+      name: "tools:read",
+      description: "Read team tools"
+    },
+    write: {
+      name: "tools:write",
+      description: "Create, update, or delete a team tool"
+    }
   },
   pc: {
-    read: "part_categories:read",
-    write: "part_categories:write",
+    read: {
+      name: "part_categories:read",
+      description: "Read team part categories"
+    },
+    write: {
+      name: "part_categories:write",
+      description: "Create, update, or delete team part categories"
+    },
     assignments: {
-      read: "part_categories:assignments:read",
-      write: "part_categories:assignments:write"
+      read: {
+        name: "part_categories:assignments:read",
+        description: "Read team part -> plate assignments"
+      },
+      write: {
+        name: "part_categories:assignments:write",
+        description: "Create, update or delete team part -> plate assignments"
+      }
     }
   },
   parts: {
-    read: "parts:read",
-    write: "parts:write"
+    read: {
+      name: "parts:read",
+      description: "Read team parts"
+    },
+    write: {
+      name: "parts:write",
+      description: "Create, update, or delete team parts"
+    }
   },
   plates: {
-    read: "plates:read",
-    write: "plates:write",
+    read: {
+      name: "plates:read",
+      description: "Read team plates"
+    },
+    write: {
+      name: "plates:write",
+      description: "Create, update, or delete team plates"
+    },
     jobs: {
-      read: "plates:jobs:read",
-      write: "plates:jobs:write"
+      read: {
+        name: "plates:jobs:read",
+        description: "Read team plate jobs"
+      },
+      write: {
+        name: "plates:jobs:write",
+        description: "Create or delete team plate jobs"
+      }
     }
   },
   boxTubes: {
-    read: "box_tubes:read",
-    write: "box_tubes:write",
+    read: {
+      name: "box_tubes:read",
+      description: "Read team box tubes"
+    },
+    write: {
+      name: "box_tubes:write",
+      description: "Create, update, or delete team box tubes"
+    },
     jobs: {
-      read: "box_tubes:jobs:read",
-      write: "box_tubes:jobs:write"
+      read: {
+        name: "box_tubes:jobs:read",
+        description: "Read team box tube jobs"
+      },
+      write: {
+        name: "box_tubes:jobs:write",
+        description: "Create or delete team box tube jobs"
+      }
     }
   },
 };
-export default scopes;
 
-function getValues(obj: Record<string, unknown>) {
-  let result: string[] = [];
-  for (const key in obj) {
-    if (typeof obj[key] === "string")
-      result.push(obj[key]);
+export interface ScopeLeaf {
+  name: string;
+  description: string;
+};
+
+export interface ScopeTree {
+  [key: string]: ScopeLeaf | ScopeTree;
+};
+
+type ScopeNameTree<T> = {
+  [K in keyof T]:
+    T[K] extends ScopeLeaf ? T[K]["name"] : ScopeNameTree<T[K]>
+};
+
+function getScopeNames<T extends ScopeTree>(tree: T): ScopeNameTree<T> {
+  const result: Record<string, unknown> = {}
+  for (const key in tree) {
+    const value = tree[key];
+    if (typeof value === "object" && value && "name" in value)
+      result[key] = value.name;
     else
-      result = result.concat(getValues(obj[key] as Record<string, unknown>))
+      result[key] = getScopeNames(value);
   }
-  return result;
+  return result as ScopeNameTree<T>;
 }
 
-export const ScopeEnum = zod.enum(getValues(scopes));
+export const scopeNames = getScopeNames(scopes);
+
+function flattenScopes<T>(tree: ScopeNameTree<T>): string[] {
+  return Object.values(tree).flatMap(value => 
+    typeof value === "object" && value ? flattenScopes(value) : value
+  ) as string[];
+}
+
+export const ScopeEnum = zod.enum(flattenScopes(scopeNames));

@@ -4,8 +4,8 @@ import {
   routeResponse,
   routeFactory
 } from "@/lib/api";
-import { TeamsCreateSchema, TeamsGetSchema } from "@/lib/api/teams";
-import { registry } from "@/lib/openapi/registry";
+import { Team, TeamsCreateSchema } from "@/lib/api/teams";
+import zod from "zod";
 
 export const POST = routeFactory(async (req, authType, tx) => {
   const body = await parseJsonBody(await req.json(), TeamsCreateSchema);
@@ -23,8 +23,8 @@ export const POST = routeFactory(async (req, authType, tx) => {
 
 export const GET = routeFactory(async (req, authType, tx) => {
   if (authType.userId)
-    return routeResponse(200, await tx.query.Teams.findMany());
+    return routeResponse(200, await parseJsonBody(await tx.query.Teams.findMany(), zod.array(Team)));
   const team = await tx.query.Teams.findFirst();
   if (!team) return routeResponse(403);
-  return routeResponse(200, team);
+  return routeResponse(200, await parseJsonBody(team, Team));
 });

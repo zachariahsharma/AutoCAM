@@ -1,3 +1,5 @@
+import "./jobs";
+
 import { BoxTubes } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
@@ -8,12 +10,48 @@ import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../com
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
 import { teamIdFromDigest } from "../../auth/server";
 import { eq } from "drizzle-orm";
-
-import "./jobs";
+import { ResponseConfig, ZodRequestBody } from "@asteasolutions/zod-to-openapi";
 
 const CreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
 const UpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
 const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).meta({ id: "Box Tube" });
+
+const GETResponse: Record<string, ResponseConfig> = {
+  200: {
+    description: "This endpoint retunrs the box tubes from the team",
+    content: {
+      "application/json": {
+        schema: zod.array(BoxTube)
+      }
+    }
+  },
+  ...CommonAuthorization
+};
+
+const POSTRequestBody: ZodRequestBody = {
+  content: {
+    "multipart/form-data": {
+      schema: zod.object({
+        data: CreateSchema.meta({ description: "Box tube info as stringified JSON" }),
+        file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Box tube file upload" })
+      }),
+    }
+  }
+};
+
+const POSTResponse: Record<string, ResponseConfig> = {
+  201: {
+    description: "Returns the ID of the created box tube",
+    content: {
+      "application/json": {
+        schema: zod.object({ id: zod.number() })
+      }
+    }
+  },
+  ...CommonAuthorization,
+  ...ValidationError,
+  ...Conflict
+};
 
 registry.registerPath({
   method: "get",
@@ -24,18 +62,7 @@ registry.registerPath({
   request: {
     params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
   },
-  responses: {
-    200: {
-      description: "This endpoint returns the box tubes from the given team",
-      content: {
-        "application/json": {
-          schema: zod.array(BoxTube)
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError
-  }
+  responses: { ...GETResponse, ...ValidationError }
 });
 
 registry.registerPath({
@@ -44,17 +71,7 @@ registry.registerPath({
   tags: ["Box Tubes"],
   security: [{ [apiKey.name]: [scopes.boxTubes.read] }],
   summary: "Get Box Tubes (API Key)",
-  responses: {
-    200: {
-      description: "This endpoint returns the box tubes from the API Key's team",
-      content: {
-        "application/json": {
-          schema: zod.array(BoxTube)
-        }
-      }
-    },
-    ...CommonAuthorization
-  }
+  responses: GETResponse
 });
 
 registry.registerPath({
@@ -66,30 +83,9 @@ registry.registerPath({
   security: [{ [userSession.name]: [] }],
   request: {
     params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
-    body: {
-      content: {
-        "multipart/form-data": {
-          schema: zod.object({
-            data: CreateSchema.meta({ description: "Box tube info as stringified JSON" }),
-            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Box tube file upload" })
-          }),
-        }
-      }
-    }
+    body: POSTRequestBody
   },
-  responses: {
-    201: {
-      description: "Returns the ID of the created box tube",
-      content: {
-        "application/json": {
-          schema: zod.object({ id: zod.number() })
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict,
-  }
+  responses: POSTResponse
 });
 
 registry.registerPath({
@@ -98,31 +94,8 @@ registry.registerPath({
   tags: ["Box Tubes"],
   summary: "Create Box Tube (API Key)",
   security: [{ [apiKey.name]: [scopes.boxTubes.write] }],
-  request: {
-    body: {
-      content: {
-        "multipart/form-data": {
-          schema: zod.object({
-            data: CreateSchema.meta({ description: "Box tube info as stringified JSON" }),
-            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Box tube file upload" })
-          }),
-        }
-      }
-    }
-  },
-  responses: {
-    201: {
-      description: "Returns the ID of the created box tube",
-      content: {
-        "application/json": {
-          schema: zod.object({ id: zod.number() })
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict,
-  }
+  request: { body: POSTRequestBody },
+  responses: POSTResponse
 });
 
 registry.registerPath({

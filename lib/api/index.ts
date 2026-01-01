@@ -135,18 +135,18 @@ export interface RouteFactoryConfig {
   emailVerifiedNeeded?: boolean;
 }
 
-export type RouteFactoryCallback = (req: NextRequest, authType: AuthType, tx: Transaction, id: number) => Promise<any>;
+export type RouteFactoryCallback = (req: NextRequest, authType: AuthType, tx: Transaction, id: number | null) => Promise<any>;
 
 export function routeFactory(callback: RouteFactoryCallback, config?: RouteFactoryConfig) {
-  return async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  return async (req: NextRequest, { params }: { params: Promise<{ id: string }> | undefined }) => {
     const authType = await getAuthType();
     try { await validateAuthType(authType, config?.emailVerifiedNeeded ?? false); }
     catch (err) { return err; }
 
     return withAuth(authType, async tx => {
       try {
-        let id = 0;
-        if (callback.length === 4)
+        let id = null;
+        if (params)
           id = await parseParamId((await params).id)
         const result = await callback(req, authType, tx, id);
         if (Array.isArray(result))

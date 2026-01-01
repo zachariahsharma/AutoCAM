@@ -2,12 +2,14 @@ import { BoxTubes } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, userSession } from "./auth";
-import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, ValidationError } from "./codes";
-import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
-import { teamIdFromDigest } from "../auth/server";
+import { apiKey, userSession } from "../auth";
+import { scopeNames as scopes } from "../../scopes";
+import { CommonAuthorization, ValidationError } from "../codes";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
+import { teamIdFromDigest } from "../../auth/server";
 import { eq } from "drizzle-orm";
+
+import "./jobs";
 
 const CreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
 const UpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });

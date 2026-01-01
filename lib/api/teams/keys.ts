@@ -3,7 +3,7 @@ import { registry } from "@/lib/openapi/registry";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { userSession } from "../auth";
-import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../codes";
+import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 import { ScopeEnum } from "@/lib/scopes";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";

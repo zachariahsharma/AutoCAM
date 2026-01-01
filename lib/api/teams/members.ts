@@ -4,7 +4,7 @@ import { TeamMembers } from "@/lib/db/schema/entities";
 import { eq } from "drizzle-orm";
 import { registry } from "@/lib/openapi/registry";
 import zod from "zod";
-import { CommonAuthorization, ValidationError } from "../codes";
+import { CommonAuthorization, ValidationError } from "../common";
 import { apiKey, userSession } from "../auth";
 
 const Member = zod.object({ user: zod.email(), admin: zod.boolean() });

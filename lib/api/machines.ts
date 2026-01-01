@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, Conflict, ValidationError } from "./codes";
+import { CommonAuthorization, Conflict, ValidationError } from "./common";
 
 const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });

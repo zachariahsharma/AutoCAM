@@ -2,7 +2,7 @@ import { TeamInvites, Teams } from "@/lib/db/schema/entities";
 import { registry } from "@/lib/openapi/registry";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
-import { CommonAuthorization, Conflict, ValidationError } from "../codes";
+import { CommonAuthorization, Conflict, ValidationError } from "../common";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { parseJsonBody, routeFactory, routeResponse } from "..";

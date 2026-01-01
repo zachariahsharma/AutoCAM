@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../codes";
+import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";

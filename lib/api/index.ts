@@ -13,6 +13,7 @@ import "./parts";
 import "./pc";
 import "./plates";
 import "./boxTubes";
+import "./user";
 import "./auth";
 
 /**

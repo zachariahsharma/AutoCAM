@@ -1,8 +1,1 @@
-import { routeFactory, routeResponse } from "@/lib/api";
-
-export const GET = routeFactory(async (req, authType, tx) => {
-  return routeResponse(200, (await tx.query.TeamInvites.findMany({
-    with: { team: true },
-    columns: { id: true }
-  })).map(x => ({ ...x, team: x.team.name })))
-});
+export { GET } from "@/lib/api/user/invites"

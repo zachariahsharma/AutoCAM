@@ -116,4 +116,4 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     text: `Join the ${team.name} Team with this link: ${new URL(`/api/user/invites/accept/${invite.id}`, `http://${process.env.BASE_URL}`)}`
   });
   return routeResponse(204);
-});
+}, { emailVerifiedNeeded: true });

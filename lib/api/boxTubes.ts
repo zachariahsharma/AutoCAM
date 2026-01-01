@@ -5,10 +5,13 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, ValidationError } from "./codes";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
+import { teamIdFromDigest } from "../auth/server";
+import { eq } from "drizzle-orm";
 
-export const BoxTubesCreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
-export const BoxTubesUpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
-export const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).meta({ id: "Box Tube" });
+const CreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
+const UpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
+const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).meta({ id: "Box Tube" });
 
 registry.registerPath({
   method: "get",
@@ -65,7 +68,7 @@ registry.registerPath({
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: BoxTubesCreateSchema.meta({ description: "Box tube info as stringified JSON" }),
+            data: CreateSchema.meta({ description: "Box tube info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Box tube file upload" })
           }),
         }
@@ -97,7 +100,7 @@ registry.registerPath({
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: BoxTubesCreateSchema.meta({ description: "Box tube info as stringified JSON" }),
+            data: CreateSchema.meta({ description: "Box tube info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Box tube file upload" })
           }),
         }
@@ -133,7 +136,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: BoxTubesUpdateSchema
+          schema: UpdateSchema
         }
       }
     }
@@ -168,3 +171,31 @@ registry.registerPath({
     ...ValidationError
   }
 });
+
+export const GET = routeFactory(async (req, authType, tx, teamId) => {
+  teamId ??= await teamIdFromDigest(tx, authType);
+
+  return routeResponse(200, await parseJsonBody(await tx.query.BoxTubes.findMany({
+    where: eq(BoxTubes.team_id, teamId)
+  }), zod.array(BoxTube)));
+});
+
+export const POST = routeFactory(async (req, authType, tx, team_id) => {
+  team_id ??= await teamIdFromDigest(tx, authType);
+
+  const { data, file } = await parseJsonFile(await req.formData(), CreateSchema);
+
+  const [id] = await tx.insert(BoxTubes).values({ ...data, file, team_id }).returning({ id: BoxTubes.id });
+  return routeResponse(201, id);
+}, { emailVerifiedNeeded: true })
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  return await tx.update(BoxTubes).set(body).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
+}, { emailVerifiedNeeded: true });
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return await tx.delete(BoxTubes).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
+}, { emailVerifiedNeeded: true });

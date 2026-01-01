@@ -5,10 +5,17 @@ import { PartCategories } from "../db/schema/cam";
 import { scopeNames as scopes } from "../scopes";
 import zod from "zod";
 import { CommonAuthorization, ValidationError } from "./codes";
+import { parseJsonBody, routeFactory, routeResponse } from ".";
+import { teamIdFromDigest } from "../auth/server";
+import { and, eq } from "drizzle-orm";
 
-export const PartCategoriesCreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
-export const PartCategoriesUpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
-export const PartCategory = createSelectSchema(PartCategories).omit({ team_id: true }).meta({ id: "Part Category" });
+const CreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
+const UpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
+const PartCategory = createSelectSchema(PartCategories).omit({ team_id: true }).meta({ id: "Part Category" });
+const SearchParams = zod.object({
+  material: zod.string().optional(),
+  thickness: zod.coerce.number().positive().optional()
+});
 
 registry.registerPath({
   method: "get",
@@ -18,10 +25,7 @@ registry.registerPath({
   summary: "Get Part Categories (User)",
   request: {
     params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
-    query: zod.object({
-      material: zod.string().optional(),
-      thickness: zod.number().optional()
-    })
+    query: SearchParams
   },
   responses: {
     200: {
@@ -75,7 +79,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: PartCategoriesCreateSchema
+          schema: CreateSchema
         }
       }
     }
@@ -104,7 +108,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: PartCategoriesCreateSchema
+          schema: CreateSchema
         }
       }
     }
@@ -137,7 +141,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: PartCategoriesUpdateSchema
+          schema: UpdateSchema
         }
       }
     }
@@ -171,3 +175,39 @@ registry.registerPath({
     ...ValidationError
   }
 });
+
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  id ??= await teamIdFromDigest(tx, authType);
+  const params = req.nextUrl.searchParams;
+
+  const data = await parseJsonBody({
+    material: params.get("material")?.toString(),
+    thickness: params.get("thickness")?.toString()
+  }, SearchParams);
+  return routeResponse(200, await parseJsonBody(await tx.query.PartCategories.findMany({
+    where: and(
+      eq(PartCategories.team_id, id),
+      data.material !== undefined ? eq(PartCategories.material, data.material) : undefined,
+      data.thickness ? eq(PartCategories.thickness, data.thickness) : undefined
+    )
+  }), zod.array(PartCategory)))
+});
+
+export const POST = routeFactory(async (req, authType, tx, team_id) => {
+  team_id ??= await teamIdFromDigest(tx, authType);
+
+  const data = await parseJsonBody(await req.json(), CreateSchema);
+  const [id] = await tx.insert(PartCategories).values({ ...data, team_id }).returning({ id: PartCategories.id })
+  return routeResponse(201, id);
+}, { emailVerifiedNeeded: true });
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  return tx.update(PartCategories).set(body).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id })
+}, { emailVerifiedNeeded: true });
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return tx.delete(PartCategories).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id });
+}, { emailVerifiedNeeded: true });

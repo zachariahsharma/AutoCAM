@@ -5,10 +5,12 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, ValidationError } from "./codes";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
+import { eq } from "drizzle-orm";
 
-export const PartsCreateSchema = createInsertSchema(Parts).omit({ file: true, category_id: true });
-export const PartsUpdateSchema = createUpdateSchema(Parts).omit({ file: true, category_id: true });
-export const Part = createSelectSchema(Parts).omit({ file: true, category_id: true }).meta({ id: "Part" });
+const CreateSchema = createInsertSchema(Parts).omit({ file: true, category_id: true });
+const UpdateSchema = createUpdateSchema(Parts).omit({ file: true, category_id: true });
+const Part = createSelectSchema(Parts).omit({ file: true, category_id: true }).meta({ id: "Part" });
 
 registry.registerPath({
   method: "get",
@@ -52,7 +54,7 @@ registry.registerPath({
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: PartsCreateSchema.meta({ description: "Part info as stringified JSON" }),
+            data: CreateSchema.meta({ description: "Part info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Part file upload" })
           })
         }
@@ -88,7 +90,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: PartsUpdateSchema
+          schema: UpdateSchema
         }
       }
     }
@@ -123,3 +125,28 @@ registry.registerPath({
     ...ValidationError
   }
 });
+
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return routeResponse(200, await parseJsonBody(await tx.query.Parts.findMany({
+    where: eq(Parts.category_id, id)
+  }), zod.array(Part)));
+});
+
+export const POST = routeFactory(async (req, authType, tx, category_id) => {
+  if (!category_id) return routeResponse(422);
+  const { data, file } = await parseJsonFile(await req.formData(), CreateSchema);
+  const [id] = await tx.insert(Parts).values({ ...data, file, category_id }).returning({ id: Parts.id });
+  return routeResponse(201, id);
+}, { emailVerifiedNeeded: true });
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  return await tx.update(Parts).set(body).where(eq(Parts.id, id)).returning({ id: Parts.id });
+}, { emailVerifiedNeeded: true });
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return await tx.delete(Parts).where(eq(Parts.id, id)).returning({ id: Parts.id });
+}, { emailVerifiedNeeded: true })

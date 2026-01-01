@@ -130,7 +130,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return await tx.delete(TeamKeys)
+  return tx.delete(TeamKeys)
     .where(eq(TeamKeys.id, id))
     .returning({ id: TeamKeys.id });
 }, { emailVerifiedNeeded: true });
@@ -138,7 +138,7 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
-  return await tx.update(TeamKeys)
+  return tx.update(TeamKeys)
     .set(body)
     .where(eq(TeamKeys.id, id))
     .returning({ id: TeamKeys.id })

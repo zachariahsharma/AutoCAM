@@ -140,10 +140,10 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
-  return await tx.update(Plates).set(body).where(eq(Plates.id, id)).returning({ id: Plates.id });
+  return tx.update(Plates).set(body).where(eq(Plates.id, id)).returning({ id: Plates.id });
 }, { emailVerifiedNeeded: true });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return await tx.delete(Plates).where(eq(Plates.id, id)).returning({ id: Plates.id });
+  return tx.delete(Plates).where(eq(Plates.id, id)).returning({ id: Plates.id });
 });

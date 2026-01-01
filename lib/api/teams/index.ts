@@ -147,10 +147,10 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
       return newOwner.id;
     })
   }));
-  return await tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
 }, { emailVerifiedNeeded: true });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return await tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  return tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
 }, { emailVerifiedNeeded: true });

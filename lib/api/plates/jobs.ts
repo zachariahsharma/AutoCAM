@@ -24,7 +24,7 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return await tx.delete(PlateJobs)
+  return tx.delete(PlateJobs)
     .where(eq(PlateJobs.id, id))
     .returning({ id: PlateJobs.id });
 }, { emailVerifiedNeeded: true });

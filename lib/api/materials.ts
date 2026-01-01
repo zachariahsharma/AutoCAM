@@ -5,10 +5,13 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, ValidationError } from "./codes";
+import { parseJsonBody, routeFactory, routeResponse } from ".";
+import { teamIdFromDigest } from "../auth/server";
+import { eq } from "drizzle-orm";
 
-export const MaterialsCreateSchema = createInsertSchema(Materials).omit({ team_id: true });
-export const MaterialsUpdateSchema = createUpdateSchema(Materials).omit({ team_id: true });
-export const Material = createSelectSchema(Materials).omit({ team_id: true }).meta({ id: "Material" })
+const CreateSchema = createInsertSchema(Materials).omit({ team_id: true });
+const UpdateSchema = createUpdateSchema(Materials).omit({ team_id: true });
+const Material = createSelectSchema(Materials).omit({ team_id: true }).meta({ id: "Material" })
 
 registry.registerPath({
   method: "get",
@@ -65,7 +68,7 @@ registry.registerPath({
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: MaterialsCreateSchema.meta({ description: "Material info as stringified JSON" }),
+            data: CreateSchema.meta({ description: "Material info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Material file upload" })
           })
         }
@@ -98,7 +101,7 @@ registry.registerPath({
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: MaterialsCreateSchema.meta({ description: "Material info as stringified JSON" }),
+            data: CreateSchema.meta({ description: "Material info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Material file upload" })
           })
         }
@@ -133,7 +136,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: MaterialsUpdateSchema
+          schema: UpdateSchema
         }
       }
     }
@@ -167,3 +170,32 @@ registry.registerPath({
     ...ValidationError
   }
 });
+
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  id ??= await teamIdFromDigest(tx, authType);
+  return routeResponse(200, await parseJsonBody(await tx.query.Materials.findMany({
+    where: eq(Materials.team_id, id)
+  }), zod.array(Material)));
+});
+
+export const POST = routeFactory(async (req, authType, tx, team_id) => {
+  team_id ??= await teamIdFromDigest(tx, authType);
+
+  const body = await parseJsonBody(await req.json(), CreateSchema);
+
+  const [id] = await tx.insert(Materials).values({ ...body, team_id }).returning({ id: Materials.id });
+  return routeResponse(200, id);
+});
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), createUpdateSchema(Materials));
+
+  return tx.update(Materials).set(body).where(eq(Materials.id, id));
+});
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return tx.delete(Materials).where(eq(Materials.id, id));
+});
+

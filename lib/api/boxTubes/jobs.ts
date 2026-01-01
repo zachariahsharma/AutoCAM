@@ -21,5 +21,5 @@ export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return await tx.delete(BoxTubeJobs).where(eq(BoxTubeJobs.id, id)).returning({ id: BoxTubeJobs.id })
+  return tx.delete(BoxTubeJobs).where(eq(BoxTubeJobs.id, id)).returning({ id: BoxTubeJobs.id })
 }, { emailVerifiedNeeded: true });

@@ -4,21 +4,17 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, Conflict, ValidationError } from "./common";
+import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
 
 const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
 const Machine = createSelectSchema(Machines).omit({ team_id: true, file: true }).meta({ id: "Machine" })
 
-registry.registerPath({
+registerTeamEndpoint({
   method: "get",
-  path: "/api/teams/{id}/machines",
+  path: "/api/machines",
   tags: ["Machines"],
-  security: [{ [userSession.name]: [] }],
-  summary: "Get Machines (User)",
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
-  },
+  summary: "Get Machines",
   responses: {
     200: {
       description: "This endpoint returns the machines from the given team",
@@ -28,73 +24,17 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization,
-    ...ValidationError
-  }
-});
-
-registry.registerPath({
-  method: "get",
-  path: "/api/machines",
-  tags: ["Machines"],
-  security: [{ [apiKey.name]: [scopes.machines.read] }],
-  summary: "Get Machines (API Key)",
-  responses: {
-    200: {
-      description: "This endpoint returns the part categories from the api key's team",
-      content: {
-        "application/json": {
-          schema: zod.array(Machine)
-        }
-      }
-    },
     ...CommonAuthorization
   }
-});
+}, [scopes.machines.read]);
 
-registry.registerPath({
-  method: "post",
-  path: "/api/teams/{id}/machines",
-  tags: ["Machines"],
-  summary: "Create Machine (User)",
-  description: "This endpoint requires the user's email to be verified",
-  security: [{ [userSession.name]: [] }],
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
-    body: {
-      content: {
-        "multipart/form-data": {
-          schema: zod.object({
-            data: CreateSchema.meta({ description: "Machine info as stringified JSON" }),
-            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Machine file upload" })
-          })
-        }
-      }
-    }
-  },
-  responses: {
-    201: {
-      description: "Returns the ID of the created machine",
-      content: {
-        "application/json": {
-          schema: zod.object({ id: zod.number() })
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict
-  }
-});
-
-registry.registerPath({
+registerTeamEndpoint({
   method: "post",
   path: "/api/machines",
   tags: ["Machines"],
-  summary: "Create Machine (API Key)",
-  security: [{ [apiKey.name]: [scopes.machines.write] }],
+  summary: "Create Machine",
+  description: "This endpoint requires the user's email to be verified",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
     body: {
       content: {
         "multipart/form-data": {
@@ -119,7 +59,7 @@ registry.registerPath({
     ...ValidationError,
     ...Conflict
   }
-});
+}, [scopes.machines.write]);
 
 registry.registerPath({
   method: "patch",

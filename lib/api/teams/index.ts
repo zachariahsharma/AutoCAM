@@ -122,12 +122,12 @@ export const GET = routeFactory(async (req, authType, tx) => {
   if (authType.userId)
     return routeResponse(200, await parseJsonBody(await tx.query.Teams.findMany(), zod.array(Team)));
   const team = await tx.query.Teams.findFirst();
-  if (!team) return routeResponse(403);
+  if (!team) return routeResponse(403, { message: "API Key is not valid" });
   return routeResponse(200, await parseJsonBody(team, Team));
 });
 
 export const POST = routeFactory(async (req, authType, tx) => {
-  if (!authType.userId) return routeResponse(401);
+  if (!authType.userId) return routeResponse(401, { message: "User session not found" });
   const body = await parseJsonBody(await req.json(), CreateSchema);
   const [id] = await tx.insert(Teams).values({
     ...body,

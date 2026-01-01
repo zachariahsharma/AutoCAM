@@ -36,13 +36,13 @@ export async function getAuthType(): Promise<AuthType> {
 
 export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
   if (!(authType.userId || authType.keyDigest))
-    throw routeResponse(401);
+    throw routeResponse(401, { message: "No valid authorization found" });
   if (emailVerifiedNeeded && authType.userId) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session)
-      throw routeResponse(401);
+      throw routeResponse(401, { message: "User session not found" });
     if (!session.user.emailVerified)
-      throw routeResponse(403);
+      throw routeResponse(403, { message: "User email has not been verified" });
   }
 }
 
@@ -116,7 +116,7 @@ export function handleDatabaseError(err: unknown): NextResponse {
   if (err instanceof DrizzleQueryError)
     cause = err.cause as DatabaseError;
   if (cause instanceof DatabaseError) {
-    if (cause.code === "42501") return routeResponse(403); // Permission denied
+    if (cause.code === "42501") return routeResponse(403, { message: "Permission denied" }); // Permission denied
     if (cause.code === "23505") return routeResponse(409); // Unique violation
   }
   throw err;

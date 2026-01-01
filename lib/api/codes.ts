@@ -30,6 +30,12 @@ export const NotFound: Record<string, ResponseConfig> = {
   }
 }
 
+export const Conflict: Record<string, ResponseConfig> = {
+  409: {
+    description: "There was a conflict with creating the requested resource."
+  }
+};
+
 const ValidationIssue = zod.object({
   code: zod.string(),
   message: zod.string(),

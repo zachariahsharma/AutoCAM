@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, ValidationError } from "./codes";
+import { CommonAuthorization, Conflict, ValidationError } from "./codes";
 
 const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
@@ -82,7 +82,8 @@ registry.registerPath({
       }
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...Conflict
   }
 });
 
@@ -115,7 +116,8 @@ registry.registerPath({
       }
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...Conflict
   }
 });
 

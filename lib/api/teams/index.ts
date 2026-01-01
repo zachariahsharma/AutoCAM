@@ -1,4 +1,4 @@
-import { Teams } from "@/lib/db/schema/entities";
+import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
@@ -8,10 +8,13 @@ import { CommonAuthorization, ValidationError } from "../codes";
 
 import "./invites";
 import "./keys";
+import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { eq } from "drizzle-orm";
+import { user } from "@/lib/db/schema/auth";
 
-export const TeamsCreateSchema = createInsertSchema(Teams).omit({ owner: true });
-export const TeamsUpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
-export const Team = createSelectSchema(Teams).meta({ id: "Team", description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
+const CreateSchema = createInsertSchema(Teams).omit({ owner: true });
+const UpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
+const Team = createSelectSchema(Teams).meta({ id: "Team", description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
 // OpenAPI route definitions
 registry.registerPath({
@@ -50,7 +53,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: TeamsCreateSchema
+          schema: CreateSchema
         }
       }
     }
@@ -80,7 +83,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: TeamsUpdateSchema
+          schema: UpdateSchema
         }
       }
     }
@@ -110,3 +113,43 @@ registry.registerPath({
     ...CommonAuthorization
   }
 });
+
+export const GET = routeFactory(async (req, authType, tx) => {
+  if (authType.userId)
+    return routeResponse(200, await parseJsonBody(await tx.query.Teams.findMany(), zod.array(Team)));
+  const team = await tx.query.Teams.findFirst();
+  if (!team) return routeResponse(403);
+  return routeResponse(200, await parseJsonBody(team, Team));
+});
+
+export const POST = routeFactory(async (req, authType, tx) => {
+  if (!authType.userId) return routeResponse(401);
+  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const [id] = await tx.insert(Teams).values({
+    ...body,
+    owner: authType.userId
+  }).returning({ id: Teams.id });
+  await tx.insert(TeamMembers).values({
+    user_id: authType.userId,
+    team_id: id.id,
+    admin: true
+  });
+}, { emailVerifiedNeeded: true });
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), UpdateSchema.extend({
+    owner: zod.email().optional().transform(async owner => {
+      if (!owner) return;
+      const newOwner = await tx.query.user.findFirst({ where: eq(user.email, owner) });
+      if (!newOwner) throw routeResponse(404);
+      return newOwner.id;
+    })
+  }));
+  return await tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
+}, { emailVerifiedNeeded: true });
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return await tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
+}, { emailVerifiedNeeded: true });

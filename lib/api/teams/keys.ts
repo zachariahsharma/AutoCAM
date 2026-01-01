@@ -5,10 +5,13 @@ import zod from "zod";
 import { userSession } from "../auth";
 import { CommonAuthorization, ValidationError } from "../codes";
 import { ScopeEnum } from "@/lib/scopes";
+import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { eq } from "drizzle-orm";
+import crypto from "crypto";
 
-export const KeysCreateSchema = createInsertSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum) }).omit({ team_id: true, digest: true });
-export const KeysUpdateSchema = createUpdateSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum).optional() }).omit({ team_id: true, digest: true });
-export const Key = createSelectSchema(TeamKeys).omit({ team_id: true, digest: true }).meta({ id: "API Key" });
+const CreateSchema = createInsertSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum) }).omit({ team_id: true, digest: true });
+const UpdateSchema = createUpdateSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum).optional() }).omit({ team_id: true, digest: true });
+const Key = createSelectSchema(TeamKeys).omit({ team_id: true, digest: true }).meta({ id: "API Key" });
 
 registry.registerPath({
   method: "get",
@@ -44,7 +47,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: KeysCreateSchema
+          schema: CreateSchema
         }
       }
     }
@@ -74,7 +77,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: KeysUpdateSchema
+          schema: UpdateSchema
         }
       }
     }
@@ -105,3 +108,38 @@ registry.registerPath({
     ...ValidationError
   }
 });
+
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return routeResponse(200, await parseJsonBody(await tx.query.TeamKeys.findMany({
+    where: eq(TeamKeys.team_id, id),
+  }), zod.array(Key)));
+}, { emailVerifiedNeeded: true });
+
+export const POST = routeFactory(async (req, authType, tx, team_id) => {
+  if (!team_id) return routeResponse(422);
+  const token = crypto.randomBytes(32).toString("hex");
+  const body = await parseJsonBody(await req.json(), CreateSchema);
+
+  await tx.insert(TeamKeys).values({
+    ...body, team_id,
+    digest: crypto.createHmac("sha256", "key").update(token).digest("hex")
+  });
+  return routeResponse(201, { token });
+}, { emailVerifiedNeeded: true });
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return await tx.delete(TeamKeys)
+    .where(eq(TeamKeys.id, id))
+    .returning({ id: TeamKeys.id });
+}, { emailVerifiedNeeded: true });
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  return await tx.update(TeamKeys)
+    .set(body)
+    .where(eq(TeamKeys.id, id))
+    .returning({ id: TeamKeys.id })
+}, { emailVerifiedNeeded: true })

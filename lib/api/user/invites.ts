@@ -1,13 +1,25 @@
+import { createSelectSchema } from "drizzle-zod";
+import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { TeamInvites, TeamMembers } from "@/lib/db/schema/entities";
-import { NextRequest, NextResponse } from "next/server";
-import { routeResponse } from "../..";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth/server";
-import { eq } from "drizzle-orm";
-import db from "@/lib/db";
+import zod from "zod";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const inviteId = (await params).id;
+import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { auth } from "@/lib/auth/server";
+import db from "@/lib/db";
+import { headers } from "next/headers";
+
+const Invite = createSelectSchema(TeamInvites).omit({ id: true }).extend({ team: zod.string() });
+
+export const GET = routeFactory(async (req, authType, tx) => {
+  return routeResponse(200, await parseJsonBody((await tx.query.TeamInvites.findMany({
+    with: { team: true },
+  })).map(x => ({ ...x, team: x.team.name })), zod.array(Invite)))
+});
+
+export const Accept = {
+  GET: async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    const inviteId = (await params).id;
   const invite = await db.query.TeamInvites.findFirst({
     where: eq(TeamInvites.id, inviteId)
   });
@@ -27,4 +39,5 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 
   return NextResponse.redirect(new URL("/dashboard", req.url));
-}
+  }
+};

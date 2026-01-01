@@ -4,7 +4,7 @@ import { apiKey, userSession } from "./auth";
 import { PartCategories } from "../db/schema/cam";
 import { scopeNames as scopes } from "../scopes";
 import zod from "zod";
-import { CommonAuthorization, Conflict, ValidationError } from "./common";
+import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
 import { parseJsonBody, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { and, eq } from "drizzle-orm";
@@ -17,14 +17,12 @@ const SearchParams = zod.object({
   thickness: zod.coerce.number().positive().optional()
 });
 
-registry.registerPath({
+registerTeamEndpoint({
   method: "get",
-  path: "/api/teams/{id}/pc",
+  path: "/api/pc",
   tags: ["Part Categories"],
-  security: [{ [userSession.name]: [] }],
-  summary: "Get Part Categories (User)",
+  summary: "Get Part Categories",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
     query: SearchParams
   },
   responses: {
@@ -39,72 +37,14 @@ registry.registerPath({
     ...CommonAuthorization,
     ...ValidationError
   }
-});
+}, [scopes.pc.read]);
 
-registry.registerPath({
-  method: "get",
+registerTeamEndpoint({
+  method: "post",
   path: "/api/pc",
   tags: ["Part Categories"],
-  security: [{ [apiKey.name]: [scopes.pc.read] }],
-  summary: "Get Part Categories (API Key)",
-  request: {
-    query: zod.object({
-      material: zod.string().optional(),
-      thickness: zod.number().optional()
-    })
-  },
-  responses: {
-    200: {
-      description: "This endpoint returns the part categories from the api key's team",
-      content: {
-        "application/json": {
-          schema: zod.array(PartCategory)
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError
-  }
-});
-
-registry.registerPath({
-  method: "post",
-  path: "/api/teams/{id}/pc",
-  tags: ["Part Categories"],
-  summary: "Create Part Category (User)",
+  summary: "Create Part Category",
   description: "This endpoint requires the user's email to be verified",
-  security: [{ [userSession.name]: [] }],
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
-    body: {
-      content: {
-        "application/json": {
-          schema: CreateSchema
-        }
-      }
-    }
-  },
-  responses: {
-    201: {
-      description: "Returns the ID of the created part category",
-      content: {
-        "application/json": {
-          schema: zod.object({ id: zod.number() })
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict
-  }
-});
-
-registry.registerPath({
-  method: "post",
-  path: "/api/pc",
-  tags: ["Part Categories"],
-  summary: "Create Part Category (API Key)",
-  security: [{ [apiKey.name]: [scopes.pc.write] }],
   request: {
     body: {
       content: {
@@ -127,7 +67,7 @@ registry.registerPath({
     ...ValidationError,
     ...Conflict
   }
-});
+}, [scopes.pc.write]);
 
 registry.registerPath({
   method: "patch",

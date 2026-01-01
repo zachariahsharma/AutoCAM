@@ -4,7 +4,7 @@ import { apiKey, userSession } from "./auth";
 import { PartCategories } from "../db/schema/cam";
 import { scopeNames as scopes } from "../scopes";
 import zod from "zod";
-import { CommonAuthorization, ValidationError } from "./codes";
+import { CommonAuthorization, Conflict, ValidationError } from "./codes";
 import { parseJsonBody, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { and, eq } from "drizzle-orm";
@@ -94,7 +94,8 @@ registry.registerPath({
       }
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...Conflict
   }
 });
 
@@ -123,7 +124,8 @@ registry.registerPath({
       }
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...Conflict
   }
 });
 

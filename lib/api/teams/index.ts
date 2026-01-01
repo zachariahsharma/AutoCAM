@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { CommonAuthorization, ValidationError } from "../codes";
+import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../codes";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
@@ -69,7 +69,8 @@ registry.registerPath({
       }
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...Conflict
   }
 });
 
@@ -94,7 +95,8 @@ registry.registerPath({
       description: "Team updated successfully",
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...NotFound
   }
 });
 
@@ -111,7 +113,9 @@ registry.registerPath({
     204: {
       description: "Team deleted successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError,
+    ...NotFound
   }
 });
 
@@ -119,12 +123,12 @@ export const GET = routeFactory(async (req, authType, tx) => {
   if (authType.userId)
     return routeResponse(200, await parseJsonBody(await tx.query.Teams.findMany(), zod.array(Team)));
   const team = await tx.query.Teams.findFirst();
-  if (!team) return routeResponse(403);
+  if (!team) return routeResponse(403, { message: "API Key is not valid" });
   return routeResponse(200, await parseJsonBody(team, Team));
 });
 
 export const POST = routeFactory(async (req, authType, tx) => {
-  if (!authType.userId) return routeResponse(401);
+  if (!authType.userId) return routeResponse(401, { message: "User session not found" });
   const body = await parseJsonBody(await req.json(), CreateSchema);
   const [id] = await tx.insert(Teams).values({
     ...body,

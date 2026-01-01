@@ -3,10 +3,36 @@ import zod from "zod";
 
 export const CommonAuthorization: Record<string, ResponseConfig> = {
   401: {
-    description: "Unauthorized. Due to missing or invalid authentication"
+    description: "Unauthorized. Due to missing or invalid authentication",
+    content: {
+      "application/json": {
+        schema: zod.object({
+          message: zod.string()
+        })
+      }
+    }
   },
   403: {
-    description: "Forbidden. You do not have permission to access this resource or perform this action. This includes not having your email verified"
+    description: "Forbidden. You do not have permission to access this resource or perform this action. This includes not having your email verified",
+    content: {
+      "application/json": {
+        schema: zod.object({
+          message: zod.string()
+        })
+      }
+    }
+  }
+};
+
+export const NotFound: Record<string, ResponseConfig> = {
+  404: {
+    description: "Not Found. The requested resource was not found."
+  }
+}
+
+export const Conflict: Record<string, ResponseConfig> = {
+  409: {
+    description: "There was a conflict with creating the requested resource."
   }
 };
 

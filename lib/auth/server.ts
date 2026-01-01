@@ -43,14 +43,13 @@ export async function getKeyDigest() {
   const token = authHeader.split("Bearer ")[1];
   return crypto.createHmac("sha256", "key").update(token).digest("hex");
 }
-export const APIKeyInvalidResponse = new NextResponse(null, { status: 401 });
 
 export async function teamIdFromDigest(tx: Transaction, authType: AuthType) {
-  if (!authType.keyDigest) throw routeResponse(401);
+  if (!authType.keyDigest) throw routeResponse(401, { message: "API key not found" });
   const teamId = (await tx.query.TeamKeys.findFirst({
     where: eq(TeamKeys.digest, authType.keyDigest)
   }))?.team_id;
-  if (!teamId) throw routeResponse(401);
+  if (!teamId) throw routeResponse(401, { message: "API key is not valid" });
   return teamId;
 }
 

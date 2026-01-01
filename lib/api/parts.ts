@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, ValidationError } from "./codes";
+import { CommonAuthorization, Conflict, ValidationError } from "./codes";
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { eq } from "drizzle-orm";
 
@@ -71,7 +71,8 @@ registry.registerPath({
       }
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...Conflict
   }
 });
 

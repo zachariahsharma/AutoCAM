@@ -13,8 +13,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
   if (!invite) return routeResponse(404);
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return routeResponse(401);
-  if (session.user.email !== invite.email) return routeResponse(403);
+  if (!session) return routeResponse(401, { message: "User session not found" });
+  if (session.user.email !== invite.email) return routeResponse(403, { message: "User email does not match invite email" });
 
   // User is now authorized to join the team
   await db.transaction(async tx => {

@@ -5,12 +5,13 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, ValidationError } from "../codes";
-
-import "./invites";
-import "./keys";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
+
+import "./invites";
+import "./keys";
+import "./members";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true });
 const UpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });

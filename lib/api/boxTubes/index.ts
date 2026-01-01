@@ -15,7 +15,7 @@ const CreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: tr
 const UpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
 const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).meta({ id: "Box Tube" });
 
-registerTeamEndpoint({
+registerTeamEndpoint([scopes.boxTubes.read], {
   method: "get",
   path: "/api/boxTubes",
   tags: ["Box Tubes"],
@@ -31,9 +31,9 @@ registerTeamEndpoint({
     },
     ...CommonAuthorization
   }
-}, [scopes.boxTubes.read]);
+});
 
-registerTeamEndpoint({
+registerTeamEndpoint([scopes.boxTubes.write], {
   method: "post",
   path: "/api/boxTubes",
   tags: ["Box Tubes"],
@@ -64,7 +64,7 @@ registerTeamEndpoint({
     ...ValidationError,
     ...Conflict
   }
-}, [scopes.boxTubes.write]);
+});
 
 registry.registerPath({
   method: "patch",

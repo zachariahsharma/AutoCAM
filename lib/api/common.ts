@@ -56,12 +56,13 @@ export const ValidationError: Record<string, ResponseConfig> = {
 /**
  * Register an endpoint that has two variants: /api/... and /api/teams/:id/...
  */
-export function registerTeamEndpoint(config: RouteConfig, scopes: string[]) {
+export function registerTeamEndpoint(scopes: string[], config: RouteConfig, userOverride?: object, apiKeyOverride?: object) {
   // API Key variant - this one is easier
   registry.registerPath({
     ...config,
     summary: config.summary ? config.summary + " (API Key)" : config.summary,
     security: [{ [apiKey.name]: scopes }],
+    ...apiKeyOverride
   });
 
   let params: ZodObject = zod.object({ id: zod.number().meta({ description: "ID of the team" }) });
@@ -81,6 +82,7 @@ export function registerTeamEndpoint(config: RouteConfig, scopes: string[]) {
     responses: {
       ...config.responses,
       ...ValidationError
-    }
+    },
+    ...userOverride
   })
 }

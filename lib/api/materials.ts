@@ -13,7 +13,7 @@ const CreateSchema = createInsertSchema(Materials).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(Materials).omit({ team_id: true });
 const Material = createSelectSchema(Materials).omit({ team_id: true }).meta({ id: "Material" })
 
-registerTeamEndpoint({
+registerTeamEndpoint([scopes.materials.read], {
   method: "get",
   path: "/api/materials",
   tags: ["Materials"],
@@ -32,9 +32,9 @@ registerTeamEndpoint({
     },
     ...CommonAuthorization,
   }
-}, [scopes.materials.read]);
+});
 
-registerTeamEndpoint({
+registerTeamEndpoint([scopes.materials.write], {
   method: "post",
   path: "/api/materials",
   tags: ["Materials"],
@@ -65,7 +65,7 @@ registerTeamEndpoint({
     ...ValidationError,
     ...Conflict
   }
-}, [scopes.materials.write]);
+});
 
 registry.registerPath({
   method: "patch",

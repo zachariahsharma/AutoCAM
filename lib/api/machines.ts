@@ -10,7 +10,7 @@ const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: tr
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
 const Machine = createSelectSchema(Machines).omit({ team_id: true, file: true }).meta({ id: "Machine" })
 
-registerTeamEndpoint({
+registerTeamEndpoint([scopes.machines.read], {
   method: "get",
   path: "/api/machines",
   tags: ["Machines"],
@@ -26,9 +26,9 @@ registerTeamEndpoint({
     },
     ...CommonAuthorization
   }
-}, [scopes.machines.read]);
+});
 
-registerTeamEndpoint({
+registerTeamEndpoint([scopes.machines.write], {
   method: "post",
   path: "/api/machines",
   tags: ["Machines"],
@@ -59,7 +59,7 @@ registerTeamEndpoint({
     ...ValidationError,
     ...Conflict
   }
-}, [scopes.machines.write]);
+});
 
 registry.registerPath({
   method: "patch",

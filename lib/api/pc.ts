@@ -17,7 +17,7 @@ const SearchParams = zod.object({
   thickness: zod.coerce.number().positive().optional()
 });
 
-registerTeamEndpoint({
+registerTeamEndpoint([scopes.pc.read], {
   method: "get",
   path: "/api/pc",
   tags: ["Part Categories"],
@@ -37,9 +37,9 @@ registerTeamEndpoint({
     ...CommonAuthorization,
     ...ValidationError
   }
-}, [scopes.pc.read]);
+});
 
-registerTeamEndpoint({
+registerTeamEndpoint([scopes.pc.write], {
   method: "post",
   path: "/api/pc",
   tags: ["Part Categories"],
@@ -67,7 +67,7 @@ registerTeamEndpoint({
     ...ValidationError,
     ...Conflict
   }
-}, [scopes.pc.write]);
+});
 
 registry.registerPath({
   method: "patch",

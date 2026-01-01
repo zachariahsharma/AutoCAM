@@ -5,10 +5,12 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, ValidationError } from "./codes";
+import { parseJsonBody, routeFactory, routeResponse } from ".";
+import { eq } from "drizzle-orm";
 
-export const PlatesCreateSchema = createInsertSchema(Plates).omit({ category_id: true });
-export const PlatesUpdateSchema = createUpdateSchema(Plates).omit({ category_id: true });
-export const Plate = createSelectSchema(Plates).omit({ category_id: true }).meta({ id: "Plate" });
+const CreateSchema = createInsertSchema(Plates).omit({ category_id: true });
+const UpdateSchema = createUpdateSchema(Plates).omit({ category_id: true });
+const Plate = createSelectSchema(Plates).omit({ category_id: true }).meta({ id: "Plate" });
 
 registry.registerPath({
   method: "get",
@@ -51,7 +53,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: PlatesCreateSchema
+          schema: CreateSchema
         }
       }
     }
@@ -85,7 +87,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: PlatesUpdateSchema
+          schema: UpdateSchema
         }
       }
     }
@@ -119,4 +121,29 @@ registry.registerPath({
     ...CommonAuthorization,
     ...ValidationError
   }
+});
+
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return routeResponse(200, await parseJsonBody(await tx.query.Plates.findMany({
+    where: eq(Plates.category_id, id)
+  }), zod.array(Plate)));
+});
+
+export const POST = routeFactory(async (req, authType, tx, category_id) => {
+  if (!category_id) return routeResponse(422);
+  const data = await parseJsonBody(await req.json(), CreateSchema);
+  const [id] = await tx.insert(Plates).values({ ...data, category_id }).returning({ id: Plates.id });
+  return routeResponse(201, id);
+}, { emailVerifiedNeeded: true });
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  return await tx.update(Plates).set(body).where(eq(Plates.id, id)).returning({ id: Plates.id });
+}, { emailVerifiedNeeded: true });
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return await tx.delete(Plates).where(eq(Plates.id, id)).returning({ id: Plates.id });
 });

@@ -2,10 +2,10 @@ import { Plates } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { apiKey, userSession } from "./auth";
-import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, ValidationError } from "./codes";
-import { parseJsonBody, routeFactory, routeResponse } from ".";
+import { apiKey, userSession } from "../auth";
+import { scopeNames as scopes } from "../../scopes";
+import { CommonAuthorization, ValidationError } from "../codes";
+import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(Plates).omit({ category_id: true });

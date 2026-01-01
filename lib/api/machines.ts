@@ -6,8 +6,8 @@ import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, ValidationError } from "./codes";
 
-export const MachinesCreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
-export const MachinesUpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
+const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
+const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
 const Machine = createSelectSchema(Machines).omit({ team_id: true, file: true }).meta({ id: "Machine" })
 
 registry.registerPath({
@@ -65,7 +65,7 @@ registry.registerPath({
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: MachinesCreateSchema.meta({ description: "Machine info as stringified JSON" }),
+            data: CreateSchema.meta({ description: "Machine info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Machine file upload" })
           })
         }
@@ -98,7 +98,7 @@ registry.registerPath({
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: MachinesCreateSchema.meta({ description: "Machine info as stringified JSON" }),
+            data: CreateSchema.meta({ description: "Machine info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Machine file upload" })
           })
         }
@@ -133,7 +133,7 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: MachinesUpdateSchema
+          schema: UpdateSchema
         }
       }
     }

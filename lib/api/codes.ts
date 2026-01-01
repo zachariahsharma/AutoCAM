@@ -10,6 +10,12 @@ export const CommonAuthorization: Record<string, ResponseConfig> = {
   }
 };
 
+export const NotFound: Record<string, ResponseConfig> = {
+  404: {
+    description: "Not Found. The requested resource was not found."
+  }
+}
+
 const ValidationIssue = zod.object({
   code: zod.string(),
   message: zod.string(),

@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { CommonAuthorization, ValidationError } from "../codes";
+import { CommonAuthorization, NotFound, ValidationError } from "../codes";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
@@ -94,7 +94,8 @@ registry.registerPath({
       description: "Team updated successfully",
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...NotFound
   }
 });
 
@@ -111,7 +112,9 @@ registry.registerPath({
     204: {
       description: "Team deleted successfully",
     },
-    ...CommonAuthorization
+    ...CommonAuthorization,
+    ...ValidationError,
+    ...NotFound
   }
 });
 

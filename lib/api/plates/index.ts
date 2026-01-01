@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { CommonAuthorization, ValidationError } from "../codes";
+import { CommonAuthorization, NotFound, ValidationError } from "../codes";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 
@@ -97,7 +97,8 @@ registry.registerPath({
       description: "Plate updated successfully",
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...NotFound
   }
 });
 
@@ -119,7 +120,8 @@ registry.registerPath({
       description: "Plate deleted successfully",
     },
     ...CommonAuthorization,
-    ...ValidationError
+    ...ValidationError,
+    ...NotFound
   }
 });
 

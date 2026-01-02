@@ -1,0 +1,110 @@
+#noboxes {
+    text-align: center;
+    display: flex;
+    width:calc(100vw - 300px);
+    height:100vh;
+    position: absolute;
+    top:0px;
+    left: 300px;
+    z-index: 1;
+    justify-content: center;
+    align-items: center;
+    color:#949393;
+}
+
+
+.boxtubeslist {
+  /* background-color: blue; */
+  /* width:100vw; */
+  position: absolute;
+  left: 300px;
+  width: calc(100vw - 300px);
+  height: calc(100vh - 100px);
+  padding:20px;
+  display:flex;
+  flex-wrap: wrap;
+  gap:15px;
+  /* justify-content: space-between; */
+
+}
+
+.boxtubecard {
+  /* max-width: 500px; */
+  flex: 1 0 21%;
+  min-width: 320px;
+  background-color: black;
+  height:300px;
+  position: relative;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.31);
+  transition: all .1s;
+}
+
+.boxtubecard:hover {
+  box-shadow:rgba(255,255,255,.2) 0px 0px 3px 3px;
+}
+
+#boxtubecardheader {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap:10px;
+  padding:0px 18%;
+  margin-top:10px;
+  font-family: var(--font-roboto);
+  color:white;
+  font-size:25px;
+  font-weight:500;
+  letter-spacing: 1px;
+}
+
+#boxtubecardinfo {
+  display: flex;
+  padding: 0px 18%;
+  justify-content: space-between;
+  font-family: var(--font-zalando);
+  color:#949393;
+}
+
+#boxtubecardunique {
+  text-align: right;
+}
+#partcardheaderthickness {
+  text-align: right;
+}
+#boxtubecardinfo > p {
+  margin-bottom:10px;
+}
+
+#horizontalrule {
+  opacity: 1;
+  border-width: 1px;
+  border-image-slice: 1;
+  border-image-source: linear-gradient(90deg, #D0C9B1, #6A675A);
+  z-index: 10;
+  margin-left: 10%;
+  margin-right:10%;
+  margin-top:0px;
+}
+
+#boxtubecardpartstable {
+  color:#BCBCBC;
+  margin:0 10%;
+  width: 80%;
+}
+
+#boxtubecardpartstable > tbody > tr {
+  display: flex;
+  width:100%;
+  justify-content: space-between;
+}
+
+#openiconcontainer {
+  position:absolute;
+  bottom:8px;
+  right:8px;
+}
+#openicon { 
+  width:15px;
+  height:15px;
+}

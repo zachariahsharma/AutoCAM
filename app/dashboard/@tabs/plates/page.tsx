@@ -1,10 +1,12 @@
+"use client";
+
 import { motion } from "framer-motion";
 import styles from "./partcat.module.css";
 import { PartCategory, Team } from "@/app/types";
 import { redirect, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useDashboardEvents } from "../dashboardTeam";
+import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
 function countUniquePartsByEpicArray(category: PartCategory) {
   const map = category.parts!.reduce<Map<string, number>>((acc, part) => {
     acc.set(part.epic, (acc.get(part.epic) ?? 0) + 1);
@@ -107,7 +109,7 @@ async function fetchPartCategories({
   }
 }
 
-export function PartCatList() {
+export default function Plates() {
   const { team } = useDashboardEvents();
   const [partcats, setCategories] = useState<PartCategory[]>([]);
   useEffect(() => {

@@ -1,0 +1,188 @@
+.sidebar { 
+  width: 300px;
+  background-color: #0A0A0A;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding-top: 20px;
+  border-radius: 0px 20px 20px 0px;
+}
+.Hamburgericon {
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+.logoicon {
+  width: 40px;
+  height: auto;
+}
+.topSidebar {
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.logoText {
+  font-size: 30px;
+  font-family: var(--font-zalando);
+}
+#teamdropdown {
+  height: 40px;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  background-color: white;
+  border-radius: 5px;
+  background-color: black;
+  border: 1px solid #4F4F4F;
+  color: #A1A1A1;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  transition: background-color 0.2s ease;
+}
+
+#teamdropdown:hover {
+  cursor: pointer;
+  background-color: rgba(255,255,255,0.1);
+}
+
+#teamdropdown > span {
+  font-family: var(--font-roboto);
+  font-size: 16px;
+  font-weight: 200;
+  width: calc(100% - 25px);
+  overflow: hidden;
+}
+.teamdropdownIcon {
+  height: 12px;
+  width: 12px;
+  position: absolute;
+  right: 10px;
+}
+
+#teamdropdownMenu {
+  position: absolute;
+  top: 80px;
+  left: 300px;
+  width: 175px;
+  background-color: black;
+  border: 1px solid #4F4F4F;
+  border-radius: 5px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  color: #A1A1A1;
+  font-family: var(--font-roboto);
+  font-size: 16px;
+  font-weight: 200;
+  padding: 5px 0px;
+}
+.teamdropdownItem {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+
+.teamdropdownItem:hover {
+  background-color: rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+
+.sidebaricon {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+}
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  padding: 5px 20px;margin: 5px 0px;margin-bottom: 10px;
+  cursor: pointer;
+  color:#B3B3B3;
+  margin-left: 30px;
+  font-weight: 600;
+  transition: all .2s;
+  width: calc(100% - 40px);
+}
+#sidebarDivider {
+  border-color: #656565;
+  opacity: 1;
+  width: 90%;
+  margin: 10px auto;
+  margin-bottom: 20px;
+}
+.sidebarItems {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: calc(100% - 190px);
+}
+
+.sidebarItem:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+#logout {
+  color: #A50303;
+}
+.sidebarSelected {
+  position: absolute;
+  top: -40px;
+  z-index: -1;
+  width: calc(100% - 40px);
+  height: 40px;
+}
+.selectedYellow {
+  position: absolute;
+  left: 10px;
+  width: 12px;
+  height: 100%;
+  background-color: var(--yellow-1);
+  border-radius: 4px;
+}
+.selectedHighlight {
+  position: absolute;
+  left: 30px;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+#profileicon {
+  width: 40px;
+  height: 40px;
+}
+#profileContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 90%;
+  background-color: #191919;
+  border-radius: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  height: 50px;
+}
+#profileinfo {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-roboto);
+}
+#username {
+  font-size: 14px;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+#email {
+  font-size: 12px;
+  font-weight: 500;
+  color: #8C8C8C;
+}

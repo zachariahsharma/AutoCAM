@@ -1,2 +1,1 @@
-import { Accept } from "@/lib/api/user/invites";
-export const GET = Accept.GET;
+export { Accept as GET } from "@/lib/api/user/invites";

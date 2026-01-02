@@ -12,8 +12,10 @@ import { user } from "@/lib/db/schema/auth";
 import "./invites";
 import "./keys";
 import "./members";
+import { client } from "@/lib/aws";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
-const CreateSchema = createInsertSchema(Teams).omit({ owner: true });
+const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });
 const UpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
 const Team = createSelectSchema(Teams).openapi("Team", { description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
@@ -152,7 +154,15 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
       return newOwner.id;
     })
   }));
-  return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  await client.send(new PutObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${id}/logo`,
+    Body: ""
+  }));
+  return tx.update(Teams).set({
+    ...body,
+    logo: undefined
+  }).where(eq(Teams.id, id)).returning({ id: Teams.id });
 }, { emailVerifiedNeeded: true });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

@@ -8,7 +8,8 @@ import { scopeNames as scopes } from "../../scopes";
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  owner: text().notNull().references(() => user.id)
+  owner: text().notNull().references(() => user.id),
+  logo: text()
 }, table => [
   pgPolicy('teams_query_key', { for: 'select', using: KeyAuthorized(table.id, scopes.teams.read) }),
   pgPolicy('teams_query_user', { for: 'select', using: sql`${UserInTeam(table.id)} OR owner = ${UserId()}` }),

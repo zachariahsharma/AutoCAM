@@ -4,24 +4,20 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, Conflict, ValidationError } from "./codes";
+import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
 import { parseJsonBody, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(Materials).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(Materials).omit({ team_id: true });
-const Material = createSelectSchema(Materials).omit({ team_id: true }).meta({ id: "Material" })
+const Material = createSelectSchema(Materials).omit({ team_id: true }).openapi("Material")
 
-registry.registerPath({
+registerTeamEndpoint([scopes.materials.read], {
   method: "get",
-  path: "/api/teams/{id}/materials",
+  path: "/api/materials",
   tags: ["Materials"],
-  security: [{ [userSession.name]: [] }],
-  summary: "Get Materials (User)",
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
-  },
+  summary: "Get Materials",
   responses: {
     200: {
       description: "This endpoint returns the materials from the given team",
@@ -32,77 +28,21 @@ registry.registerPath({
       }
     },
     ...CommonAuthorization,
-    ...ValidationError
   }
 });
 
-registry.registerPath({
-  method: "get",
+registerTeamEndpoint([scopes.materials.write], {
+  method: "post",
   path: "/api/materials",
   tags: ["Materials"],
-  security: [{ [apiKey.name]: [scopes.materials.read] }],
-  summary: "Get Materials (API Key)",
-  responses: {
-    200: {
-      description: "This endpoint returns the part categories from the api key's team",
-      content: {
-        "application/json": {
-          schema: zod.array(Material)
-        }
-      }
-    },
-    ...CommonAuthorization
-  }
-});
-
-registry.registerPath({
-  method: "post",
-  path: "/api/teams/{id}/materials",
-  tags: ["Materials"],
-  summary: "Create Material (User)",
+  summary: "Create Material",
   description: "This endpoint requires the user's email to be verified",
-  security: [{ [userSession.name]: [] }],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
     body: {
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: CreateSchema.meta({ description: "Material info as stringified JSON" }),
-            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Material file upload" })
-          })
-        }
-      }
-    }
-  },
-  responses: {
-    201: {
-      description: "Returns the ID of the created material",
-      content: {
-        "application/json": {
-          schema: zod.object({ id: zod.number() })
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict
-  }
-});
-
-registry.registerPath({
-  method: "post",
-  path: "/api/materials",
-  tags: ["Materials"],
-  summary: "Create Material (API Key)",
-  security: [{ [apiKey.name]: [scopes.materials.write] }],
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
-    body: {
-      content: {
-        "multipart/form-data": {
-          schema: zod.object({
-            data: CreateSchema.meta({ description: "Material info as stringified JSON" }),
+            data: CreateSchema.openapi({ description: "Material info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Material file upload" })
           })
         }
@@ -134,7 +74,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.materials.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the material" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the material" }) }),
     body: {
       content: {
         "application/json": {
@@ -162,7 +102,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.materials.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the material" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the material" }) }),
   },
   responses: {
     204: {

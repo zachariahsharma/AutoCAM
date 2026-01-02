@@ -3,9 +3,95 @@ import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
+import { registry } from "@/lib/openapi/registry";
+import { apiKey, userSession } from "../auth";
+import { scopeNames as scopes } from "@/lib/scopes";
+import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 
 const CreateSchema = createInsertSchema(PlateJobs).omit({ plate_id: true, cam: true, screenshot: true });
-const Job = createSelectSchema(PlateJobs).omit({ machine_id: true, plate_id: true, tool_id: true })
+const Job = createSelectSchema(PlateJobs).omit({ machine_id: true, plate_id: true, tool_id: true }).openapi("Plate Job")
+
+registry.registerPath({
+  method: "get",
+  path: "/api/plates/{id}/jobs",
+  tags: ["Plate Jobs"],
+  summary: "Get Plate Jobs",
+  security: [
+    { [userSession.name]: [] },
+    { [apiKey.name]: [scopes.plates.jobs.read] }
+  ],
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "Plate ID" }) })
+  },
+  responses: {
+    200: {
+      description: "This endpoint returns the plate jobs for a given plate",
+      content: {
+        "application/json": {
+          schema: zod.array(Job)
+        }
+      }
+    },
+    ...CommonAuthorization,
+    ...ValidationError
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/plates/{id}/jobs",
+  tags: ["Plate Jobs"],
+  summary: "Create Plate Job",
+  security: [
+    { [userSession.name]: [] },
+    { [apiKey.name]: [scopes.plates.jobs.write] }
+  ],
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "Plate ID" }) }),
+    body: {
+      content: {
+        "application/json": {
+          schema: CreateSchema
+        }
+      }
+    }
+  },
+  responses: {
+    201: {
+      description: "Returns the ID of the created plate job",
+      content: {
+        "application/json": {
+          schema: zod.object({ id: zod.number() })
+        }
+      }
+    },
+    ...CommonAuthorization,
+    ...ValidationError,
+    ...Conflict
+  }
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/plates/jobs/{id}",
+  tags: ["Plate Jobs"],
+  summary: "Delete Plate Job",
+  security: [
+    { [userSession.name]: [] },
+    { [apiKey.name]: [scopes.plates.jobs.write] }
+  ],
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "Plate job ID" }) }),
+  },
+  responses: {
+    204: {
+      description: "Plate job deleted successfully",
+    },
+    ...CommonAuthorization,
+    ...ValidationError,
+    ...NotFound
+  }
+})
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);

@@ -1,52 +1,28 @@
+import "./jobs";
+
 import { BoxTubes } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../codes";
+import { CommonAuthorization, Conflict, NotFound, registerTeamEndpoint, ValidationError } from "../common";
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
 import { teamIdFromDigest } from "../../auth/server";
 import { eq } from "drizzle-orm";
 
-import "./jobs";
-
 const CreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
 const UpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
-const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).meta({ id: "Box Tube" });
+const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).openapi("Box Tube");
 
-registry.registerPath({
-  method: "get",
-  path: "/api/teams/{id}/boxTubes",
-  tags: ["Box Tubes"],
-  security: [{ [userSession.name]: [] }],
-  summary: "Get Box Tubes (User)",
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
-  },
-  responses: {
-    200: {
-      description: "This endpoint returns the box tubes from the given team",
-      content: {
-        "application/json": {
-          schema: zod.array(BoxTube)
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError
-  }
-});
-
-registry.registerPath({
+registerTeamEndpoint([scopes.boxTubes.read], {
   method: "get",
   path: "/api/boxTubes",
   tags: ["Box Tubes"],
-  security: [{ [apiKey.name]: [scopes.boxTubes.read] }],
-  summary: "Get Box Tubes (API Key)",
+  summary: "Get Box Tubes",
   responses: {
     200: {
-      description: "This endpoint returns the box tubes from the API Key's team",
+      description: "This endpoint retunrs the box tubes from the team",
       content: {
         "application/json": {
           schema: zod.array(BoxTube)
@@ -57,53 +33,18 @@ registry.registerPath({
   }
 });
 
-registry.registerPath({
-  method: "post",
-  path: "/api/teams/{id}/boxTubes",
-  tags: ["Box Tubes"],
-  summary: "Create Box Tube (User)",
-  description: "This endpoint requires the user's email to be verified",
-  security: [{ [userSession.name]: [] }],
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
-    body: {
-      content: {
-        "multipart/form-data": {
-          schema: zod.object({
-            data: CreateSchema.meta({ description: "Box tube info as stringified JSON" }),
-            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Box tube file upload" })
-          }),
-        }
-      }
-    }
-  },
-  responses: {
-    201: {
-      description: "Returns the ID of the created box tube",
-      content: {
-        "application/json": {
-          schema: zod.object({ id: zod.number() })
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict,
-  }
-});
-
-registry.registerPath({
+registerTeamEndpoint([scopes.boxTubes.write], {
   method: "post",
   path: "/api/boxTubes",
   tags: ["Box Tubes"],
-  summary: "Create Box Tube (API Key)",
-  security: [{ [apiKey.name]: [scopes.boxTubes.write] }],
+  summary: "Create Box Tube",
+  description: "This endpoint requires the user's email to be verified",
   request: {
     body: {
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: CreateSchema.meta({ description: "Box tube info as stringified JSON" }),
+            data: CreateSchema.openapi({ description: "Box tube info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Box tube file upload" })
           }),
         }
@@ -121,7 +62,7 @@ registry.registerPath({
     },
     ...CommonAuthorization,
     ...ValidationError,
-    ...Conflict,
+    ...Conflict
   }
 });
 
@@ -136,7 +77,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.boxTubes.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the box tube" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the box tube" }) }),
     body: {
       content: {
         "application/json": {
@@ -166,7 +107,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.boxTubes.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the box tube" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the box tube" }) }),
   },
   responses: {
     204: {

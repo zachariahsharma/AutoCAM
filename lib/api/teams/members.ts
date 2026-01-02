@@ -2,22 +2,17 @@ import { teamIdFromDigest } from "@/lib/auth/server";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { TeamMembers } from "@/lib/db/schema/entities";
 import { eq } from "drizzle-orm";
-import { registry } from "@/lib/openapi/registry";
 import zod from "zod";
-import { CommonAuthorization, ValidationError } from "../codes";
-import { apiKey, userSession } from "../auth";
+import { CommonAuthorization, registerTeamEndpoint, ValidationError } from "../common";
+import { scopeNames as scopes } from "@/lib/scopes";
 
 const Member = zod.object({ user: zod.email(), admin: zod.boolean() });
 
-registry.registerPath({
+registerTeamEndpoint([scopes.teams.read], {
   method: "get",
-  path: "/api/teams/{id}/members",
+  path: "/api/members",
   tags: ["Teams"],
-  summary: "Get Team Members (User)",
-  security: [{ [userSession.name]: [] }],
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
-  },
+  summary: "Get Team Members",
   responses: {
     200: {
       description: "Returns the members of the team",
@@ -27,29 +22,9 @@ registry.registerPath({
         }
       }
     },
-    ...CommonAuthorization,
-    ...ValidationError
+    ...CommonAuthorization
   }
-});
-
-registry.registerPath({
-  method: "get",
-  path: "/api/teams/members",
-  tags: ["Teams"],
-  summary: "Get Team Members (API Key)",
-  security: [{ [apiKey.name]: [] }],
-  responses: {
-    200: {
-      description: "Returns the members of the team that the key corresponds to.",
-      content: {
-        "application/json": {
-          schema: zod.array(Member)
-        }
-      }
-    },
-    ...CommonAuthorization,
-  }
-});
+}, {}, { path: "/api/teams/members" });
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);

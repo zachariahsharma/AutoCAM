@@ -1,9 +1,7 @@
 import { TeamInvites, Teams } from "@/lib/db/schema/entities";
-import { registry } from "@/lib/openapi/registry";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
-import { CommonAuthorization, Conflict, ValidationError } from "../codes";
-import { apiKey, userSession } from "../auth";
+import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { teamIdFromDigest } from "@/lib/auth/server";
@@ -11,37 +9,13 @@ import { eq } from "drizzle-orm";
 import mailer from "@/lib/mailer";
 
 const CreateSchema = createInsertSchema(TeamInvites).omit({ team_id: true, id: true });
-const Invite = createSelectSchema(TeamInvites).omit({ team_id: true, id: true }).meta({ id: "Team Invite" });
+const Invite = createSelectSchema(TeamInvites).omit({ team_id: true, id: true }).openapi("Team Invite");
 
-registry.registerPath({
+registerTeamEndpoint([scopes.teams.invites.read], {
   method: "get",
-  path: "/api/teams/{id}/invites",
+  path: "/api/invites",
   tags: ["Team Invites"],
-  summary: "Get Team Invites (User)",
-  security: [{ [userSession.name]: [] }],
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
-  },
-  responses: {
-    200: {
-      description: "Returns the pending team invites",
-      content: {
-        "application/json": {
-          schema: zod.array(Invite)
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError
-  }
-});
-
-registry.registerPath({
-  method: "get",
-  path: "/api/teams/invites",
-  tags: ["Team Invites"],
-  summary: "Get Team Invites (API Key)",
-  security: [{ [apiKey.name]: [scopes.teams.invites.read] }],
+  summary: "Get Team Invites",
   responses: {
     200: {
       description: "Returns the pending team invites",
@@ -53,17 +27,13 @@ registry.registerPath({
     },
     ...CommonAuthorization,
   }
-});
+}, {}, { path: "/api/teams/invites" });
 
-registry.registerPath({
+registerTeamEndpoint([scopes.teams.invites.send], {
   method: "post",
-  path: "/api/teams/{id}/invites",
+  path: "/api/invites",
   tags: ["Team Invites"],
-  summary: "Send Team Invite (User)",
-  security: [{ [userSession.name]: [] }],
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
-  },
+  summary: "Send Team Invite",
   responses: {
     204: {
       description: "Team invite sent successfully"
@@ -72,23 +42,7 @@ registry.registerPath({
     ...ValidationError,
     ...Conflict
   }
-});
-
-registry.registerPath({
-  method: "post",
-  path: "/api/teams/invites",
-  tags: ["Team Invites"],
-  summary: "Send Team Invite (API Key)",
-  security: [{ [apiKey.name]: [scopes.teams.invites.send] }],
-  responses: {
-    204: {
-      description: "Team invite sent successfully"
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict,
-  }
-});
+}, {}, { path: "/api/teams/invites" });
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);

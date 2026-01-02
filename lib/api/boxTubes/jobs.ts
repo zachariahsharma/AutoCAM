@@ -58,7 +58,7 @@ registry.registerPath({
   },
   responses: {
     201: {
-      description: "Returns the ID of the created box tube",
+      description: "Returns the ID of the created box tube job",
       content: {
         "application/json": {
           schema: zod.object({ id: zod.number() })

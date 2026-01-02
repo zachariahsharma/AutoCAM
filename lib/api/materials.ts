@@ -18,9 +18,6 @@ registerTeamEndpoint([scopes.materials.read], {
   path: "/api/materials",
   tags: ["Materials"],
   summary: "Get Materials",
-  request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
-  },
   responses: {
     200: {
       description: "This endpoint returns the materials from the given team",

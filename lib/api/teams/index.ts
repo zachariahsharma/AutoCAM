@@ -15,7 +15,7 @@ import "./members";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true });
 const UpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
-const Team = createSelectSchema(Teams).meta({ id: "Team", description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
+const Team = createSelectSchema(Teams).openapi("Team", { description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
 // OpenAPI route definitions
 registry.registerPath({
@@ -81,7 +81,7 @@ registry.registerPath({
   summary: "Update Team",
   description: "This endpoint requires the user's email to be verified",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team that is being updated" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the team that is being updated" }) }),
     body: {
       content: {
         "application/json": {
@@ -107,7 +107,7 @@ registry.registerPath({
   summary: "Delete Team",
   description: "This endpoint requires the user's email to be verified. The user must be the owner of the team",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team that is being deleted" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the team that is being deleted" }) }),
   },
   responses: {
     204: {

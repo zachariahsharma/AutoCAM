@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import mailer from "@/lib/mailer";
 
 const CreateSchema = createInsertSchema(TeamInvites).omit({ team_id: true, id: true });
-const Invite = createSelectSchema(TeamInvites).omit({ team_id: true, id: true }).meta({ id: "Team Invite" });
+const Invite = createSelectSchema(TeamInvites).omit({ team_id: true, id: true }).openapi("Team Invite");
 
 registerTeamEndpoint([scopes.teams.invites.read], {
   method: "get",

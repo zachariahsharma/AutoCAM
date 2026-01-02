@@ -12,7 +12,7 @@ import "./jobs";
 
 const CreateSchema = createInsertSchema(Plates).omit({ category_id: true });
 const UpdateSchema = createUpdateSchema(Plates).omit({ category_id: true });
-const Plate = createSelectSchema(Plates).omit({ category_id: true }).meta({ id: "Plate" });
+const Plate = createSelectSchema(Plates).omit({ category_id: true }).openapi("Plate");
 
 registry.registerPath({
   method: "get",
@@ -24,7 +24,7 @@ registry.registerPath({
   ],
   summary: "Get Plates",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the part category" }) })
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the part category" }) })
   },
   responses: {
     200: {
@@ -51,7 +51,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.plates.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the part category" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the part category" }) }),
     body: {
       content: {
         "application/json": {
@@ -86,7 +86,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.plates.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the plate" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the plate" }) }),
     body: {
       content: {
         "application/json": {
@@ -116,7 +116,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.plates.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the plate" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the plate" }) }),
   },
   responses: {
     204: {

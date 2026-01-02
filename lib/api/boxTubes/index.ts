@@ -13,7 +13,7 @@ import { eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
 const UpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
-const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).meta({ id: "Box Tube" });
+const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).openapi("Box Tube");
 
 registerTeamEndpoint([scopes.boxTubes.read], {
   method: "get",
@@ -44,7 +44,7 @@ registerTeamEndpoint([scopes.boxTubes.write], {
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: CreateSchema.meta({ description: "Box tube info as stringified JSON" }),
+            data: CreateSchema.openapi({ description: "Box tube info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Box tube file upload" })
           }),
         }
@@ -77,7 +77,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.boxTubes.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the box tube" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the box tube" }) }),
     body: {
       content: {
         "application/json": {
@@ -107,7 +107,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.boxTubes.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the box tube" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the box tube" }) }),
   },
   responses: {
     204: {

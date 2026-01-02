@@ -11,7 +11,7 @@ import { eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(Materials).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(Materials).omit({ team_id: true });
-const Material = createSelectSchema(Materials).omit({ team_id: true }).meta({ id: "Material" })
+const Material = createSelectSchema(Materials).omit({ team_id: true }).openapi("Material")
 
 registerTeamEndpoint([scopes.materials.read], {
   method: "get",
@@ -42,7 +42,7 @@ registerTeamEndpoint([scopes.materials.write], {
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: CreateSchema.meta({ description: "Material info as stringified JSON" }),
+            data: CreateSchema.openapi({ description: "Material info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Material file upload" })
           })
         }
@@ -74,7 +74,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.materials.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the material" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the material" }) }),
     body: {
       content: {
         "application/json": {
@@ -102,7 +102,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.materials.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the material" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the material" }) }),
   },
   responses: {
     204: {

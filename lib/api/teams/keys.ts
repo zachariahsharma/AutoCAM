@@ -11,7 +11,7 @@ import crypto from "crypto";
 
 const CreateSchema = createInsertSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum) }).omit({ team_id: true, digest: true });
 const UpdateSchema = createUpdateSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum).optional() }).omit({ team_id: true, digest: true });
-const Key = createSelectSchema(TeamKeys).omit({ team_id: true, digest: true }).meta({ id: "API Key" });
+const Key = createSelectSchema(TeamKeys).omit({ team_id: true, digest: true }).openapi("API Key");
 
 registry.registerPath({
   method: "get",
@@ -20,7 +20,7 @@ registry.registerPath({
   security: [{ [userSession.name]: [] }],
   summary: "Get API Keys",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) })
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the team" }) })
   },
   responses: {
     200: {
@@ -43,7 +43,7 @@ registry.registerPath({
   security: [{ [userSession.name]: [] }],
   summary: "Generate API Key",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the team" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the team" }) }),
     body: {
       content: {
         "application/json": {
@@ -74,7 +74,7 @@ registry.registerPath({
   security: [{ [userSession.name]: [] }],
   summary: "Update API Key",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the API key" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the API key" }) }),
     body: {
       content: {
         "application/json": {
@@ -100,7 +100,7 @@ registry.registerPath({
   security: [{ [userSession.name]: [] }],
   summary: "Delete API Key",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the API key" }) })
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the API key" }) })
   },
   responses: {
     204: {

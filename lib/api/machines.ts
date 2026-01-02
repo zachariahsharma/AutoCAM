@@ -8,7 +8,7 @@ import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } 
 
 const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
-const Machine = createSelectSchema(Machines).omit({ team_id: true, file: true }).meta({ id: "Machine" })
+const Machine = createSelectSchema(Machines).omit({ team_id: true, file: true }).openapi("Machine")
 
 registerTeamEndpoint([scopes.machines.read], {
   method: "get",
@@ -39,7 +39,7 @@ registerTeamEndpoint([scopes.machines.write], {
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: CreateSchema.meta({ description: "Machine info as stringified JSON" }),
+            data: CreateSchema.openapi({ description: "Machine info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Machine file upload" })
           })
         }
@@ -71,7 +71,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.machines.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the machine" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the machine" }) }),
     body: {
       content: {
         "application/json": {
@@ -99,7 +99,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.machines.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the machine" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the machine" }) }),
   },
   responses: {
     204: {

@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(Parts).omit({ file: true, category_id: true });
 const UpdateSchema = createUpdateSchema(Parts).omit({ file: true, category_id: true });
-const Part = createSelectSchema(Parts).omit({ file: true, category_id: true }).meta({ id: "Part" });
+const Part = createSelectSchema(Parts).omit({ file: true, category_id: true }).openapi("Part");
 
 registry.registerPath({
   method: "get",
@@ -22,7 +22,7 @@ registry.registerPath({
   ],
   summary: "Get Parts",
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the part category" }) })
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the part category" }) })
   },
   responses: {
     200: {
@@ -49,12 +49,12 @@ registry.registerPath({
     { [apiKey.name]: [scopes.parts.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the part category" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the part category" }) }),
     body: {
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: CreateSchema.meta({ description: "Part info as stringified JSON" }),
+            data: CreateSchema.openapi({ description: "Part info as stringified JSON" }),
             file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Part file upload" })
           })
         }
@@ -87,7 +87,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.parts.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the part" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the part" }) }),
     body: {
       content: {
         "application/json": {
@@ -116,7 +116,7 @@ registry.registerPath({
     { [apiKey.name]: [scopes.parts.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().meta({ description: "ID of the part" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the part" }) }),
   },
   responses: {
     204: {

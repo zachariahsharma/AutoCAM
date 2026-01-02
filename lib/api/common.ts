@@ -41,7 +41,7 @@ export const Conflict: Record<string, ResponseConfig> = {
 const ValidationIssue = zod.object({
   code: zod.string(),
   message: zod.string(),
-}).meta({ id: "Validation Issue" })
+}).openapi("Validation Issue")
 export const ValidationError: Record<string, ResponseConfig> = {
   422: {
     description: "Unprocessable Entity. Usually due to missing or invalid parameters.",
@@ -65,7 +65,7 @@ export function registerTeamEndpoint(scopes: string[], config: RouteConfig, user
     ...apiKeyOverride
   });
 
-  let params: ZodObject = zod.object({ id: zod.number().meta({ description: "ID of the team" }) });
+  let params: ZodObject = zod.object({ id: zod.number().openapi({ description: "ID of the team" }) });
   if (config.request?.params)
     params = (config.request.params as ZodObject).extend(params);
 

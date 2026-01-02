@@ -52,6 +52,7 @@ export const Parts = pgTable("parts", {
 
 export const Plates = pgTable("plates", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull(),
   width: doublePrecision().notNull(),
   length: doublePrecision().notNull(),
   true_depth: doublePrecision().notNull(),

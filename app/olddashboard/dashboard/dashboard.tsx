@@ -3,8 +3,8 @@ import styles from "./dashboard.module.css";
 
 import { Plate } from "@/app/types";
 import { Header } from "./header/header";
-import { PartCatList } from "@/app/dashboard/PartCatCards/PartCat";
-import { BoxTubes } from "@/app/dashboard/BoxTubes/BoxTubes";
+import { PartCatList } from "@/app/olddashboard/dashboard/PartCatCards/PartCat";
+import { BoxTubes } from "@/app/olddashboard/dashboard/BoxTubes/BoxTubes";
 import { useEffect, useState } from "react";
 import { FinishedCAM } from "./FinishedCAM/FinishedCAM";
 import Image from "next/image";
@@ -55,10 +55,9 @@ export default function DashboardPage({
 }: {
   finishedcam: Plate[];
 }) {
-
   const [boxtubeOpen, setBoxtubeOpen] = useState(false);
   const [finishedcamOpen, setFinishedcamOpen] = useState(false);
-  
+
   return (
     <div id={styles.dashboardpage}>
       <DashboardEventsProvider>
@@ -69,10 +68,7 @@ export default function DashboardPage({
           finishedcamOpen={finishedcamOpen}
         />
         <PartCatList />
-        <BoxTubes
-          boxtubeOpen={boxtubeOpen}
-          setBoxtubeOpen={setBoxtubeOpen}
-        />
+        <BoxTubes boxtubeOpen={boxtubeOpen} setBoxtubeOpen={setBoxtubeOpen} />
         <FinishedCAM
           finishedcam={finishedcam}
           finishedcamOpen={finishedcamOpen}

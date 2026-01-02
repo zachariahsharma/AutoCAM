@@ -1,5 +1,5 @@
 import DashboardPage from "./dashboard";
-import { BoxTube, Plate } from "../types";
+import { BoxTube, Plate } from "../../types";
 
 const plates: Plate[] = [
   {
@@ -35,9 +35,5 @@ const plates: Plate[] = [
 ];
 
 export default async function Dashboard() {
-  return (
-    <DashboardPage
-      finishedcam={plates}
-    />
-  );
+  return <DashboardPage finishedcam={plates} />;
 }

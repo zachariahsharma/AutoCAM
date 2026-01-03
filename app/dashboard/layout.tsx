@@ -286,7 +286,6 @@ function Sidebar() {
             className={styles.sidebarItem}
             onClick={async () => {
               await authClient.signOut();
-              const router = useRouter();
               router.push("/login");
             }}
           >

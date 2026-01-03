@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Team } from "../types";
+import { Team } from "@/app/types";
 import { useSelectedLayoutSegment } from "next/navigation";
 export function useCurrentTab() {
   const segment = useSelectedLayoutSegment("tabs");

@@ -174,6 +174,7 @@ export const PartsToPlates = pgTable("parts_to_plates", {
   part_id: integer().notNull().references(() => Parts.id, { onDelete: "cascade" }),
   quantity: integer().notNull()
 }, table => [
+  unique().on(table.plate_id, table.part_id),
   pgPolicy('parts_to_plates_insert', { for: 'insert', as: "restrictive", withCheck: CheckPartsPlatesTeam() }),
   pgPolicy('parts_to_plates_update', { for: 'update', as: "restrictive", using: CheckPartsPlatesTeam() }),
   pgPolicy('parts_to_plates_query_user', { for: 'select', using: UserInTeam(TeamFromPlate(table.plate_id)) }),

@@ -86,6 +86,12 @@ registry.registerPath({
     params: zod.object({ id: zod.number().openapi({ description: "ID of the team that is being updated" }) }),
     body: {
       content: {
+        "multipart/form-data": {
+          schema: zod.object({
+            data: UpdateSchema,
+            logo: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Logo upload" })
+          })
+        },
         "application/json": {
           schema: UpdateSchema
         }
@@ -146,14 +152,22 @@ export const POST = routeFactory(async (req, authType, tx) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  const body = await parseJsonBody(await req.json(), UpdateSchema.extend({
+  const schema = UpdateSchema.extend({
     owner: zod.email().optional().transform(async owner => {
       if (!owner) return;
       const newOwner = await tx.query.user.findFirst({ where: eq(user.email, owner) });
       if (!newOwner) throw routeResponse(404);
       return newOwner.id;
     })
-  }));
+  });
+  let body: zod.infer<typeof schema>;
+  try {
+    body = await parseJsonBody(await req.json(), schema);
+    return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  } catch (err) {
+    if (!(err instanceof SyntaxError)) throw err;
+  }
+  return;
   await client.send(new PutObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${id}/logo`,

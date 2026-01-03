@@ -1,12 +1,13 @@
+import './assignments';
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
-import { registry } from "../openapi/registry";
-import { apiKey, userSession } from "./auth";
-import { PartCategories } from "../db/schema/cam";
-import { scopeNames as scopes } from "../scopes";
+import { registry } from "../../openapi/registry";
+import { apiKey, userSession } from "../auth";
+import { PartCategories } from "../../db/schema/cam";
+import { scopeNames as scopes } from "../../scopes";
 import zod from "zod";
-import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
-import { parseJsonBody, routeFactory, routeResponse } from ".";
-import { teamIdFromDigest } from "../auth/server";
+import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "../common";
+import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { teamIdFromDigest } from "../../auth/server";
 import { and, eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });

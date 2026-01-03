@@ -57,7 +57,7 @@ export async function parseParamId(paramValue: string): Promise<number> {
   return result.data;
 }
 
-/**!==
+/**
  * Validate and parse request body against a Zod schema
  */
 export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {

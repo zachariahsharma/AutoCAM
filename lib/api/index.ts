@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod, { ZodType } from "zod";
 import { Transaction, withAuth } from "../db";
+import { paginateListObjectsV2, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
+import { client } from "../aws";
 
 import "./teams";
 import "./machines";
@@ -16,8 +18,7 @@ import "./boxTubes";
 import "./user";
 import "./auth";
 import "./tools";
-import { paginateListObjectsV2, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
-import { client } from "../aws";
+import "./jobs";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)

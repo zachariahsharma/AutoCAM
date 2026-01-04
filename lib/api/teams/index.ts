@@ -10,7 +10,7 @@ import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse, s3DeleteWithPrefix } from "..";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
 import { paginateListObjectsV2, PutObjectCommand, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
@@ -132,8 +132,25 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx) => {
-  if (authType.userId)
-    return routeResponse(200, await parseJsonBody(await tx.query.Teams.findMany(), zod.array(Team)));
+  if (authType.userId) {
+    // Get teams where the user is a member (not just invited)
+    const memberTeamIds = await tx.query.TeamMembers.findMany({
+      where: eq(TeamMembers.user_id, authType.userId),
+      columns: { team_id: true }
+    });
+    
+    const teamIds = memberTeamIds.map(m => m.team_id);
+    
+    if (teamIds.length === 0) {
+      return routeResponse(200, []);
+    }
+    
+    const teams = await tx.query.Teams.findMany({
+      where: sql`${Teams.id} IN (${sql.join(teamIds.map(id => sql`${id}`), sql`, `)})`
+    });
+    
+    return routeResponse(200, await parseJsonBody(teams, zod.array(Team)));
+  }
   const team = await tx.query.Teams.findFirst();
   if (!team) return routeResponse(403, { message: "API Key is not valid" });
   return routeResponse(200, await parseJsonBody(team, Team));

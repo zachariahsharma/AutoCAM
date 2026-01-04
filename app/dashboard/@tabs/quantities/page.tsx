@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import styles from "./quantities.module.css";
 import { Part, PartCategory } from "@/app/types";
 import { ChangeEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
 import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMarquee";
+import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 
 function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
   if (!part) return null;
@@ -67,20 +69,54 @@ function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
   );
 }
 
+function NoTeamCard() {
+  const router = useRouter();
+  return (
+    <div className={styles.noTeamContainer}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className={styles.noTeamCard}
+      >
+        <h2>No Team Found</h2>
+        <p>You need to be part of a team to adjust part quantities.</p>
+        <div className={styles.noTeamButtons}>
+          <PrimaryButton onClick={() => router.push("/dashboard/settings/newteam")}>
+            <span className="textGradient">Create a Team</span>
+          </PrimaryButton>
+          <SecondaryButton onClick={() => router.push("/dashboard/settings/jointeam")}>
+            <span className="textGradient">Join a Team</span>
+          </SecondaryButton>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function Quantitys() {
   const { team } = useDashboardEvents();
   const [parts, setParts] = useState<Part[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     let mounted = true;
     const loadQuantitys = async () => {
-      if (team === null) return;
+      if (team === null || team === undefined) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
       const response = await fetch(`/api/teams/${team.id}/pc`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
       });
-      if (!response.ok || !mounted) return;
+      if (!response.ok || !mounted) {
+        if (mounted) setIsLoading(false);
+        return;
+      }
 
       const partCategories: PartCategory[] = await response.json();
 
@@ -92,16 +128,29 @@ export default function Quantitys() {
         })
       );
 
-      setParts(partsByCategory.flat());
+      if (mounted) {
+        setParts(partsByCategory.flat());
+        setIsLoading(false);
+      }
     };
     loadQuantitys();
     return () => {
       mounted = false;
     };
   }, [team]);
+
+  // Show no team card if user has no team
+  if (!team && !isLoading) {
+    return <NoTeamCard />;
+  }
+
   return (
     <>
-      {parts.length === 0 ? (
+      {isLoading ? (
+        <div id={styles.loadingContainer}>
+          <span id={styles.loadingSpinner} />
+        </div>
+      ) : parts.length === 0 ? (
         <p id={styles.noboxes}>No Parts available.</p>
       ) : (
         <div className={styles.quantityslist}>

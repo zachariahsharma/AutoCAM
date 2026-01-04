@@ -17,7 +17,7 @@ import { Alert } from "@/app/signup/page";
 import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMarquee";
 
 const scopes = [
-  "team:read",
+  "teams:read",
   "teams:invites:read",
   "teams:invites:send",
   "teams:invites:cancel",

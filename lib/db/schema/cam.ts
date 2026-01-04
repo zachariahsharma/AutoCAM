@@ -37,7 +37,7 @@ export const Parts = pgTable("parts", {
   epic: text().notNull(),
   ticket: text().notNull(),
   quantity: integer().notNull(),
-  original_quantity: integer().notNull().$defaultFn((): SQL => sql`${Parts.quantity}`),
+  original_quantity: integer().notNull().default(1),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
   pgPolicy('parts_query_key', { for: "select", using: KeyAuthorized(TeamFromCategory(table.category_id), scopes.parts.read) }),

@@ -132,7 +132,8 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
-  const [id] = await tx.insert(BoxTubes).values({ ...data, file: files["file"], team_id }).returning({ id: BoxTubes.id });
+  const fileBuffer = await files["file"].arrayBuffer();
+  const [id] = await tx.insert(BoxTubes).values({ ...data, file: fileBuffer, team_id }).returning({ id: BoxTubes.id });
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true })
 

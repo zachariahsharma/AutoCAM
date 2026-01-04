@@ -8,10 +8,12 @@ import { apiKey, userSession } from "./auth";
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
+import { client } from "../aws";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const CreateSchema = createInsertSchema(Tools).omit({ file: true, team_id: true });
-const UpdateSchema = createUpdateSchema(Tools).omit({ file: true, team_id: true });
-const Tool = createSelectSchema(Tools).omit({ file: true, team_id: true }).openapi("Tool");
+const CreateSchema = createInsertSchema(Tools).omit({ team_id: true });
+const UpdateSchema = createUpdateSchema(Tools).omit({ team_id: true });
+const Tool = createSelectSchema(Tools).omit({ team_id: true }).openapi("Tool");
 
 registerTeamEndpoint([scopes.tools.read], {
   method: "get",
@@ -124,11 +126,14 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
-  const [id] = await tx.insert(Tools).values({
-    ...data,
-    file: files["file"],
-    team_id
-  }).returning({ id: Tools.id });
+  const [id] = await tx.insert(Tools).values({ ...data, team_id }).returning({ id: Tools.id });
+  await client.send(new PutObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${team_id}/tools/${id.id}`,
+    ACL: "private",
+    Body: await files["file"].bytes(),
+    ContentType: files["file"].type
+  }));
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });
 
@@ -140,5 +145,12 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(Tools).where(eq(Tools.id, id)).returning({ id: Tools.id });
+  const result = await tx.delete(Tools).where(eq(Tools.id, id)).returning({ team_id: Tools.team_id });
+  if (result.length === 0) return result;
+  const [{ team_id }] = result;
+  await client.send(new DeleteObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${team_id}/tools/${id}`
+  }));
+  return result;
 }, { emailVerifiedNeeded: true });

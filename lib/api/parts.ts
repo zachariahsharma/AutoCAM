@@ -140,11 +140,7 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
-  const [id] = await tx.insert(Parts).values({
-    ...data,
-    original_quantity: data.quantity,
-    category_id
-  }).returning({ id: Parts.id });
+  const [id] = await tx.insert(Parts).values({ ...data, category_id }).returning({ id: Parts.id });
   const { team_id } = (await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) }))!;
   await client.send(new PutObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,

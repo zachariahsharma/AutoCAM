@@ -15,6 +15,7 @@ import "./plates";
 import "./boxTubes";
 import "./user";
 import "./auth";
+import "./tools";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)

@@ -139,6 +139,7 @@ export const POST = routeFactory(async (req, authType, tx) => {
     team_id: id.id,
     admin: true
   });
+  return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {

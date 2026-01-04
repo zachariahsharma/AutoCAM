@@ -58,7 +58,9 @@ export default function TeamSettingsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
   const [adminCount, setAdminCount] = useState(0);
-  const [otherMembers, setOtherMembers] = useState<{ email: string; name: string; admin: boolean; isOwner: boolean }[]>([]);
+  const [otherMembers, setOtherMembers] = useState<
+    { email: string; name: string; admin: boolean; isOwner: boolean }[]
+  >([]);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -95,14 +97,21 @@ export default function TeamSettingsPage() {
       try {
         const response = await fetch(`/api/teams/${teamDbId}/members`);
         if (response.ok) {
-          const members: { email: string; name: string; admin: boolean; isOwner: boolean }[] = await response.json();
+          const members: {
+            email: string;
+            name: string;
+            admin: boolean;
+            isOwner: boolean;
+          }[] = await response.json();
           const admins = members.filter((m) => m.admin);
           setAdminCount(admins.length);
-          
-          const currentMember = members.find((m) => m.email === currentUserEmail);
+
+          const currentMember = members.find(
+            (m) => m.email === currentUserEmail
+          );
           // Owner is always treated as admin for settings access
           setIsAdmin(currentMember?.admin ?? currentMember?.isOwner ?? false);
-          
+
           // Get other members (excluding current user) for ownership transfer
           setOtherMembers(members.filter((m) => m.email !== currentUserEmail));
         }
@@ -116,18 +125,26 @@ export default function TeamSettingsPage() {
   useEffect(() => {
     // Wait for teams to load before checking access
     if (teams.length === 0) return;
-    
+
     const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
     const teamIndex = parseInt(idStr, 10);
     console.log("Loading team with id:", idStr, "and index:", teamIndex);
     const team = teams[teamIndex];
-    
+
     // If team doesn't exist at this index, user doesn't have access - redirect
-    if (!team || isNaN(teamIndex) || teamIndex < 0 || teamIndex >= teams.length) {
+    console.log(
+      !team || isNaN(teamIndex) || teamIndex < 0 || teamIndex >= teams.length
+    );
+    if (
+      !team ||
+      isNaN(teamIndex) ||
+      teamIndex < 0 ||
+      teamIndex >= teams.length
+    ) {
       router.push("/dashboard/settings/personal");
       return;
     }
-    
+
     setTeamName(team.name);
     setTeamDbId(team.id);
     setMaterials(team.materials || []);
@@ -157,7 +174,7 @@ export default function TeamSettingsPage() {
 
   const handleLeaveClick = () => {
     setLeaveError(null);
-    
+
     // Check if owner needs to transfer ownership
     if (isOwner) {
       if (otherMembers.length === 0) {
@@ -167,13 +184,15 @@ export default function TeamSettingsPage() {
       setShowTransferModal(true);
       return;
     }
-    
+
     // Check if sole admin trying to leave
     if (isAdmin && adminCount <= 1) {
-      setLeaveError("You are the only admin. Assign admin to someone else before leaving.");
+      setLeaveError(
+        "You are the only admin. Assign admin to someone else before leaving."
+      );
       return;
     }
-    
+
     setShowLeaveModal(true);
   };
 
@@ -207,8 +226,15 @@ export default function TeamSettingsPage() {
     setIsLeaving(true);
     try {
       // If owner is sole admin and new owner is not admin, make them admin first
-      const newOwnerMember = otherMembers.find((m) => m.email === selectedNewOwner);
-      if (isAdmin && adminCount <= 1 && newOwnerMember && !newOwnerMember.admin) {
+      const newOwnerMember = otherMembers.find(
+        (m) => m.email === selectedNewOwner
+      );
+      if (
+        isAdmin &&
+        adminCount <= 1 &&
+        newOwnerMember &&
+        !newOwnerMember.admin
+      ) {
         // Make new owner an admin
         const adminResponse = await fetch(`/api/teams/${teamDbId}/members`, {
           method: "PATCH",
@@ -216,7 +242,10 @@ export default function TeamSettingsPage() {
           body: JSON.stringify({ email: selectedNewOwner, admin: true }),
         });
         if (!adminResponse.ok) {
-          console.error("Failed to make new owner admin:", await adminResponse.text());
+          console.error(
+            "Failed to make new owner admin:",
+            await adminResponse.text()
+          );
           setIsLeaving(false);
           return;
         }
@@ -229,7 +258,10 @@ export default function TeamSettingsPage() {
         body: JSON.stringify({ owner: selectedNewOwner }),
       });
       if (!transferResponse.ok) {
-        console.error("Failed to transfer ownership:", await transferResponse.text());
+        console.error(
+          "Failed to transfer ownership:",
+          await transferResponse.text()
+        );
         setIsLeaving(false);
         return;
       }
@@ -280,7 +312,10 @@ export default function TeamSettingsPage() {
           />
         ) : null}
         <br />
-        <CollaboratorsSettingsPage teamDbId={teamDbId} readOnly={!isAdmin || !emailVerified} />
+        <CollaboratorsSettingsPage
+          teamDbId={teamDbId}
+          readOnly={!isAdmin || !emailVerified}
+        />
         <br />
         {isAdmin && emailVerified && (
           <FusionInputs
@@ -301,10 +336,7 @@ export default function TeamSettingsPage() {
       )}
 
       <div className={styles.teamActions}>
-        <button
-          className={styles.leaveTeamButton}
-          onClick={handleLeaveClick}
-        >
+        <button className={styles.leaveTeamButton} onClick={handleLeaveClick}>
           Leave Team
         </button>
         {isOwner && (
@@ -316,17 +348,15 @@ export default function TeamSettingsPage() {
           </button>
         )}
       </div>
-      {leaveError && (
-        <p className={styles.leaveError}>{leaveError}</p>
-      )}
+      {leaveError && <p className={styles.leaveError}>{leaveError}</p>}
 
       {showLeaveModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.leaveModal}>
             <h3>Leave Team?</h3>
             <p>
-              Are you sure you want to leave <strong>{teamName}</strong>?
-              You will lose access to all team resources.
+              Are you sure you want to leave <strong>{teamName}</strong>? You
+              will lose access to all team resources.
             </p>
             <div className={styles.modalButtons}>
               <button
@@ -355,7 +385,12 @@ export default function TeamSettingsPage() {
             <p>
               As the owner, you must transfer ownership before leaving.
               {isAdmin && adminCount <= 1 && (
-                <><br /><br />You are also the only admin. The new owner will be made an admin.</>
+                <>
+                  <br />
+                  <br />
+                  You are also the only admin. The new owner will be made an
+                  admin.
+                </>
               )}
             </p>
             <label className={styles.transferLabel}>Select new owner:</label>
@@ -400,7 +435,8 @@ export default function TeamSettingsPage() {
             <h3>Delete Team?</h3>
             <p>
               This action is <strong>permanent</strong> and cannot be undone.
-              All team data, including materials, machines, API keys, and members will be deleted.
+              All team data, including materials, machines, API keys, and
+              members will be deleted.
             </p>
             <div className={styles.modalButtons}>
               <button

@@ -1,29 +1,29 @@
-import { Machines } from "@/lib/db/schema/cam";
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
-import { registry } from "@/lib/openapi/registry";
-import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
+import { Tools } from "../db/schema/cam";
+import { registry } from "../openapi/registry";
+import { apiKey, userSession } from "./auth";
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 
-const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
-const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
-const Machine = createSelectSchema(Machines).omit({ team_id: true, file: true }).openapi("Machine")
+const CreateSchema = createInsertSchema(Tools).omit({ file: true, team_id: true });
+const UpdateSchema = createUpdateSchema(Tools).omit({ file: true, team_id: true });
+const Tool = createSelectSchema(Tools).omit({ file: true, team_id: true }).openapi("Tool");
 
-registerTeamEndpoint([scopes.machines.read], {
+registerTeamEndpoint([scopes.tools.read], {
   method: "get",
-  path: "/api/machines",
-  tags: ["Machines"],
-  summary: "Get Machines",
+  path: "/api/tools",
+  tags: ["Tools"],
+  summary: "Get Tools",
   responses: {
     200: {
-      description: "This endpoint returns the machines from the given team",
+      description: "This endpoint returns the tools from the given team",
       content: {
         "application/json": {
-          schema: zod.array(Machine)
+          schema: zod.array(Tool)
         }
       }
     },
@@ -31,19 +31,19 @@ registerTeamEndpoint([scopes.machines.read], {
   }
 });
 
-registerTeamEndpoint([scopes.machines.write], {
+registerTeamEndpoint([scopes.tools.write], {
   method: "post",
-  path: "/api/machines",
-  tags: ["Machines"],
-  summary: "Create Machine",
+  path: "/api/tools",
+  tags: ["Tools"],
+  summary: "Create Tool",
   description: "This endpoint requires the user's email to be verified",
   request: {
     body: {
       content: {
         "multipart/form-data": {
           schema: zod.object({
-            data: CreateSchema.openapi({ description: "Machine info as stringified JSON" }),
-            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Machine file upload" })
+            data: CreateSchema.openapi({ description: "Tool info as stringified JSON" }),
+            file: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Tool file upload" })
           })
         }
       }
@@ -51,7 +51,7 @@ registerTeamEndpoint([scopes.machines.write], {
   },
   responses: {
     201: {
-      description: "Returns the ID of the created machine",
+      description: "Returns the ID of the created tool",
       content: {
         "application/json": {
           schema: zod.object({ id: zod.number() })
@@ -66,15 +66,15 @@ registerTeamEndpoint([scopes.machines.write], {
 
 registry.registerPath({
   method: "patch",
-  path: "/api/machines/{id}",
-  tags: ["Machines"],
-  summary: "Update Machine",
+  path: "/api/tools/{id}",
+  tags: ["Tools"],
+  summary: "Update Tool",
   security: [
     { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.machines.write] }
+    { [apiKey.name]: [scopes.tools.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().openapi({ description: "ID of the machine" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the tool" }) }),
     body: {
       content: {
         "application/json": {
@@ -85,7 +85,7 @@ registry.registerPath({
   },
   responses: {
     204: {
-      description: "Machine successfully updated",
+      description: "Tool successfully updated"
     },
     ...CommonAuthorization,
     ...ValidationError
@@ -94,52 +94,51 @@ registry.registerPath({
 
 registry.registerPath({
   method: "delete",
-  path: "/api/machine/{id}",
-  tags: ["Machines"],
-  summary: "Delete Machine",
+  path: "/api/tools/{id}",
+  tags: ["Tools"],
+  summary: "Delete Tool",
   security: [
     { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.machines.write] }
+    { [apiKey.name]: [scopes.tools.write] }
   ],
   request: {
-    params: zod.object({ id: zod.number().openapi({ description: "ID of the machine" }) }),
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the tool" }) })
   },
   responses: {
     204: {
-      description: "Machine successfully deleted",
-    },
-    ...CommonAuthorization,
-    ...ValidationError
+      description: "Tool successfully deleted",
+      ...CommonAuthorization,
+      ...ValidationError
+    }
   }
 });
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
-  return routeResponse(200, await parseJsonBody(await tx.query.Machines.findMany({
-    where: eq(Machines.team_id, id)
-  }), zod.array(Machine)));
+  return routeResponse(200, await parseJsonBody(await tx.query.Materials.findMany({
+    where: eq(Tools.team_id, id)
+  }), zod.array(Tool)));
 });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
-  const [id] = await tx.insert(Machines).values({
+  const [id] = await tx.insert(Tools).values({
     ...data,
     file: files["file"],
     team_id
-  }).returning({ id: Machines.id });
-
+  }).returning({ id: Tools.id });
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
-  return tx.update(Machines).set(body).where(eq(Machines.id, id)).returning({ id: Machines.id });
+  return tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
 }, { emailVerifiedNeeded: true });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(Machines).where(eq(Machines.id, id)).returning({ id: Machines.id });
+  return tx.delete(Tools).where(eq(Tools.id, id)).returning({ id: Tools.id });
 }, { emailVerifiedNeeded: true });

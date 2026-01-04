@@ -126,7 +126,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   const body = await parseJsonBody(await req.json(), CreateSchema);
 
   const [id] = await tx.insert(Materials).values({ ...body, team_id }).returning({ id: Materials.id });
-  return routeResponse(200, id);
+  return routeResponse(201, id);
 });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {

@@ -13,7 +13,7 @@ import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { paginateListObjectsV2, PutObjectCommand, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });
 const UpdateSchema = createUpdateSchema(Teams).extend({
@@ -196,5 +196,21 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  const result = tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  const paginator = paginateListObjectsV2(
+    { client },
+    { Bucket: process.env.AUTOCAM_BUCKET, Prefix: `teams/${id}/` }
+  );
+  for await (const page of paginator) {
+    const objects = page.Contents ?? [];
+    const tagPromises = objects.map(obj => {
+      return client.send(new PutObjectTaggingCommand({
+        Bucket: process.env.AUTOCAM_BUCKET,
+        Key: obj.Key,
+        Tagging: { TagSet: [{ Key: "delete", Value: "true" }] }
+      }));
+    });
+    await Promise.all(tagPromises);
+  }
+  return result;
 }, { emailVerifiedNeeded: true });

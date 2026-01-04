@@ -81,7 +81,9 @@ function TeamDropdown() {
         id={styles.teamdropdown}
         onClick={() => setTeamDropdownOpen(!teamDropdownOpen)}
       >
-        <span id={styles.dropdownSelectedText}>{team?.name}</span>
+        <span id={styles.dropdownSelectedText}>
+          {team?.name || "No Teams Found"}
+        </span>
         <Image
           src="/dashboard/dropdownTeam.svg"
           width={2000}

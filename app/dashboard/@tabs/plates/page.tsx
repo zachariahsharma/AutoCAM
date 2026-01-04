@@ -3,10 +3,11 @@
 import { motion } from "framer-motion";
 import styles from "./partcat.module.css";
 import { PartCategory, Team } from "@/app/types";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
+import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 function countUniquePartsByEpicArray(category: PartCategory) {
   const map = category.parts!.reduce<Map<string, number>>((acc, part) => {
     acc.set(part.epic, (acc.get(part.epic) ?? 0) + 1);
@@ -109,10 +110,36 @@ async function fetchPartCategories({
   }
 }
 
+function NoTeamCard() {
+  const router = useRouter();
+  return (
+    <div className={styles.noTeamContainer}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className={styles.noTeamCard}
+      >
+        <h2>No Team Found</h2>
+        <p>You need to be part of a team to view plates and part categories.</p>
+        <div className={styles.noTeamButtons}>
+          <PrimaryButton onClick={() => router.push("/dashboard/settings/newteam")}>
+            <span className="textGradient">Create a Team</span>
+          </PrimaryButton>
+          <SecondaryButton onClick={() => router.push("/dashboard/settings/jointeam")}>
+            <span className="textGradient">Join a Team</span>
+          </SecondaryButton>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function Plates() {
   const { team } = useDashboardEvents();
   const [partcats, setCategories] = useState<PartCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -128,11 +155,19 @@ export default function Plates() {
     };
     if (team) {
       load();
+    } else {
+      setIsLoading(false);
     }
     return () => {
       mounted = false;
     };
   }, [team]);
+
+  // Show no team card if user has no team
+  if (!team && !isLoading) {
+    return <NoTeamCard />;
+  }
+
   return (
     <>
       {isLoading ? (

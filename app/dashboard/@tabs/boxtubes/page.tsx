@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import styles from "./boxtubes.module.css";
 import { BoxTube, Team } from "@/app/types";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { ConditionalMarquee } from "./ConditionalMarquee";
@@ -64,14 +65,43 @@ function BoxTubeCard({ boxtube, delay }: { boxtube: BoxTube; delay: number }) {
   );
 }
 
-export default function boxtubes() {
+function NoTeamCard() {
+  const router = useRouter();
+  return (
+    <div className={styles.noTeamContainer}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className={styles.noTeamCard}
+      >
+        <h2>No Team Found</h2>
+        <p>You need to be part of a team to view box tubes.</p>
+        <div className={styles.noTeamButtons}>
+          <PrimaryButton onClick={() => router.push("/dashboard/settings/newteam")}>
+            <span className="textGradient">Create a Team</span>
+          </PrimaryButton>
+          <SecondaryButton onClick={() => router.push("/dashboard/settings/jointeam")}>
+            <span className="textGradient">Join a Team</span>
+          </SecondaryButton>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function Boxtubes() {
   const { team } = useDashboardEvents();
   const [boxtubes, setBoxTubes] = useState<BoxTube[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
   useEffect(() => {
     let mounted = true;
     const loadBoxTubes = async () => {
-      if (team === null) return;
+      if (team === null || team === undefined) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       const response = await fetch(`/api/teams/${team.id}/boxTubes`, {
         method: "GET",
@@ -120,6 +150,12 @@ export default function boxtubes() {
       mounted = false;
     };
   }, [team]);
+
+  // Show no team card if user has no team
+  if (!team && !isLoading) {
+    return <NoTeamCard />;
+  }
+
   return (
     <>
       {isLoading ? (

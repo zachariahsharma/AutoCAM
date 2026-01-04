@@ -189,12 +189,14 @@ export const PartsToPlates = pgTable("parts_to_plates", {
 
 export const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
 
+export const PlateJobType = pgEnum("plate_job_type", ["arrange", "cam"]);
 export const PlateJobs = pgTable("plate_jobs", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   status: JobStatus().notNull().default("pending"),
   plate_id: integer().notNull().references(() => Plates.id),
   tool_id: integer().notNull().references(() => Tools.id),
   machine_id: integer().notNull().references(() => Machines.id),
+  type: PlateJobType().notNull(),
   cam: bytea(),
   screenshot: bytea()
 }, table => [

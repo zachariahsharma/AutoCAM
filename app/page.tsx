@@ -289,7 +289,7 @@ export default function Home() {
               </div>
             </div>
             <h3 className={styles.teamName}>Ishan Karmakar</h3>
-            <p className={styles.teamRole}>Backend Architect</p>
+            <p className={styles.teamRole}>Lead Backend Architect</p>
             <div className={styles.teamDivider} />
             <ul className={styles.teamContributions}>
               <li>Architected the entire backend API infrastructure</li>

@@ -8,10 +8,12 @@ import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } 
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
+import { client } from "../aws";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
-const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
-const Machine = createSelectSchema(Machines).omit({ team_id: true, file: true }).openapi("Machine")
+const CreateSchema = createInsertSchema(Machines).omit({ team_id: true });
+const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true });
+const Machine = createSelectSchema(Machines).omit({ team_id: true }).openapi("Machine")
 
 registerTeamEndpoint([scopes.machines.read], {
   method: "get",
@@ -126,9 +128,16 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   if (!data) return routeResponse(422);
   const [id] = await tx.insert(Machines).values({
     ...data,
-    file: files["file"],
     team_id
   }).returning({ id: Machines.id });
+
+  await client.send(new PutObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${team_id}/machines/${id.id}`,
+    ACL: "private",
+    Body: await files["file"].bytes(),
+    ContentType: files["file"].type
+  }));
 
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });
@@ -141,5 +150,11 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(Machines).where(eq(Machines.id, id)).returning({ id: Machines.id });
+  const result = await tx.delete(Machines).where(eq(Machines.id, id)).returning({ team_id: Machines.team_id });
+  if (result.length === 0) return result;
+  await client.send(new DeleteObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${result[0].team_id}/machines/${id}`
+  }));
+  return result;
 }, { emailVerifiedNeeded: true });

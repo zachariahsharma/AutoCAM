@@ -69,7 +69,7 @@ export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T)
   return result.data;
 }
 
-export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T): Promise<{ data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined, files: Record<string, ArrayBuffer> }> {
+export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T): Promise<{ data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined, files: Record<string, File> }> {
   const json = formData.get("data");
   let data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined = undefined;
   if (json) {
@@ -98,10 +98,10 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
     data = await parseJsonBody(rawJson, schema);
   }
 
-  const files: Record<string, ArrayBuffer> = {};
+  const files: Record<string, File> = {};
   formData.forEach(async (value, key) => {
     if (value instanceof File)
-      files[key] = await value.arrayBuffer();
+      files[key] = value;
   });
 
   return { data, files };

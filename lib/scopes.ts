@@ -121,6 +121,24 @@ export const scopes = {
       }
     }
   },
+  jobs: {
+    read: {
+      name: "jobs:read",
+      description: "Read all jobs for a team"
+    },
+    create: {
+      name: "jobs:create",
+      description: "Create a job for a team"
+    },
+    process: {
+      name: "jobs:process",
+      description: "Process a job (for runners)"
+    },
+    delete: {
+      name: "jobs:delete",
+      description: "Delete a job"
+    }
+  }
 };
 
 export interface ScopeLeaf {

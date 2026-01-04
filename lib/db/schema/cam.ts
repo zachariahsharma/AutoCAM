@@ -1,7 +1,7 @@
 import { relations, sql, SQL } from "drizzle-orm";
-import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, text, unique } from "drizzle-orm/pg-core";
+import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, primaryKey, text, timestamp, unique } from "drizzle-orm/pg-core";
 import { Teams } from "./entities";
-import { CheckBoxTubeJobsTeams, CheckPartsPlatesTeam, CheckPlateJobsTeams, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { CheckBoxTubeJobsTeams, CheckJobTeams, CheckPartsPlatesTeam, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
 import { scopeNames as scopes } from "../../scopes";
 
 const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
@@ -186,48 +186,40 @@ export const PartsToPlates = pgTable("parts_to_plates", {
 ]);
 
 export const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
+export const JobKind = pgEnum('job_kind', ["plate", "box_tube"])
+
+export const Jobs = pgTable("jobs", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  status: JobStatus().notNull().default("pending"),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
+  kind: JobKind().notNull(),
+  claimed_by: text(),
+  tool_id: integer().references(() => Tools.id, { onDelete: "set null" }),
+  machine_id: integer().references(() => Machines.id, { onDelete: "set null" }),
+  created_at: timestamp().defaultNow()
+}, table => [
+  pgPolicy('jobs_insert', { for: "insert", as: "restrictive", withCheck: CheckJobTeams() }),
+  pgPolicy('jobs_query_user', { for: "select", using: UserInTeam(table.team_id) }),
+  pgPolicy('jobs_query_key', { for: "select", using: KeyAuthorized(table.team_id, scopes.jobs.read) }),
+  pgPolicy('jobs_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) }),
+  pgPolicy('jobs_insert_key', { for: "insert", withCheck: KeyAuthorized(table.team_id, scopes.jobs.create) }),
+  pgPolicy('jobs_delete_user', { for: "delete", using: UserInTeam(table.team_id) }),
+  pgPolicy('jobs_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, scopes.jobs.delete) })
+]);
 
 export const PlateJobType = pgEnum("plate_job_type", ["arrange", "cam"]);
 export const PlateJobs = pgTable("plate_jobs", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  status: JobStatus().notNull().default("pending"),
+  job_id: integer().notNull().primaryKey().references(() => Jobs.id, { onDelete: "cascade" }),
+  // No ON DELETE CASCADE here because we need the backend to explicitly delete the jobs entries to avoid orphaning jobs
   plate_id: integer().notNull().references(() => Plates.id),
-  tool_id: integer().notNull().references(() => Tools.id),
-  machine_id: integer().notNull().references(() => Machines.id),
   type: PlateJobType().notNull(),
-  cam: bytea(),
-  screenshot: bytea()
-}, table => [
-  pgPolicy('plate_jobs_insert', { for: 'insert', as: "restrictive", withCheck: CheckPlateJobsTeams() }),
-  pgPolicy('plate_jobs_update', { for: 'update', as: "restrictive", using: CheckPlateJobsTeams() }),
-  pgPolicy('plate_jobs_query_user', { for: 'select', using: UserInTeam(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('plate_jobs_query_key', { for: 'select', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.plates.jobs.read) }),
-  pgPolicy('plate_jobs_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('plate_jobs_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.plates.jobs.write) }),
-  pgPolicy('plate_jobs_update_user', { for: 'update', using: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('plate_jobs_update_key', { for: 'update', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.plates.jobs.write) }),
-  pgPolicy('plate_jobs_delete_user', { for: 'delete', using: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('plate_jobs_delete_key', { for: 'delete', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.plates.jobs.write) }),
-]);
+});
 
 export const BoxTubeJobs = pgTable("box_tube_jobs", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  job_id: integer().notNull().primaryKey().references(() => Jobs.id, { onDelete: "cascade" }),
+  // No ON DELETE CASCADE here because we need the backend to explicitly delete the jobs entries to avoid orphaning jobs
   box_tube_id: integer().notNull().references(() => BoxTubes.id),
-  tool_id: integer().notNull().references(() => Tools.id),
-  machine_id: integer().notNull().references(() => Machines.id),
-  status: JobStatus().notNull().default("pending")
-}, table => [
-  pgPolicy('box_tube_jobs_insert', { for: 'insert', as: "restrictive", withCheck: CheckBoxTubeJobsTeams() }),
-  pgPolicy('box_tube_jobs_update', { for: 'update', as: "restrictive", using: CheckBoxTubeJobsTeams() }),
-  pgPolicy('box_tube_jobs_query_user', { for: 'select', using: UserInTeam(TeamFromBoxTube(table.box_tube_id)) }),
-  pgPolicy('box_tube_jobs_query_key', { for: 'select', using: KeyAuthorized(TeamFromBoxTube(table.box_tube_id), scopes.boxTubes.jobs.read) }),
-  pgPolicy('box_tube_jobs_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromBoxTube(table.box_tube_id)) }),
-  pgPolicy('box_tube_jobs_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromBoxTube(table.box_tube_id), scopes.boxTubes.jobs.write) }),
-  pgPolicy('box_tube_jobs_update_user', { for: 'update', using: UserIsTeamAdmin(TeamFromBoxTube(table.box_tube_id)) }),
-  pgPolicy('box_tube_jobs_update_key', { for: 'update', using: KeyAuthorized(TeamFromBoxTube(table.box_tube_id), scopes.boxTubes.jobs.write) }),
-  pgPolicy('box_tube_jobs_delete_user', { for: 'delete', using: UserIsTeamAdmin(TeamFromBoxTube(table.box_tube_id)) }),
-  pgPolicy('box_tube_jobs_delete_key', { for: 'delete', using: KeyAuthorized(TeamFromBoxTube(table.box_tube_id), scopes.boxTubes.jobs.write) }),
-]);
+});
 
 export const PartsRelations = relations(Parts, ({ one }) => ({
   category: one(PartCategories, {
@@ -244,14 +236,38 @@ export const PlatesRelations = relations(Plates, ({ one, many }) => ({
   jobs: many(PlateJobs)
 }));
 
+export const JobsRelations = relations(Jobs, ({ one }) => ({
+  machine: one(Machines, {
+    fields: [Jobs.machine_id],
+    references: [Machines.id]
+  }),
+  tool: one(Tools, {
+    fields: [Jobs.tool_id],
+    references: [Tools.id]
+  }),
+  plate_job: one(PlateJobs),
+  box_tube_job: one(BoxTubeJobs)
+}));
+
 export const PlateJobsRelations = relations(PlateJobs, ({ one }) => ({
+  job: one(Jobs, {
+    fields: [PlateJobs.job_id],
+    references: [Jobs.id]
+  }),
   plate: one(Plates, {
     fields: [PlateJobs.plate_id],
     references: [Plates.id]
+  })
+}));
+
+export const BoxTubeJobsRelations = relations(BoxTubeJobs, ({ one }) => ({
+  job: one(Jobs, {
+    fields: [BoxTubeJobs.job_id],
+    references: [Jobs.id]
   }),
-  machine: one(Machines, {
-    fields: [PlateJobs.machine_id],
-    references: [Machines.id]
+  box_tube: one(BoxTubes, {
+    fields: [BoxTubeJobs.box_tube_id],
+    references: [BoxTubes.id]
   })
 }));
 
@@ -273,13 +289,6 @@ export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
     fields: [PartsToPlates.plate_id],
     references: [Plates.id]
   }),
-}));
-
-export const BoxTubeJobsRelations = relations(BoxTubeJobs, ({ one }) => ({
-  boxTube: one(BoxTubes, {
-    fields: [BoxTubeJobs.box_tube_id],
-    references: [BoxTubes.id]
-  })
 }));
 
 export const BoxTubesRelations = relations(BoxTubes, ({ one, many }) => ({

@@ -55,14 +55,24 @@ export default function TeamSettingsPage() {
   const { teams, notifyUpdate } = useTabEvents();
   const [tools, setTools] = useState<Tool[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCount, setAdminCount] = useState(0);
+  const [otherMembers, setOtherMembers] = useState<{ email: string; admin: boolean; isOwner: boolean }[]>([]);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [selectedNewOwner, setSelectedNewOwner] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
 
-  // Check if current user is the owner
+  // Check if current user is the owner and get their email
   useEffect(() => {
     async function checkOwnership() {
       const { data } = await authClient.getSession();
       if (data?.user?.id) {
+        setCurrentUserEmail(data.user.email ?? null);
         const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
         const teamIndex = parseInt(idStr, 10);
         const team = teams[teamIndex];
@@ -75,6 +85,30 @@ export default function TeamSettingsPage() {
     }
     checkOwnership();
   }, [teamid, teams]);
+
+  // Fetch members to check admin status
+  useEffect(() => {
+    if (!teamDbId || !currentUserEmail) return;
+    async function fetchMembers() {
+      try {
+        const response = await fetch(`/api/teams/${teamDbId}/members`);
+        if (response.ok) {
+          const members: { user: string; admin: boolean; isOwner: boolean }[] = await response.json();
+          const admins = members.filter((m) => m.admin);
+          setAdminCount(admins.length);
+          
+          const currentMember = members.find((m) => m.user === currentUserEmail);
+          setIsAdmin(currentMember?.admin ?? false);
+          
+          // Get other members (excluding current user) for ownership transfer
+          setOtherMembers(members.filter((m) => m.user !== currentUserEmail));
+        }
+      } catch (err) {
+        console.error("Error fetching members:", err);
+      }
+    }
+    fetchMembers();
+  }, [teamDbId, currentUserEmail]);
 
   useEffect(() => {
     const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
@@ -107,6 +141,106 @@ export default function TeamSettingsPage() {
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
+    }
+  };
+
+  const handleLeaveClick = () => {
+    setLeaveError(null);
+    
+    // Check if owner needs to transfer ownership
+    if (isOwner) {
+      if (otherMembers.length === 0) {
+        setLeaveError("You are the only member. Delete the team instead.");
+        return;
+      }
+      setShowTransferModal(true);
+      return;
+    }
+    
+    // Check if sole admin trying to leave
+    if (isAdmin && adminCount <= 1) {
+      setLeaveError("You are the only admin. Assign admin to someone else before leaving.");
+      return;
+    }
+    
+    setShowLeaveModal(true);
+  };
+
+  const handleLeaveTeam = async () => {
+    if (!currentUserEmail) return;
+    setIsLeaving(true);
+    try {
+      const response = await fetch(`/api/teams/${teamDbId}/members`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: currentUserEmail }),
+      });
+      if (response.ok) {
+        notifyUpdate();
+        router.push("/dashboard/settings/personal");
+      } else {
+        console.error("Failed to leave team:", await response.text());
+      }
+    } catch (err) {
+      console.error("Error leaving team:", err);
+    } finally {
+      setIsLeaving(false);
+      setShowLeaveModal(false);
+    }
+  };
+
+  const handleTransferAndLeave = async () => {
+    if (!currentUserEmail || !selectedNewOwner) return;
+    setIsLeaving(true);
+    try {
+      // If owner is sole admin and new owner is not admin, make them admin first
+      const newOwnerMember = otherMembers.find((m) => m.user === selectedNewOwner);
+      if (isAdmin && adminCount <= 1 && newOwnerMember && !newOwnerMember.admin) {
+        // Make new owner an admin
+        const adminResponse = await fetch(`/api/teams/${teamDbId}/members`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: selectedNewOwner, admin: true }),
+        });
+        if (!adminResponse.ok) {
+          console.error("Failed to make new owner admin:", await adminResponse.text());
+          setIsLeaving(false);
+          return;
+        }
+      }
+
+      // Transfer ownership
+      const transferResponse = await fetch(`/api/teams/${teamDbId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner: selectedNewOwner }),
+      });
+      if (!transferResponse.ok) {
+        console.error("Failed to transfer ownership:", await transferResponse.text());
+        setIsLeaving(false);
+        return;
+      }
+
+      // Now leave the team
+      const leaveResponse = await fetch(`/api/teams/${teamDbId}/members`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: currentUserEmail }),
+      });
+      if (leaveResponse.ok) {
+        notifyUpdate();
+        router.push("/dashboard/settings/personal");
+      } else {
+        console.error("Failed to leave team:", await leaveResponse.text());
+      }
+    } catch (err) {
+      console.error("Error transferring and leaving:", err);
+    } finally {
+      setIsLeaving(false);
+      setShowTransferModal(false);
+      setSelectedNewOwner(null);
     }
   };
   return (
@@ -149,13 +283,98 @@ export default function TeamSettingsPage() {
       <br />
       <FusionServer />
 
-      {isOwner && (
+      <div className={styles.teamActions}>
         <button
-          className={styles.deleteTeamButton}
-          onClick={() => setShowDeleteModal(true)}
+          className={styles.leaveTeamButton}
+          onClick={handleLeaveClick}
         >
-          Delete Team
+          Leave Team
         </button>
+        {isOwner && (
+          <button
+            className={styles.deleteTeamButton}
+            onClick={() => setShowDeleteModal(true)}
+          >
+            Delete Team
+          </button>
+        )}
+      </div>
+      {leaveError && (
+        <p className={styles.leaveError}>{leaveError}</p>
+      )}
+
+      {showLeaveModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.leaveModal}>
+            <h3>Leave Team?</h3>
+            <p>
+              Are you sure you want to leave <strong>{teamName}</strong>?
+              You will lose access to all team resources.
+            </p>
+            <div className={styles.modalButtons}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setShowLeaveModal(false)}
+                disabled={isLeaving}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmLeaveButton}
+                onClick={handleLeaveTeam}
+                disabled={isLeaving}
+              >
+                {isLeaving ? "Leaving..." : "Leave Team"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTransferModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.transferModal}>
+            <h3>Transfer Ownership</h3>
+            <p>
+              As the owner, you must transfer ownership before leaving.
+              {isAdmin && adminCount <= 1 && (
+                <><br /><br />You are also the only admin. The new owner will be made an admin.</>
+              )}
+            </p>
+            <label className={styles.transferLabel}>Select new owner:</label>
+            <select
+              className={styles.transferSelect}
+              value={selectedNewOwner || ""}
+              onChange={(e) => setSelectedNewOwner(e.target.value || null)}
+            >
+              <option value="">Choose a member...</option>
+              {otherMembers.map((member) => (
+                <option key={member.user} value={member.user}>
+                  {member.user} {member.admin ? "(Admin)" : "(Member)"}
+                </option>
+              ))}
+            </select>
+            <div className={styles.modalButtons}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => {
+                  setShowTransferModal(false);
+                  setSelectedNewOwner(null);
+                }}
+                disabled={isLeaving}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmTransferButton}
+                onClick={handleTransferAndLeave}
+                disabled={isLeaving || !selectedNewOwner}
+              >
+                {isLeaving ? "Transferring..." : "Transfer & Leave"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showDeleteModal && (

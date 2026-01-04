@@ -11,6 +11,7 @@ import { Alert } from "@/app/signup/page";
 interface CollaboratorsProps {
   optional?: boolean;
   teamDbId?: number;
+  readOnly?: boolean;
   // For new team flow - local state management
   collaborators?: Collaborator[];
   setCollaborators?: React.Dispatch<React.SetStateAction<Collaborator[]>>;
@@ -19,6 +20,7 @@ interface CollaboratorsProps {
 export default function CollaboratorsSettingsPage({
   optional = false,
   teamDbId,
+  readOnly = false,
   collaborators: externalCollaborators,
   setCollaborators: setExternalCollaborators,
 }: CollaboratorsProps) {
@@ -74,8 +76,11 @@ export default function CollaboratorsSettingsPage({
     };
   }, [alertMessage]);
 
-  // Count number of admins
-  const adminCount = collaborators.filter((c) => c.role === "Admin").length;
+  // Count number of users with admin privileges (Admins + Owners)
+  // Owners have admin privileges, so they count toward maintaining admin coverage
+  const adminPrivilegedCount = collaborators.filter(
+    (c) => c.role === "Admin" || c.role === "Owner"
+  ).length;
 
   // Fetch members and invites from API (only for existing teams)
   const fetchCollaborators = useCallback(async () => {
@@ -92,7 +97,7 @@ export default function CollaboratorsSettingsPage({
         return;
       }
 
-      const members: { user: string; admin: boolean; isOwner: boolean }[] =
+      const members: { email: string; name: string; admin: boolean; isOwner: boolean }[] =
         await membersRes.json();
       const invites: { email: string; admin: boolean }[] =
         await invitesRes.json();
@@ -100,8 +105,8 @@ export default function CollaboratorsSettingsPage({
       const collaboratorsList: Collaborator[] = [
         ...members.map((m, idx) => ({
           id: idx + 1,
-          email: m.user,
-          name: m.user.split("@")[0] || "Unknown",
+          email: m.email,
+          name: m.name,
           role: (m.isOwner ? "Owner" : m.admin ? "Admin" : "Member") as "Owner" | "Admin" | "Member",
         })),
         ...invites.map((inv, idx) => ({
@@ -201,9 +206,10 @@ export default function CollaboratorsSettingsPage({
     // Clear any previous alert
     setAlertMessage(null);
 
-    // Check if this would remove the last admin
-    if (collaborator.role === "Admin" && newRole === "Member" && adminCount <= 1) {
-      setAlertMessage("There must be at least one admin in the team");
+    // Check if this would remove the last user with admin privileges
+    // (Only block if demoting an Admin AND there are no other Admins or Owners left)
+    if (collaborator.role === "Admin" && newRole === "Member" && adminPrivilegedCount <= 1) {
+      setAlertMessage("There must be at least one admin or owner in the team");
       return;
     }
 
@@ -267,9 +273,10 @@ export default function CollaboratorsSettingsPage({
     // Clear any previous alert
     setAlertMessage(null);
 
-    // Check if this would remove the last admin
-    if (collaborator.role === "Admin" && adminCount <= 1) {
-      setAlertMessage("There must be at least one admin in the team");
+    // Check if this would remove the last user with admin privileges
+    // (Only block if removing an Admin AND there are no other Admins or Owners left)
+    if (collaborator.role === "Admin" && adminPrivilegedCount <= 1) {
+      setAlertMessage("There must be at least one admin or owner in the team");
       return;
     }
 
@@ -331,29 +338,33 @@ export default function CollaboratorsSettingsPage({
             {optional ? "(Optional)" : null}
           </span>
         </h1>
-        <form onSubmit={handleAddCollaborator}>
-          <div className={styles.addCollaboratorSection}>
-            <div className={styles.addCollaboratorContainer}>
-              <Image
-                alt="search"
-                src="/settings/teams/search.svg"
-                width={2000}
-                height={2000}
-                className={styles.searchIcon}
-              />
-              <input type="email" name="email" placeholder="Enter email" />
+        {!readOnly && (
+          <form onSubmit={handleAddCollaborator}>
+            <div className={styles.addCollaboratorSection}>
+              <div className={styles.addCollaboratorContainer}>
+                <Image
+                  alt="search"
+                  src="/settings/teams/search.svg"
+                  width={2000}
+                  height={2000}
+                  className={styles.searchIcon}
+                />
+                <input type="email" name="email" placeholder="Enter email" />
+              </div>
+              <PrimaryButton type="submit" disabled={isSending}>
+                <span className="textGradient">
+                  {isSending ? "Sending..." : "Add Collaborator"}
+                </span>
+              </PrimaryButton>
             </div>
-            <PrimaryButton type="submit" disabled={isSending}>
-              <span className="textGradient">
-                {isSending ? "Sending..." : "Add Collaborator"}
-              </span>
-            </PrimaryButton>
+            {error && <p className={styles.error}>{error}</p>}
+          </form>
+        )}
+        {!readOnly && (
+          <div className={styles.alertWrapper}>
+            <Alert message={alertMessage || ""} open={!!alertMessage} />
           </div>
-          {error && <p className={styles.error}>{error}</p>}
-        </form>
-        <div className={styles.alertWrapper}>
-          <Alert message={alertMessage || ""} open={!!alertMessage} />
-        </div>
+        )}
         <div className={styles.collaboratorsList}>
           {collaborators.map((collaborator) => (
             <CollaboratorCard
@@ -361,12 +372,13 @@ export default function CollaboratorsSettingsPage({
               key={collaborator.id}
               onRoleChange={handleRoleChange}
               onRemove={handleRemove}
+              readOnly={readOnly}
             />
           ))}
           {collaborators.length === 0 && (
             <div className={styles.emptyStateContainer}>
               <span className={styles.emptyState}>
-                Enter an email to add a collaborator.
+                {readOnly ? "No collaborators." : "Enter an email to add a collaborator."}
               </span>
             </div>
           )}
@@ -410,10 +422,12 @@ function CollaboratorCard({
   collaborator,
   onRoleChange,
   onRemove,
+  readOnly = false,
 }: {
   collaborator: Collaborator;
   onRoleChange: (collaborator: Collaborator, newRole: "Admin" | "Member", confirmed?: boolean) => void;
   onRemove: (collaborator: Collaborator) => void;
+  readOnly?: boolean;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -446,12 +460,9 @@ function CollaboratorCard({
   return (
     <div className={styles.collaboratorCard}>
       <div className={styles.name}>{collaborator.name}</div>
-      <span className={styles.email}>
-        <div>{collaborator.email}</div>
-      </span>
       <div className={styles.role}>
-        {collaborator.role === "pending" || collaborator.role === "Owner" ? (
-          <span>{collaborator.role === "Owner" ? "Owner" : "pending"}</span>
+        {collaborator.role === "pending" || collaborator.role === "Owner" || readOnly ? (
+          <span>{collaborator.role === "Owner" ? "Owner" : collaborator.role === "pending" ? "pending" : collaborator.role}</span>
         ) : (
           <button onClick={() => setDropdownOpen(!dropdownOpen)}>
             {collaborator.role}
@@ -464,7 +475,7 @@ function CollaboratorCard({
             />
           </button>
         )}
-        {dropdownOpen && (
+        {dropdownOpen && !readOnly && (
           <div className={styles.roleDropdown} ref={dropdownRef}>
             <div
               className={styles.roleOption}
@@ -481,7 +492,7 @@ function CollaboratorCard({
           </div>
         )}
       </div>
-      {collaborator.role !== "Owner" && (
+      {collaborator.role !== "Owner" && !readOnly && (
         <Image
           alt="remove"
           src="/settings/teams/remove.svg"

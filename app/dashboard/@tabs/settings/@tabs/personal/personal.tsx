@@ -173,22 +173,22 @@ export default function PersonalSettingsPage() {
       <hr />
       <div className={styles.contentWrapper}>
         <form onSubmit={handleSubmit} className={styles.formSection}>
-          <label>Username</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(val) => setUsername(val.target.value)}
-          />
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(val) => setEmail(val.target.value)}
-          />
+        <label>Username</label>
+        <input
+          type="text"
+          value={username}
+          onChange={(val) => setUsername(val.target.value)}
+        />
+        <label>Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(val) => setEmail(val.target.value)}
+        />
           <div className={styles.emailStatusRow}>
-            <span className={styles.emailStatus}>
-              {emailVerified ? "Email verified" : "Email not verified"}
-            </span>
+        <span className={styles.emailStatus}>
+          {emailVerified ? "Email verified" : "Email not verified"}
+        </span>
             {!emailVerified && (
               <button
                 type="button"
@@ -204,21 +204,21 @@ export default function PersonalSettingsPage() {
               </button>
             )}
           </div>
-          {message && (
-            <p
-              className={
-                message.type === "success" ? styles.success : styles.error
-              }
-            >
-              {message.text}
-            </p>
-          )}
-          <PrimaryButton type="submit" id={styles.submitbutton} disabled={isSaving}>
-            <span className="textGradient">
-              {isSaving ? "Saving..." : "Save"}
-            </span>
-          </PrimaryButton>
-        </form>
+        {message && (
+          <p
+            className={
+              message.type === "success" ? styles.success : styles.error
+            }
+          >
+            {message.text}
+          </p>
+        )}
+        <PrimaryButton type="submit" id={styles.submitbutton} disabled={isSaving}>
+          <span className="textGradient">
+            {isSaving ? "Saving..." : "Save"}
+          </span>
+        </PrimaryButton>
+      </form>
 
         <div className={styles.profileCard}>
           <div className={styles.profileImageWrapper} onClick={handleProfileClick}>

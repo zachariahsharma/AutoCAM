@@ -22,6 +22,11 @@ export const Accept = async (req: NextRequest, { params }: { params: Promise<{ i
   const inviteId = (await params).id;
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return routeResponse(401, { message: "User session not found" });
+  
+  // Check if this is an API call (wants JSON) or a direct link visit (wants redirect)
+  const acceptHeader = req.headers.get("accept") || "";
+  const wantsJson = acceptHeader.includes("application/json");
+  
   return await withAuth(authType, async tx => {
     const invite = await tx.query.TeamInvites.findFirst({
       where: eq(TeamInvites.id, inviteId)
@@ -36,6 +41,12 @@ export const Accept = async (req: NextRequest, { params }: { params: Promise<{ i
       admin: admin.admin
     });
 
+    // If called via fetch (API call), return JSON with team_id
+    if (wantsJson) {
+      return routeResponse(200, { team_id: invite.team_id });
+    }
+    
+    // If accessed directly (email link), redirect to dashboard
     return NextResponse.redirect(new URL("/dashboard", req.url));
   });
 }

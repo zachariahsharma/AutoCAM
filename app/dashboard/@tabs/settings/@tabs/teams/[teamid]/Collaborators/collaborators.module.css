@@ -61,15 +61,11 @@
   align-items: center;
 }
 .name {
-  width: 40%;
-}
-.email {
-  width: calc(60% - 146px);
-}
-.email > div {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-right: 120px;
 }
 .removeIcon {
   width: 16px;

@@ -68,15 +68,48 @@ function JoinCard({
   invite: TeamInvite;
   setInvites: React.Dispatch<React.SetStateAction<TeamInvite[]>>;
 }) {
-  const { notifyUpdate } = useTabEvents();
+  const { notifyUpdate, setTeams } = useTabEvents();
   const router = useRouter();
   const [isJoining, setIsJoining] = useState(false);
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     setIsJoining(true);
-    // Navigate to the accept endpoint which will accept the invite and redirect to dashboard
-    router.push(`/api/user/invites/accept/${invite.id}`);
-    notifyUpdate();
+    try {
+      // Call the accept endpoint via fetch to get the team_id
+      const response = await fetch(`/api/user/invites/accept/${invite.id}`, {
+        headers: {
+          "Accept": "application/json",
+        },
+      });
+      
+      if (response.ok) {
+        const { team_id } = await response.json();
+        
+        // Remove the invite from the local list
+        setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+        
+        // Reload the teams list
+        const teamsResponse = await fetch("/api/teams");
+        if (teamsResponse.ok) {
+          const teamsData = await teamsResponse.json();
+          teamsData.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
+          setTeams(teamsData);
+          
+          // Find the index of the newly joined team
+          const teamIndex = teamsData.findIndex((t: { id: number }) => t.id === team_id);
+          
+          // Notify other components and navigate to the new team's settings
+          notifyUpdate();
+          router.push(`/dashboard/settings/teams/${teamIndex >= 0 ? teamIndex : 0}`);
+        }
+      } else {
+        console.error("Failed to accept invite");
+        setIsJoining(false);
+      }
+    } catch (error) {
+      console.error("Error accepting invite:", error);
+      setIsJoining(false);
+    }
   };
 
   const handleDecline = () => {

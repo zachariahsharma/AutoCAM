@@ -389,8 +389,41 @@ export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
             <Sidebar />
             <main className={styles.main}>{tabs}</main>
           </div>
+          <EmailVerificationWarning />
         </DashboardEventsProvider>
       </SidebarProvider>
+    </div>
+  );
+}
+
+function EmailVerificationWarning() {
+  const { emailVerified, isLoadingAuth } = useDashboardEvents();
+  const router = useRouter();
+
+  if (isLoadingAuth || emailVerified) {
+    return null;
+  }
+
+  return (
+    <div className={styles.verificationWarning}>
+      <Image
+        src="/auth/Warning.svg"
+        alt="Warning"
+        width={20}
+        height={20}
+        className={styles.warningIcon}
+      />
+      <div className={styles.warningContent}>
+        <span className={styles.warningText}>
+          Email not verified. Some features are disabled.
+        </span>
+        <button
+          className={styles.warningLink}
+          onClick={() => router.push("/dashboard/settings/personal")}
+        >
+          Verify now →
+        </button>
+      </div>
     </div>
   );
 }

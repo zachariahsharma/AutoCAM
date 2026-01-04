@@ -7,7 +7,12 @@ import zod from "zod";
 import { CommonAuthorization, registerTeamEndpoint, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 
-const Member = zod.object({ user: zod.string().email(), admin: zod.boolean(), isOwner: zod.boolean() });
+const Member = zod.object({ 
+  email: zod.string().email(), 
+  name: zod.string(), 
+  admin: zod.boolean(), 
+  isOwner: zod.boolean() 
+});
 
 registerTeamEndpoint([scopes.teams.read], {
   method: "get",
@@ -39,7 +44,12 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody((await tx.query.TeamMembers.findMany({
     where: eq(TeamMembers.team_id, id),
     with: { user: true },
-  })).map(x => ({ ...x, user: x.user.email, isOwner: x.user_id === ownerId })), zod.array(Member)));
+  })).map(x => ({ 
+    ...x, 
+    email: x.user.email, 
+    name: x.user.name || x.user.email.split("@")[0], 
+    isOwner: x.user_id === ownerId 
+  })), zod.array(Member)));
 });
 
 const UpdateMemberSchema = zod.object({ 

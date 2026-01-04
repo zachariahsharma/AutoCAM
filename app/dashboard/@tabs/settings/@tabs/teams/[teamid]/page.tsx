@@ -56,8 +56,9 @@ export default function TeamSettingsPage() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(true);
   const [adminCount, setAdminCount] = useState(0);
-  const [otherMembers, setOtherMembers] = useState<{ email: string; admin: boolean; isOwner: boolean }[]>([]);
+  const [otherMembers, setOtherMembers] = useState<{ email: string; name: string; admin: boolean; isOwner: boolean }[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -73,6 +74,7 @@ export default function TeamSettingsPage() {
       const { data } = await authClient.getSession();
       if (data?.user?.id) {
         setCurrentUserEmail(data.user.email ?? null);
+        setEmailVerified(data.user.emailVerified ?? false);
         const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
         const teamIndex = parseInt(idStr, 10);
         const team = teams[teamIndex];
@@ -93,15 +95,16 @@ export default function TeamSettingsPage() {
       try {
         const response = await fetch(`/api/teams/${teamDbId}/members`);
         if (response.ok) {
-          const members: { user: string; admin: boolean; isOwner: boolean }[] = await response.json();
+          const members: { email: string; name: string; admin: boolean; isOwner: boolean }[] = await response.json();
           const admins = members.filter((m) => m.admin);
           setAdminCount(admins.length);
           
-          const currentMember = members.find((m) => m.user === currentUserEmail);
-          setIsAdmin(currentMember?.admin ?? false);
+          const currentMember = members.find((m) => m.email === currentUserEmail);
+          // Owner is always treated as admin for settings access
+          setIsAdmin(currentMember?.admin ?? currentMember?.isOwner ?? false);
           
           // Get other members (excluding current user) for ownership transfer
-          setOtherMembers(members.filter((m) => m.user !== currentUserEmail));
+          setOtherMembers(members.filter((m) => m.email !== currentUserEmail));
         }
       } catch (err) {
         console.error("Error fetching members:", err);
@@ -111,18 +114,26 @@ export default function TeamSettingsPage() {
   }, [teamDbId, currentUserEmail]);
 
   useEffect(() => {
+    // Wait for teams to load before checking access
+    if (teams.length === 0) return;
+    
     const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
     const teamIndex = parseInt(idStr, 10);
     console.log("Loading team with id:", idStr, "and index:", teamIndex);
     const team = teams[teamIndex];
-    if (team) {
-      setTeamName(team.name);
-      setTeamDbId(team.id);
-      setMaterials(team.materials || []);
-      setMachines(team.machines || []);
-      setTools(team.tools || []);
+    
+    // If team doesn't exist at this index, user doesn't have access - redirect
+    if (!team || isNaN(teamIndex) || teamIndex < 0 || teamIndex >= teams.length) {
+      router.push("/dashboard/settings/personal");
+      return;
     }
-  }, [teamid, teams]);
+    
+    setTeamName(team.name);
+    setTeamDbId(team.id);
+    setMaterials(team.materials || []);
+    setMachines(team.machines || []);
+    setTools(team.tools || []);
+  }, [teamid, teams, router]);
 
   const handleDeleteTeam = async () => {
     setIsDeleting(true);
@@ -196,7 +207,7 @@ export default function TeamSettingsPage() {
     setIsLeaving(true);
     try {
       // If owner is sole admin and new owner is not admin, make them admin first
-      const newOwnerMember = otherMembers.find((m) => m.user === selectedNewOwner);
+      const newOwnerMember = otherMembers.find((m) => m.email === selectedNewOwner);
       if (isAdmin && adminCount <= 1 && newOwnerMember && !newOwnerMember.admin) {
         // Make new owner an admin
         const adminResponse = await fetch(`/api/teams/${teamDbId}/members`, {
@@ -248,7 +259,7 @@ export default function TeamSettingsPage() {
       <div className={styles.teamContainer}>
         <h1>{teamName}</h1>
         <hr />
-        {teamName ? (
+        {isAdmin && emailVerified && teamName ? (
           <TeamName
             oldTeamName={teamName}
             handleFormSubmit={async (newName) => {
@@ -269,19 +280,25 @@ export default function TeamSettingsPage() {
           />
         ) : null}
         <br />
-        <CollaboratorsSettingsPage teamDbId={teamDbId} />
+        <CollaboratorsSettingsPage teamDbId={teamDbId} readOnly={!isAdmin || !emailVerified} />
         <br />
-        <FusionInputs
-          defaultMachines={machines}
-          defaultMaterials={materials}
-          defaultTools={tools}
-          teamId={teamDbId}
-        />
+        {isAdmin && emailVerified && (
+          <FusionInputs
+            defaultMachines={machines}
+            defaultMaterials={materials}
+            defaultTools={tools}
+            teamId={teamDbId}
+          />
+        )}
       </div>
-      <br />
-      <ApiKeys />
-      <br />
-      <FusionServer />
+      {isAdmin && emailVerified && (
+        <>
+          <br />
+          <ApiKeys />
+          <br />
+          <FusionServer />
+        </>
+      )}
 
       <div className={styles.teamActions}>
         <button
@@ -349,8 +366,8 @@ export default function TeamSettingsPage() {
             >
               <option value="">Choose a member...</option>
               {otherMembers.map((member) => (
-                <option key={member.user} value={member.user}>
-                  {member.user} {member.admin ? "(Admin)" : "(Member)"}
+                <option key={member.email} value={member.email}>
+                  {member.name} {member.admin ? "(Admin)" : "(Member)"}
                 </option>
               ))}
             </select>

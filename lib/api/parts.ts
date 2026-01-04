@@ -172,4 +172,5 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/pc/${category_id}/parts/${id}`
   }));
+  return result;
 }, { emailVerifiedNeeded: true })

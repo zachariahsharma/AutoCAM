@@ -64,7 +64,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   });
 
   if (!existingUser) {
-    return routeResponse(404, "No user found with this email address");
+    return routeResponse(404, { message: "No user found with this email address" });
   }
 
   const [invite] = await tx

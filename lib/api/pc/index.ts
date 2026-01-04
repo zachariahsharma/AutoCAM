@@ -6,9 +6,10 @@ import { PartCategories } from "../../db/schema/cam";
 import { scopeNames as scopes } from "../../scopes";
 import zod from "zod";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "../common";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { parseJsonBody, routeFactory, routeResponse, s3DeleteWithPrefix } from "..";
 import { teamIdFromDigest } from "../../auth/server";
 import { and, eq } from "drizzle-orm";
+import { client } from '@/lib/aws';
 
 const CreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
@@ -152,5 +153,9 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(PartCategories).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id });
+  const result = await tx.delete(PartCategories).where(eq(PartCategories.id, id)).returning({ team_id: PartCategories.team_id });
+  if (result.length === 0) return result;
+  const [{ team_id }] = result;
+  await s3DeleteWithPrefix(`teams/${team_id}/pc/${id}/`);
+  return result;
 }, { emailVerifiedNeeded: true });

@@ -36,7 +36,6 @@ export const Parts = pgTable("parts", {
   name: text().notNull(),
   epic: text().notNull(),
   ticket: text().notNull(),
-  file: bytea().notNull(),
   quantity: integer().notNull(),
   original_quantity: integer().notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })

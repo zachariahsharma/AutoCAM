@@ -1,4 +1,4 @@
-import { Parts } from "@/lib/db/schema/cam";
+import { PartCategories, Parts } from "@/lib/db/schema/cam";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
@@ -7,10 +7,12 @@ import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, Conflict, ValidationError } from "./common";
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { eq } from "drizzle-orm";
+import { client } from "../aws";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const CreateSchema = createInsertSchema(Parts).omit({ file: true, category_id: true, original_quantity: true });
-const UpdateSchema = createUpdateSchema(Parts).omit({ file: true, category_id: true, original_quantity: true });
-const Part = createSelectSchema(Parts).omit({ file: true, category_id: true }).openapi("Part");
+const CreateSchema = createInsertSchema(Parts).omit({ category_id: true, original_quantity: true });
+const UpdateSchema = createUpdateSchema(Parts).omit({ category_id: true, original_quantity: true });
+const Part = createSelectSchema(Parts).omit({ category_id: true }).openapi("Part");
 
 registry.registerPath({
   method: "get",
@@ -141,9 +143,16 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
   const [id] = await tx.insert(Parts).values({
     ...data,
     original_quantity: data.quantity,
-    file: files["file"],
     category_id
   }).returning({ id: Parts.id });
+  const { team_id } = (await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) }))!;
+  await client.send(new PutObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${team_id}/pc/${category_id}/parts/${id.id}`,
+    ACL: "private",
+    Body: await files["file"].bytes(),
+    ContentType: files["file"].type
+  }));
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });
 
@@ -155,5 +164,13 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(Parts).where(eq(Parts.id, id)).returning({ id: Parts.id });
+  const result = await tx.delete(Parts).where(eq(Parts.id, id)).returning({ category_id: Parts.category_id });
+  if (result.length === 0) return result;
+  const [{ category_id }] = result;
+  const { team_id } = (await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) }))!;
+  await client.send(new DeleteObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${team_id}/pc/${category_id}/parts/${id}`
+  }));
+  return result;
 }, { emailVerifiedNeeded: true })

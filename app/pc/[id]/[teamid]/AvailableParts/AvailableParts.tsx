@@ -1,7 +1,7 @@
 "use client";
 import styles from "./availableparts.module.css";
 import { Part } from "@/app/types";
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useCallback, ChangeEvent } from "react";
 import { useMaterialEvents } from "../materialEvents";
 
 export default function AvailableParts({
@@ -14,7 +14,54 @@ export default function AvailableParts({
     setSelectedParts,
     setUnassignedParts,
     unassignedParts,
+    plates,
+    partsToPlates,
+    setPartsToPlates,
   } = useMaterialEvents();
+
+  // Deduct debt from plates, newest to oldest
+  const deductFromPlates = useCallback(
+    (partId: number, debt: number) => {
+      if (debt <= 0) return;
+
+      setPartsToPlates((prevPartsToPlates) => {
+        const newPartsToPlates = { ...prevPartsToPlates };
+        let remainingDebt = debt;
+
+        // Iterate plates from newest (end) to oldest (beginning)
+        for (let i = plates.length - 1; i >= 0 && remainingDebt > 0; i--) {
+          const plateId = plates[i].id;
+          const plateParts = newPartsToPlates[plateId];
+
+          if (!plateParts) continue;
+
+          const partIndex = plateParts.findIndex((p) => p.partId === partId);
+          if (partIndex === -1) continue;
+
+          const partEntry = plateParts[partIndex];
+          const deduction = Math.min(partEntry.quantity, remainingDebt);
+
+          if (deduction > 0) {
+            newPartsToPlates[plateId] = plateParts.map((p, idx) =>
+              idx === partIndex
+                ? { ...p, quantity: p.quantity - deduction }
+                : p
+            );
+            remainingDebt -= deduction;
+          }
+        }
+
+        return newPartsToPlates;
+      });
+
+      // After deducting from plates, reset unassigned to 0 (debt is now paid)
+      setUnassignedParts((prev) => ({
+        ...prev,
+        [partId]: Math.max(prev[partId], 0),
+      }));
+    },
+    [plates, setPartsToPlates, setUnassignedParts]
+  );
   useEffect(() => {
     Object.entries(epicsMap).forEach(([epic, parts]) =>
       parts.forEach((part) => {
@@ -85,14 +132,26 @@ export default function AvailableParts({
                   <button
                     className={styles.counterButtonMinus}
                     onClick={() => {
+                      const prevSelected = selectedParts[part.id] || 0;
+                      const newSelected = Math.max(prevSelected - 1, 0);
+                      const delta = newSelected - prevSelected;
+
                       setSelectedParts((obj) => ({
                         ...obj,
-                        [part.id]: Math.max((obj[part.id] || 0) - 1, 0),
+                        [part.id]: newSelected,
                       }));
+
+                      const newUnassigned =
+                        (unassignedParts[part.id] || 0) + delta;
                       setUnassignedParts((obj) => ({
                         ...obj,
-                        [part.id]: Math.max((obj[part.id] || 0) - 1, 0),
+                        [part.id]: newUnassigned,
                       }));
+
+                      // If unassigned went negative, deduct from plates
+                      if (newUnassigned < 0) {
+                        deductFromPlates(part.id, Math.abs(newUnassigned));
+                      }
                     }}
                   >
                     -
@@ -102,27 +161,51 @@ export default function AvailableParts({
                     type="number"
                     value={selectedParts[part.id] || 0}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      const prevSelected = selectedParts[part.id] || 0;
+                      const newSelected = Math.max(Number(e.target.value), 0);
+                      const delta = newSelected - prevSelected;
+
                       setSelectedParts((obj) => ({
                         ...obj,
-                        [part.id]: Number(e.target.value),
+                        [part.id]: newSelected,
                       }));
+
+                      const newUnassigned =
+                        (unassignedParts[part.id] || 0) + delta;
                       setUnassignedParts((obj) => ({
                         ...obj,
-                        [part.id]: Math.max((obj[part.id] || 0) - 1, 0),
+                        [part.id]: newUnassigned,
                       }));
+
+                      // If unassigned went negative, deduct from plates
+                      if (newUnassigned < 0) {
+                        deductFromPlates(part.id, Math.abs(newUnassigned));
+                      }
                     }}
                   />
                   <button
                     className={styles.counterButtonPlus}
                     onClick={() => {
+                      const prevSelected = selectedParts[part.id] || 0;
+                      const newSelected = prevSelected + 1;
+                      const delta = newSelected - prevSelected; // Always +1
+
                       setSelectedParts((obj) => ({
                         ...obj,
-                        [part.id]: (obj[part.id] || 0) + 1,
+                        [part.id]: newSelected,
                       }));
+
+                      const newUnassigned =
+                        (unassignedParts[part.id] || 0) + delta;
                       setUnassignedParts((obj) => ({
                         ...obj,
-                        [part.id]: Math.max((obj[part.id] || 0) + 1, 0),
+                        [part.id]: newUnassigned,
                       }));
+
+                      // If unassigned went negative, deduct from plates
+                      if (newUnassigned < 0) {
+                        deductFromPlates(part.id, Math.abs(newUnassigned));
+                      }
                     }}
                   >
                     +

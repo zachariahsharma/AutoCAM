@@ -41,18 +41,18 @@ export function Header({
             {thickness}
           </span>
         </h1>
-        <div>
-          <div id={styles.usericoncontainer}>
-            <Image
-              src="/dashboard/UserIcon.svg"
-              width={2000}
-              height={2000}
-              alt="user icon"
-              id={styles.usericon}
-            />
-          </div>
-        </div>
       </motion.div>
+      <div>
+        <div id={styles.backcontainer} onClick={() => router.back()}>
+          <Image
+            src="/mat_thickness/Back.svg"
+            width={2000}
+            height={2000}
+            alt="Back icon"
+            id={styles.backicon}
+          />
+        </div>
+      </div>
     </div>
   );
 }

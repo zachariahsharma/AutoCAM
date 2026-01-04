@@ -105,14 +105,14 @@ export default function MaterialThickness({
     if (plates.length > 0 && total > 0) {
       animate(
         scope.current,
-        { height: "calc(50vh - 110px)" },
+        { height: "calc(50vh - 180px)" },
         { duration: 0.5 }
       );
       setSorting(true);
     } else {
       animate(
         scope.current,
-        { height: "calc(100vh - 110px)" },
+        { height: "calc(100vh - 180px)" },
         { duration: 0.5 }
       );
       setSorting(false);

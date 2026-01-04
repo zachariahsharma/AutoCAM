@@ -1,9 +1,10 @@
 "use client";
 
 import styles from "./personal.module.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { authClient } from "@/lib/auth/client";
+import Image from "next/image";
 
 export default function PersonalSettingsPage() {
   const [username, setUsername] = useState("");
@@ -94,6 +95,20 @@ export default function PersonalSettingsPage() {
     }
   }
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleProfileClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // TODO: Handle file upload when API is ready
+      console.log("Selected file:", file.name);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className={styles.personalContainer}>
@@ -108,37 +123,70 @@ export default function PersonalSettingsPage() {
     <div className={styles.personalContainer}>
       <h1>Personal</h1>
       <hr />
-      <form onSubmit={handleSubmit}>
-        <label>Username</label>
-        <input
-          type="text"
-          value={username}
-          onChange={(val) => setUsername(val.target.value)}
-        />
-        <label>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(val) => setEmail(val.target.value)}
-        />
-        <span className={styles.emailStatus}>
-          {emailVerified ? "Email verified" : "Email not verified"}
-        </span>
-        {message && (
-          <p
-            className={
-              message.type === "success" ? styles.success : styles.error
-            }
-          >
-            {message.text}
-          </p>
-        )}
-        <PrimaryButton type="submit" id={styles.submitbutton} disabled={isSaving}>
-          <span className="textGradient">
-            {isSaving ? "Saving..." : "Save"}
+      <div className={styles.contentWrapper}>
+        <form onSubmit={handleSubmit} className={styles.formSection}>
+          <label>Username</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(val) => setUsername(val.target.value)}
+          />
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(val) => setEmail(val.target.value)}
+          />
+          <span className={styles.emailStatus}>
+            {emailVerified ? "Email verified" : "Email not verified"}
           </span>
-        </PrimaryButton>
-      </form>
+          {message && (
+            <p
+              className={
+                message.type === "success" ? styles.success : styles.error
+              }
+            >
+              {message.text}
+            </p>
+          )}
+          <PrimaryButton type="submit" id={styles.submitbutton} disabled={isSaving}>
+            <span className="textGradient">
+              {isSaving ? "Saving..." : "Save"}
+            </span>
+          </PrimaryButton>
+        </form>
+
+        <div className={styles.profileCard}>
+          <div className={styles.profileImageWrapper} onClick={handleProfileClick}>
+            <div className={styles.profileImage}>
+              <Image
+                src="/dashboard/UserIcon.svg"
+                width={2000}
+                height={2000}
+                alt="Profile"
+                className={styles.profilePic}
+              />
+            </div>
+            <div className={styles.profileOverlay}>
+              <Image
+                src="/settings/edit.svg"
+                width={2000}
+                height={2000}
+                alt="Edit"
+                className={styles.editIcon}
+              />
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className={styles.fileInput}
+            />
+          </div>
+          <span className={styles.profileUsername}>{username}</span>
+        </div>
+      </div>
     </div>
   );
 }

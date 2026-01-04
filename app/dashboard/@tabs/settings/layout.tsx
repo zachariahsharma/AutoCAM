@@ -1,10 +1,9 @@
 "use client";
 import styles from "./layout.module.css";
-import { motion } from "framer-motion";
+import { useAnimate } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { Team } from "@/app/types";
+import { useEffect, useRef } from "react";
 import { useSelectedLayoutSegment } from "next/navigation";
 export function useCurrentTab() {
   const segment = useSelectedLayoutSegment("tabs");
@@ -13,10 +12,13 @@ export function useCurrentTab() {
 import { TabEventsProvider, useTabEvents } from "./teamUpdate";
 
 function Sidebar() {
-  const [top, setTop] = useState(2);
+  const itemsRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const sidebarRef = useRef<HTMLElement | null>(null);
+  const [scope, animate] = useAnimate();
   const router = useRouter();
   const tab = useCurrentTab();
   const { updateCount, teams, setTeams } = useTabEvents();
+
   useEffect(() => {
     let mounted = true;
     (async function () {
@@ -36,20 +38,38 @@ function Sidebar() {
   }, [updateCount]);
 
   useEffect(() => {
-    if (tab === "personal") {
-      setTop(12);
-    } else if (tab === "0" || Number.parseInt(tab)) {
-      setTop(12 + 34 * (Number.parseInt(tab) + 1));
-    } else if (tab == "newteam") {
-      setTop(12 + 34 * (teams.length + 1) + 8);
-    } else if (tab == "jointeam") {
-      setTop(12 + 34 * (teams.length + 2) + 8);
+    // Determine which key to look for
+    let key = tab;
+    if (tab === "default") {
+      key = "personal";
+    } else if (!isNaN(Number(tab))) {
+      key = `team-${tab}`;
     }
-  }, [tab, updateCount]);
+
+    const element = itemsRef.current[key];
+    const sidebar = sidebarRef.current;
+    
+    if (element && sidebar) {
+      const elementRect = element.getBoundingClientRect();
+      const sidebarRect = sidebar.getBoundingClientRect();
+      const relativeTop = elementRect.top - sidebarRect.top;
+      
+      animate(
+        scope.current,
+        {
+          top: relativeTop + 2,
+          height: elementRect.height - 4,
+        },
+        { duration: 0.3, ease: "easeInOut" }
+      );
+    }
+  }, [tab, teams, animate, scope]);
+
   return (
-    <aside className={styles.sidebar}>
-      <span id={styles.selected} style={{ top: top }} />
+    <aside className={styles.sidebar} ref={sidebarRef}>
+      <span id={styles.selected} ref={scope} />
       <div
+        ref={(el) => { itemsRef.current["personal"] = el; }}
         onClick={() => {
           if (tab !== "personal") {
             router.push("/dashboard/settings/personal");
@@ -76,6 +96,7 @@ function Sidebar() {
       {teams.map((team, index) => (
         <div
           key={index}
+          ref={(el) => { itemsRef.current[`team-${index}`] = el; }}
           onClick={() => {
             if (tab !== String(index)) {
               router.push("/dashboard/settings/teams/" + index);
@@ -103,6 +124,7 @@ function Sidebar() {
       ))}
       <hr />
       <div
+        ref={(el) => { itemsRef.current["newteam"] = el; }}
         onClick={() => {
           if (tab !== "newteam") {
             router.push("/dashboard/settings/newteam");
@@ -127,6 +149,7 @@ function Sidebar() {
         <span>New Team</span>
       </div>
       <div
+        ref={(el) => { itemsRef.current["jointeam"] = el; }}
         onClick={() => {
           if (tab !== "jointeam") {
             router.push("/dashboard/settings/jointeam");

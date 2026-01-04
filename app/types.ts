@@ -73,7 +73,7 @@ export interface Tool {
 export interface Collaborator {
   id: number;
   name: string;
-  role: "Admin" | "Member" | "pending";
+  role: "Owner" | "Admin" | "Member" | "pending";
   email: string;
 }
 

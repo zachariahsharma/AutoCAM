@@ -1,7 +1,6 @@
 "use client";
 
 import styles from "./newteam.module.css";
-import { TeamName } from "../teams/[teamid]/page";
 import CollaboratorsSettingsPage from "../teams/[teamid]/Collaborators/Collaborators";
 import type { Collaborator } from "@/app/types";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
@@ -53,7 +52,7 @@ export default function NewteamSettingsPage() {
       }
 
       notifyUpdate();
-      router.push("/settings/teams/" + teams.length);
+      router.push("/dashboard/settings/teams/" + teams.length);
     } else {
       console.error("Error creating team:", response.statusText);
     }
@@ -62,13 +61,17 @@ export default function NewteamSettingsPage() {
     <div className={styles.newteamContainer}>
       <h1>New Team</h1>
       <hr />
-      <TeamName
-        oldTeamName=""
-        rename={false}
-        handleFormSubmit={(newName) => {
-          setTeamName(newName);
-        }}
-      />
+      <div className={styles.teamNameSection}>
+        <label>Team Name</label>
+        <input
+          type="text"
+          placeholder="Enter team name"
+          value={teamName}
+          onChange={(e) => setTeamName(e.target.value)}
+          className={styles.teamNameInput}
+          required
+        />
+      </div>
       <br />
       <CollaboratorsSettingsPage
         optional

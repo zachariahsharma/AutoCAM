@@ -70,8 +70,7 @@
   width: 10px;
   background-color: var(--yellow-1);
   border-radius: 10px;
-  transition: top .3s;
-  top: 0;
+  top: 12px;
 }
 .main {
   position: absolute;

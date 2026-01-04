@@ -33,3 +33,38 @@
   border: 1px solid rgba(255,255,255,.70);
   color:white;
 }
+
+.teamNameSection {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.teamNameSection > label {
+  color: white;
+  font-family: var(--font-roboto);
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.teamNameInput {
+  border-radius: 5px;
+  padding: 10px;
+  height: 40px;
+  width: 100%;
+  border: 1px solid rgba(255,255,255,.53);
+  background-color: rgba(217,217,217, .19);
+  color: #BCBCBC;
+  font-size: 15px;
+  transition: all .25s;
+}
+
+.teamNameInput:focus {
+  outline: none;
+  border: 1px solid rgba(255,255,255,.70);
+  color: white;
+}
+
+.teamNameInput::placeholder {
+  color: #888;
+}

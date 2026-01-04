@@ -1,13 +1,13 @@
 import { teamIdFromDigest } from "@/lib/auth/server";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
-import { TeamMembers } from "@/lib/db/schema/entities";
+import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { user } from "@/lib/db/schema/auth";
 import { and, eq, sql } from "drizzle-orm";
 import zod from "zod";
 import { CommonAuthorization, registerTeamEndpoint, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 
-const Member = zod.object({ user: zod.string().email(), admin: zod.boolean() });
+const Member = zod.object({ user: zod.string().email(), admin: zod.boolean(), isOwner: zod.boolean() });
 
 registerTeamEndpoint([scopes.teams.read], {
   method: "get",
@@ -30,10 +30,16 @@ registerTeamEndpoint([scopes.teams.read], {
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
   
+  // Get team to find owner
+  const team = await tx.query.Teams.findFirst({
+    where: eq(Teams.id, id)
+  });
+  const ownerId = team?.owner;
+  
   return routeResponse(200, await parseJsonBody((await tx.query.TeamMembers.findMany({
     where: eq(TeamMembers.team_id, id),
     with: { user: true },
-  })).map(x => ({ ...x, user: x.user.email })), zod.array(Member)));
+  })).map(x => ({ ...x, user: x.user.email, isOwner: x.user_id === ownerId })), zod.array(Member)));
 });
 
 const UpdateMemberSchema = zod.object({ 

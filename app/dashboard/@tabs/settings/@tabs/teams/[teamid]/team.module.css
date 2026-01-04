@@ -38,3 +38,126 @@
   width: 190px;
   height: 40px;
 }
+
+#teamNameContainer {
+  display: flex;
+  gap: 10px;
+}
+
+/* Delete Team Button */
+.deleteTeamButton {
+  margin-top: 20px;
+  background-color: black;
+  color: #A81717;
+  border: 1px solid #A81717;
+  padding: 5px 20px;
+  border-radius: 8px;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.deleteTeamButton:hover {
+  background-color: #A81717;
+  color: white;
+}
+
+/* Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.deleteModal {
+  background-color: black;
+  width: 400px;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #A81717;
+  color: white;
+  font-family: var(--font-roboto);
+  text-align: center;
+}
+
+.deleteModal h3 {
+  margin: 0 0 15px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #A81717;
+}
+
+.deleteModal p {
+  font-size: 14px;
+  color: #ccc;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+
+.modalButtons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.modalButtons button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.cancelButton {
+  background-color: #3a3a3a;
+  color: white;
+  border: 1px solid #4a4a4a;
+}
+
+.cancelButton:hover {
+  background-color: #4a4a4a;
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmDeleteButton {
+  background-color: #A81717;
+  color: white;
+  border: 1px solid #A81717;
+}
+
+.confirmDeleteButton:hover {
+  background-color: #8a1212;
+}
+
+.confirmDeleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 500px) {
+  .deleteTeamButton {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  
+  .deleteModal {
+    width: 90%;
+    padding: 20px;
+  }
+}

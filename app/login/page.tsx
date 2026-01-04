@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState, Dispatch, SetStateAction, use } from "react";
 import { RobotPic } from "../signup/page";
 import { Alert } from "../signup/page";
-import { ErrorModal } from "../settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";
+import { ErrorModal } from "../dashboard/@tabs/settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";
 
 function LoginContainer({
   setErrorModalOpen,

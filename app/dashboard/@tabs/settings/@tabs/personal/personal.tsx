@@ -18,6 +18,8 @@ export default function PersonalSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -49,6 +51,34 @@ export default function PersonalSettingsPage() {
       mounted = false;
     };
   }, []);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  async function handleResendVerification() {
+    if (resendCooldown > 0 || isSendingVerification) return;
+    
+    setIsSendingVerification(true);
+    try {
+      await authClient.sendVerificationEmail({
+        email: email,
+        callbackURL: "/dashboard/settings/personal",
+      });
+      setMessage({ type: "success", text: "Verification email sent! Check your inbox." });
+      setResendCooldown(60);
+    } catch (err) {
+      console.error("Error sending verification email:", err);
+      setMessage({ type: "error", text: "Failed to send verification email" });
+    } finally {
+      setIsSendingVerification(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -155,9 +185,25 @@ export default function PersonalSettingsPage() {
             value={email}
             onChange={(val) => setEmail(val.target.value)}
           />
-          <span className={styles.emailStatus}>
-            {emailVerified ? "Email verified" : "Email not verified"}
-          </span>
+          <div className={styles.emailStatusRow}>
+            <span className={styles.emailStatus}>
+              {emailVerified ? "Email verified" : "Email not verified"}
+            </span>
+            {!emailVerified && (
+              <button
+                type="button"
+                className={styles.resendButton}
+                onClick={handleResendVerification}
+                disabled={resendCooldown > 0 || isSendingVerification}
+              >
+                {isSendingVerification
+                  ? "Sending..."
+                  : resendCooldown > 0
+                  ? `Resend (${resendCooldown}s)`
+                  : "Resend verification"}
+              </button>
+            )}
+          </div>
           {message && (
             <p
               className={

@@ -5,24 +5,113 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import FileUploadModal from "@/components/FileUploadModal/FileUploadModal";
 
-function Machines({ oldMachines }: { oldMachines: Machine[] }) {
-  const [machines, setMachines] = useState<Machine[]>(oldMachines);
-  const [machineName, setMachineName] = useState(
-    machines.map((machine) => machine.name)
-  );
+function Machines({ teamId }: { teamId: number }) {
+  const [machines, setMachines] = useState<Machine[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingUpdates, setPendingUpdates] = useState<Record<number, NodeJS.Timeout>>({});
 
-  const handleAddMachine = (name: string, file: File) => {
-    const newMachine: Machine = {
-      id: machines.length + 1,
-      name,
-      file: file.name,
+  // Load machines from API
+  useEffect(() => {
+    if (!teamId) return;
+    let mounted = true;
+    setIsLoading(true);
+    async function loadMachines() {
+      try {
+        const response = await fetch(`/api/teams/${teamId}/machines`);
+        if (response.ok) {
+          const data = await response.json();
+          if (mounted) {
+            setMachines(data);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading machines:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+    loadMachines();
+    return () => {
+      mounted = false;
     };
-    setMachines((prev) => [...prev, newMachine]);
-    setMachineName((prev) => [...prev, name]);
-    // TODO: Upload file to API here
-    console.log("Machine added:", name, "File:", file.name);
+  }, [teamId]);
+
+  // Cleanup pending timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(pendingUpdates).forEach(clearTimeout);
+    };
+  }, [pendingUpdates]);
+
+  const handleAddMachine = async (name: string, file: File) => {
+    if (!teamId) return;
+    try {
+      const formData = new FormData();
+      formData.append("data", JSON.stringify({ name }));
+      formData.append("file", file);
+
+      const response = await fetch(`/api/teams/${teamId}/machines`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const { id } = await response.json();
+        setMachines((prev) => [...prev, { id, name, file: file.name }]);
+      }
+    } catch (error) {
+      console.error("Error adding machine:", error);
+    }
   };
+
+  function updateMachineLocal(machineId: number, name: string) {
+    setMachines((prev) =>
+      prev.map((m) => (m.id === machineId ? { ...m, name } : m))
+    );
+
+    // Debounce the API call
+    if (pendingUpdates[machineId]) {
+      clearTimeout(pendingUpdates[machineId]);
+    }
+
+    const timeout = setTimeout(() => {
+      updateMachineApi(machineId, name);
+      setPendingUpdates((prev) => {
+        const { [machineId]: _, ...rest } = prev;
+        return rest;
+      });
+    }, 500);
+
+    setPendingUpdates((prev) => ({ ...prev, [machineId]: timeout }));
+  }
+
+  async function updateMachineApi(machineId: number, name: string) {
+    try {
+      await fetch(`/api/machines/${machineId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+    } catch (error) {
+      console.error("Error updating machine:", error);
+    }
+  }
+
+  async function deleteMachine(machineId: number) {
+    try {
+      const response = await fetch(`/api/machines/${machineId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setMachines((prev) => prev.filter((m) => m.id !== machineId));
+      }
+    } catch (error) {
+      console.error("Error deleting machine:", error);
+    }
+  }
 
   return (
     <main id={styles.machinesContainer}>
@@ -46,34 +135,32 @@ function Machines({ oldMachines }: { oldMachines: Machine[] }) {
           className={styles.addIcon}
         />
       </div>
-      {machines.map((machine, index) => (
-        <div key={index} className={styles.machineContainer}>
-          <input
-            type="text"
-            value={machineName[index]}
-            placeholder="Name"
-            onChange={(e) =>
-              setMachineName((prev) => {
-                const newNames = [...prev];
-                newNames[index] = e.target.value;
-                return newNames;
-              })
-            }
-          />
-          <span id={styles.machineVertical} />
-          <span>{machine.file}</span>
-          <Image
-            alt="Trash"
-            src="/settings/teams/Trash.svg"
-            width={2000}
-            height={2000}
-            onClick={() =>
-              setMachines((prev) => prev.filter((t) => t.id !== machine.id))
-            }
-            className={styles.trashIcon}
-          />
+      {isLoading ? (
+        <div className={styles.loadingContainer}>
+          <span className={styles.loadingSpinner} />
         </div>
-      ))}
+      ) : (
+        machines.map((machine) => (
+          <div key={machine.id} className={styles.machineContainer}>
+            <input
+              type="text"
+              value={machine.name}
+              placeholder="Name"
+              onChange={(e) => updateMachineLocal(machine.id, e.target.value)}
+            />
+            <span id={styles.machineVertical} />
+            <span>{machine.file}</span>
+            <Image
+              alt="Trash"
+              src="/settings/teams/Trash.svg"
+              width={2000}
+              height={2000}
+              onClick={() => deleteMachine(machine.id)}
+              className={styles.trashIcon}
+            />
+          </div>
+        ))
+      )}
     </main>
   );
 }
@@ -569,7 +656,7 @@ export default function FusionInputs({
         </div>
         <div id={styles.inputsContainer}>
           {selectedTab === "Machines" && (
-            <Machines oldMachines={defaultMachines} />
+            <Machines teamId={teamId} />
           )}
           {selectedTab === "Materials" && (
             <Materials teamId={teamId} />

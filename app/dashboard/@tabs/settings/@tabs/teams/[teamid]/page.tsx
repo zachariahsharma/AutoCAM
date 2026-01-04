@@ -7,9 +7,10 @@ import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";
 import CollaboratorsSettingsPage from "./Collaborators/Collaborators";
 import { useTabEvents } from "../../../../settings/teamUpdate";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import ApiKeys from "./ApiKeys/ApiKeys";
 import FusionServer from "./FusionServer/FusionServer";
+import { authClient } from "@/lib/auth/client";
 export function TeamName({
   oldTeamName,
   rename = true,
@@ -45,6 +46,7 @@ export function TeamName({
 }
 
 export default function TeamSettingsPage() {
+  const router = useRouter();
   const [teamName, setTeamName] = useState<string>("");
   const [materials, setMaterials] = useState<Material[]>([]);
   const [machines, setMachines] = useState<Machine[]>([]);
@@ -52,6 +54,28 @@ export default function TeamSettingsPage() {
   const [teamDbId, setTeamDbId] = useState<number>(0);
   const { teams, notifyUpdate } = useTabEvents();
   const [tools, setTools] = useState<Tool[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Check if current user is the owner
+  useEffect(() => {
+    async function checkOwnership() {
+      const { data } = await authClient.getSession();
+      if (data?.user?.id) {
+        const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
+        const teamIndex = parseInt(idStr, 10);
+        const team = teams[teamIndex];
+        if (team && team.owner === data.user.id) {
+          setIsOwner(true);
+        } else {
+          setIsOwner(false);
+        }
+      }
+    }
+    checkOwnership();
+  }, [teamid, teams]);
+
   useEffect(() => {
     const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
     const teamIndex = parseInt(idStr, 10);
@@ -65,6 +89,26 @@ export default function TeamSettingsPage() {
       setTools(team.tools || []);
     }
   }, [teamid, teams]);
+
+  const handleDeleteTeam = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/teams/${teamDbId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        notifyUpdate();
+        router.push("/dashboard/settings/personal");
+      } else {
+        console.error("Failed to delete team:", await response.text());
+      }
+    } catch (err) {
+      console.error("Error deleting team:", err);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
   return (
     <div>
       <div className={styles.teamContainer}>
@@ -104,6 +148,43 @@ export default function TeamSettingsPage() {
       <ApiKeys />
       <br />
       <FusionServer />
+
+      {isOwner && (
+        <button
+          className={styles.deleteTeamButton}
+          onClick={() => setShowDeleteModal(true)}
+        >
+          Delete Team
+        </button>
+      )}
+
+      {showDeleteModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.deleteModal}>
+            <h3>Delete Team?</h3>
+            <p>
+              This action is <strong>permanent</strong> and cannot be undone.
+              All team data, including materials, machines, API keys, and members will be deleted.
+            </p>
+            <div className={styles.modalButtons}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmDeleteButton}
+                onClick={handleDeleteTeam}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete Team"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

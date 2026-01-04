@@ -54,12 +54,40 @@
   color:white;
 }
 
+.emailStatusRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: -10px;
+  margin-bottom: 15px;
+}
+
 .emailStatus {
   font-size: 12px;
   font-style: italic;
   color: #636363;
-  margin-top: -10px;
-  margin-bottom: 15px;
+}
+
+.resendButton {
+  background: none;
+  border: none;
+  color: var(--yellow-1);
+  font-size: 12px;
+  font-family: var(--font-roboto);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+
+.resendButton:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.resendButton:disabled {
+  color: #636363;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 .success {

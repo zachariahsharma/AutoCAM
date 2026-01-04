@@ -92,7 +92,7 @@ export default function CollaboratorsSettingsPage({
         return;
       }
 
-      const members: { user: string; admin: boolean }[] =
+      const members: { user: string; admin: boolean; isOwner: boolean }[] =
         await membersRes.json();
       const invites: { email: string; admin: boolean }[] =
         await invitesRes.json();
@@ -102,7 +102,7 @@ export default function CollaboratorsSettingsPage({
           id: idx + 1,
           email: m.user,
           name: m.user.split("@")[0] || "Unknown",
-          role: (m.admin ? "Admin" : "Member") as "Admin" | "Member",
+          role: (m.isOwner ? "Owner" : m.admin ? "Admin" : "Member") as "Owner" | "Admin" | "Member",
         })),
         ...invites.map((inv, idx) => ({
           id: members.length + idx + 1,
@@ -450,8 +450,8 @@ function CollaboratorCard({
         <div>{collaborator.email}</div>
       </span>
       <div className={styles.role}>
-        {collaborator.role === "pending" ? (
-          <span>pending</span>
+        {collaborator.role === "pending" || collaborator.role === "Owner" ? (
+          <span>{collaborator.role === "Owner" ? "Owner" : "pending"}</span>
         ) : (
           <button onClick={() => setDropdownOpen(!dropdownOpen)}>
             {collaborator.role}
@@ -481,14 +481,16 @@ function CollaboratorCard({
           </div>
         )}
       </div>
-      <Image
-        alt="remove"
-        src="/settings/teams/remove.svg"
-        width={2000}
-        height={2000}
-        className={styles.removeIcon}
-        onClick={() => onRemove(collaborator)}
-      />
+      {collaborator.role !== "Owner" && (
+        <Image
+          alt="remove"
+          src="/settings/teams/remove.svg"
+          width={2000}
+          height={2000}
+          className={styles.removeIcon}
+          onClick={() => onRemove(collaborator)}
+        />
+      )}
     </div>
   );
 }

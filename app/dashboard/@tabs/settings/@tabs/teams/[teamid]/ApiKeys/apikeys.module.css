@@ -284,6 +284,19 @@
   align-items: center;
   justify-content: center;
 }
+#loadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #4F4F4F;
+  border-top-color: var(--yellow-1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .checkboxIcon {
   width: 9px;
   height: 9px;
@@ -360,4 +373,106 @@
 #dropdownScopes > div > span {
   margin-left: 10px;
   cursor: pointer;
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 768px) {
+  .apiKeyItem {
+    font-size: 13px;
+    padding-left: 8px;
+  }
+  
+  .apiKeyName {
+    width: 35%;
+    min-width: 35%;
+    margin-right: 8px;
+  }
+  
+  #modalContent {
+    width: 90vw;
+    max-width: 500px;
+  }
+  
+  #inputContainer > input, .scopeInput {
+    width: calc(100% - 40px);
+    max-width: 400px;
+    font-size: 15px;
+  }
+  
+  .alert {
+    width: calc(100% - 40px);
+    max-width: 400px;
+  }
+  
+  #dropdownScopes {
+    min-width: calc(100% - 40px);
+    max-width: 400px;
+    width: calc(100% - 40px);
+  }
+}
+
+@media (max-width: 480px) {
+  .apiKeyItem {
+    font-size: 12px;
+    padding-left: 6px;
+    height: 36px;
+  }
+  
+  .apiKeyName {
+    width: 40%;
+    min-width: 40%;
+    margin-right: 6px;
+  }
+  
+  .removeIcon {
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+  }
+  
+  #modalContent {
+    width: 95vw;
+    border-radius: 15px;
+  }
+  
+  #inputContainer > input, .scopeInput {
+    width: calc(100% - 30px);
+    height: 45px;
+    font-size: 14px;
+    padding-left: 12px;
+  }
+  
+  .alert {
+    width: calc(100% - 30px);
+  }
+  
+  #dropdownScopes {
+    min-width: calc(100% - 30px);
+    width: calc(100% - 30px);
+    font-size: 14px;
+  }
+  
+  #dropdownScopes > div {
+    height: 32px;
+    padding-left: 12px;
+  }
+  
+  #headerImage {
+    width: 35px;
+    height: 35px;
+    margin-left: 15px;
+  }
+  
+  .nameIcon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  #modalTitle > h1 {
+    font-size: 14px;
+  }
+  
+  #modalTitle > span, #modalErrorTitle > span {
+    font-size: 11px;
+  }
 }

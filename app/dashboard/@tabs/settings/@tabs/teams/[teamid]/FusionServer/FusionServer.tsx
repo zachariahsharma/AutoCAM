@@ -49,6 +49,7 @@ export function Modal({
 
 export default function FusionServerPage() {
   const [fusionServers, setFusionServers] = useState<ApiKey[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { teamid } = useParams();
   const { teams } = useTabEvents();
   const [modalOpen, setModalOpen] = useState(false);
@@ -83,6 +84,7 @@ export default function FusionServerPage() {
   useEffect(() => {
     if (id) {
       let mounted = true;
+      setIsLoading(true);
       async function loadFusionServers() {
         try {
           const response = await fetch(`/api/teams/${id.id}/keys`);
@@ -94,6 +96,10 @@ export default function FusionServerPage() {
           }
         } catch (error) {
           console.error("Error loading fusion servers:", error);
+        } finally {
+          if (mounted) {
+            setIsLoading(false);
+          }
         }
       }
       loadFusionServers();
@@ -180,11 +186,15 @@ export default function FusionServerPage() {
       </div>
       <div>
         <div id={styles.fusionServerList}>
-          {fusionServers.length === 0 && (
+          {isLoading ? (
+            <div id={styles.noFusionServersContainer}>
+              <span id={styles.loadingSpinner} />
+            </div>
+          ) : fusionServers.length === 0 ? (
             <div id={styles.noFusionServersContainer}>
               <span id={styles.noFusionServers}>No Fusion Servers Added</span>
             </div>
-          )}
+          ) : null}
           {fusionServers.map((server, index) => (
             <div key={index} className={styles.fusionServerItem}>
               <span className={styles.fusionServerName}>

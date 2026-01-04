@@ -112,13 +112,18 @@ async function fetchPartCategories({
 export default function Plates() {
   const { team } = useDashboardEvents();
   const [partcats, setCategories] = useState<PartCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     let mounted = true;
     const load = async () => {
+      setIsLoading(true);
       const categories = await fetchPartCategories({ team });
       if (mounted && categories) {
         console.log("categories", categories);
         setCategories(categories);
+      }
+      if (mounted) {
+        setIsLoading(false);
       }
     };
     if (team) {
@@ -130,7 +135,11 @@ export default function Plates() {
   }, [team]);
   return (
     <>
-      {partcats.length === 0 ? (
+      {isLoading ? (
+        <div id={styles.loadingContainer}>
+          <span id={styles.loadingSpinner} />
+        </div>
+      ) : partcats.length === 0 ? (
         <p id={styles.nopartcats}>No Categories available.</p>
       ) : (
         <div className={styles.plateslist}>

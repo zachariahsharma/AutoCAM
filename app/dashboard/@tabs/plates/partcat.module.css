@@ -106,3 +106,29 @@
   width:15px;
   height:15px;
 }
+#loadingContainer {
+  text-align: center;
+  display: flex;
+  width: calc(100vw - var(--sidebar-width, 300px));
+  height: 100vh;
+  position: absolute;
+  top: 0px;
+  left: var(--sidebar-width, 300px);
+  z-index: 1;
+  justify-content: center;
+  align-items: center;
+  transition: left 0.3s ease, width 0.3s ease;
+}
+#loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #4F4F4F;
+  border-top-color: var(--yellow-1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

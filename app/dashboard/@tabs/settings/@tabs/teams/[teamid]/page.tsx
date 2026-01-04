@@ -97,6 +97,7 @@ export default function TeamSettingsPage() {
           defaultMachines={machines}
           defaultMaterials={materials}
           defaultTools={tools}
+          teamId={teamDbId}
         />
       </div>
       <br />

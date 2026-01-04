@@ -63,20 +63,112 @@ function Machines({ oldMachines }: { oldMachines: Machine[] }) {
   );
 }
 
-function Materials({ oldMaterials }: { oldMaterials: Material[] }) {
-  const [materials, setMaterials] = useState<Material[]>(oldMaterials);
+function Materials({ teamId }: { teamId: number }) {
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pendingUpdates, setPendingUpdates] = useState<Record<number, NodeJS.Timeout>>({});
+
+  // Load materials from API
+  useEffect(() => {
+    if (!teamId) return;
+    let mounted = true;
+    setIsLoading(true);
+    async function loadMaterials() {
+      try {
+        const response = await fetch(`/api/teams/${teamId}/materials`);
+        if (response.ok) {
+          const data = await response.json();
+          if (mounted) {
+            setMaterials(data);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading materials:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+    loadMaterials();
+    return () => {
+      mounted = false;
+    };
+  }, [teamId]);
+
+  // Cleanup pending timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(pendingUpdates).forEach(clearTimeout);
+    };
+  }, [pendingUpdates]);
+
+  async function addMaterial() {
+    if (!teamId) return;
+    try {
+      const response = await fetch(`/api/teams/${teamId}/materials`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "" }),
+      });
+      if (response.ok) {
+        const { id } = await response.json();
+        setMaterials((prev) => [...prev, { id, name: "" }]);
+      }
+    } catch (error) {
+      console.error("Error adding material:", error);
+    }
+  }
+
+  function updateMaterialLocal(materialId: number, name: string) {
+    setMaterials((prev) =>
+      prev.map((m) => (m.id === materialId ? { ...m, name } : m))
+    );
+
+    // Debounce the API call
+    if (pendingUpdates[materialId]) {
+      clearTimeout(pendingUpdates[materialId]);
+    }
+
+    const timeout = setTimeout(() => {
+      updateMaterialApi(materialId, name);
+      setPendingUpdates((prev) => {
+        const { [materialId]: _, ...rest } = prev;
+        return rest;
+      });
+    }, 500);
+
+    setPendingUpdates((prev) => ({ ...prev, [materialId]: timeout }));
+  }
+
+  async function updateMaterialApi(materialId: number, name: string) {
+    try {
+      await fetch(`/api/materials/${materialId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+    } catch (error) {
+      console.error("Error updating material:", error);
+    }
+  }
+
+  async function deleteMaterial(materialId: number) {
+    try {
+      const response = await fetch(`/api/materials/${materialId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setMaterials((prev) => prev.filter((m) => m.id !== materialId));
+      }
+    } catch (error) {
+      console.error("Error deleting material:", error);
+    }
+  }
+
   return (
     <main id={styles.materialsContainer}>
-      <div
-        id={styles.addMachineContainer}
-        onClick={() => {
-          const newMaterial: Material = {
-            id: materials.length + 1,
-            name: "",
-          };
-          setMaterials((prev) => [...prev, newMaterial]);
-        }}
-      >
+      <div id={styles.addMachineContainer} onClick={addMaterial}>
         <Image
           src="/settings/teams/Plus.svg"
           width={2000}
@@ -85,35 +177,31 @@ function Materials({ oldMaterials }: { oldMaterials: Material[] }) {
           className={styles.addIcon}
         />
       </div>
-      {materials.map((material) => (
-        <div key={material.id} className={styles.machineContainer}>
-          <input
-            type="text"
-            value={material.name}
-            placeholder="Name"
-            id={styles.materialInput}
-            onChange={(e) => {
-              const newMaterials = materials.map((m) => {
-                if (m.id === material.id) {
-                  return { ...m, name: e.target.value };
-                }
-                return m;
-              });
-              setMaterials(newMaterials);
-            }}
-          />
-          <Image
-            alt="Trash"
-            src="/settings/teams/Trash.svg"
-            width={2000}
-            height={2000}
-            onClick={() =>
-              setMaterials((prev) => prev.filter((t) => t.id !== material.id))
-            }
-            className={styles.trashIcon}
-          />
+      {isLoading ? (
+        <div className={styles.loadingContainer}>
+          <span className={styles.loadingSpinner} />
         </div>
-      ))}
+      ) : (
+        materials.map((material) => (
+          <div key={material.id} className={styles.machineContainer}>
+            <input
+              type="text"
+              value={material.name}
+              placeholder="Name"
+              id={styles.materialInput}
+              onChange={(e) => updateMaterialLocal(material.id, e.target.value)}
+            />
+            <Image
+              alt="Trash"
+              src="/settings/teams/Trash.svg"
+              width={2000}
+              height={2000}
+              onClick={() => deleteMaterial(material.id)}
+              className={styles.trashIcon}
+            />
+          </div>
+        ))
+      )}
     </main>
   );
 }
@@ -397,10 +485,12 @@ export default function FusionInputs({
   defaultMachines,
   defaultMaterials,
   defaultTools,
+  teamId,
 }: {
   defaultMachines: Machine[];
   defaultMaterials: Material[];
   defaultTools: Tool[];
+  teamId: number;
 }) {
   const [selectedTab, setSelectedTab] = useState<string>("Machines");
   return (
@@ -453,7 +543,7 @@ export default function FusionInputs({
             <Machines oldMachines={defaultMachines} />
           )}
           {selectedTab === "Materials" && (
-            <Materials oldMaterials={defaultMaterials} />
+            <Materials teamId={teamId} />
           )}
           {selectedTab === "Tools" && (
             <Tools

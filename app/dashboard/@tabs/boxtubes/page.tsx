@@ -67,10 +67,12 @@ function BoxTubeCard({ boxtube, delay }: { boxtube: BoxTube; delay: number }) {
 export default function boxtubes() {
   const { team } = useDashboardEvents();
   const [boxtubes, setBoxTubes] = useState<BoxTube[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     let mounted = true;
     const loadBoxTubes = async () => {
       if (team === null) return;
+      setIsLoading(true);
       const response = await fetch(`/api/teams/${team.id}/boxTubes`, {
         method: "GET",
         headers: {
@@ -109,6 +111,9 @@ export default function boxtubes() {
           console.log("Loaded box tubes:", data);
         }
       }
+      if (mounted) {
+        setIsLoading(false);
+      }
     };
     loadBoxTubes();
     return () => {
@@ -117,7 +122,11 @@ export default function boxtubes() {
   }, [team]);
   return (
     <>
-      {boxtubes.length === 0 ? (
+      {isLoading ? (
+        <div id={styles.loadingContainer}>
+          <span id={styles.loadingSpinner} />
+        </div>
+      ) : boxtubes.length === 0 ? (
         <p id={styles.noboxes}>No Box Tubes available.</p>
       ) : (
         <div className={styles.boxtubeslist}>

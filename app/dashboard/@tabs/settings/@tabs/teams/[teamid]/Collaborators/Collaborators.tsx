@@ -230,7 +230,11 @@ export default function CollaboratorsSettingsPage({
             {optional ? "(Optional)" : null}
           </span>
         </h1>
-        <p>Loading...</p>
+        <div className={styles.collaboratorsList}>
+          <div className={styles.loadingContainer}>
+            <span className={styles.loadingSpinner} />
+          </div>
+        </div>
       </div>
     );
   }

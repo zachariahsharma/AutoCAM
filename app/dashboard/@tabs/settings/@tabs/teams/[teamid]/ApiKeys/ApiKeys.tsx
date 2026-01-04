@@ -54,6 +54,7 @@ export function Modal({
 
 export default function ApiKeysPage() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { teamid } = useParams();
   const { teams } = useTabEvents();
   const [modalOpen, setModalOpen] = useState(false);
@@ -87,6 +88,7 @@ export default function ApiKeysPage() {
   useEffect(() => {
     if (id) {
       let mounted = true;
+      setIsLoading(true);
       async function loadApiKeys() {
         try {
           const response = await fetch(`/api/teams/${id.id}/keys`);
@@ -98,6 +100,10 @@ export default function ApiKeysPage() {
           }
         } catch (error) {
           console.error("Error loading API keys:", error);
+        } finally {
+          if (mounted) {
+            setIsLoading(false);
+          }
         }
       }
       loadApiKeys();
@@ -193,11 +199,15 @@ export default function ApiKeysPage() {
       </div>
       <div>
         <div id={styles.apiKeysList}>
-          {apiKeys.length === 0 && (
+          {isLoading ? (
+            <div id={styles.noApiKeysContainer}>
+              <span id={styles.loadingSpinner} />
+            </div>
+          ) : apiKeys.length === 0 ? (
             <div id={styles.noApiKeysContainer}>
               <span id={styles.noApiKeys}>No API Keys Created</span>
             </div>
-          )}
+          ) : null}
           {apiKeys.map((apiKey, index) => (
             <div key={index} className={styles.apiKeyItem}>
               <span className={styles.apiKeyName}>

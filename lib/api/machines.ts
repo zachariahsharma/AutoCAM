@@ -9,7 +9,7 @@ import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const CreateSchema = createInsertSchema(Machines).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true });
@@ -150,5 +150,11 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(Machines).where(eq(Machines.id, id)).returning({ id: Machines.id });
+  const result = await tx.delete(Machines).where(eq(Machines.id, id)).returning({ team_id: Machines.team_id });
+  if (result.length === 0) return result;
+  await client.send(new DeleteObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${result[0].team_id}/machines/${id}`
+  }));
+  return result;
 }, { emailVerifiedNeeded: true });

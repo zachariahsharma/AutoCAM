@@ -76,7 +76,7 @@ function TeamDropdown() {
   }
 
   return (
-    <div>
+    <div className={styles.teamDropdownContainer}>
       <div
         id={styles.teamdropdown}
         onClick={() => setTeamDropdownOpen(!teamDropdownOpen)}
@@ -176,7 +176,11 @@ function Sidebar() {
   }, []);
 
   return (
-    <div className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ""}`}>
+    <div
+      className={`${styles.sidebar} ${
+        isCollapsed ? styles.sidebarCollapsed : ""
+      }`}
+    >
       <div className={styles.sidebarSelected} ref={scope}>
         <span className={styles.selectedYellow} />
         <span className={styles.selectedHighlight} />
@@ -192,16 +196,17 @@ function Sidebar() {
         />
         {!isCollapsed && (
           <>
-        <Image
-          src="/index/Document.svg"
-          width={2000}
-          height={2000}
-          alt="Logo icon"
-          className={styles.logoicon}
-        />
-        <span className={styles.logoText + " secondarytextGradient"}>
-          AutoCAM
-        </span>
+            <Image
+              src="/index/Document.svg"
+              width={2000}
+              height={2000}
+              alt="Logo icon"
+              onClick={() => router.push("/")}
+              className={styles.logoicon}
+            />
+            <span className={styles.logoText + " secondarytextGradient"}>
+              AutoCAM
+            </span>
           </>
         )}
       </div>
@@ -328,7 +333,10 @@ function Sidebar() {
         </div>
       </div>
       <div className={styles.profile}>
-        <div id={styles.profileContainer} className={isCollapsed ? styles.profileCollapsed : ""}>
+        <div
+          id={styles.profileContainer}
+          className={isCollapsed ? styles.profileCollapsed : ""}
+        >
           <Image
             src="/dashboard/UserIcon.svg"
             width={2000}
@@ -337,10 +345,10 @@ function Sidebar() {
             id={styles.profileicon}
           />
           {!isCollapsed && (
-          <div id={styles.profileinfo}>
-            <span id={styles.username}>{username}</span>
-            <span id={styles.email}>{email}</span>
-          </div>
+            <div id={styles.profileinfo}>
+              <span id={styles.username}>{username}</span>
+              <span id={styles.email}>{email}</span>
+            </div>
           )}
         </div>
       </div>
@@ -352,7 +360,7 @@ export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
   useEffect(() => {
     // Set default sidebar width
     document.documentElement.style.setProperty("--sidebar-width", "300px");
-    
+
     try {
       const perf: any = (globalThis as any).performance;
       if (!perf || typeof perf.measure !== "function") return;
@@ -374,12 +382,12 @@ export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
   return (
     <div className={styles.container}>
       <SidebarProvider>
-      <DashboardEventsProvider>
-        <div className={styles.mainContent}>
-          <Sidebar />
-          <main className={styles.main}>{tabs}</main>
-        </div>
-      </DashboardEventsProvider>
+        <DashboardEventsProvider>
+          <div className={styles.mainContent}>
+            <Sidebar />
+            <main className={styles.main}>{tabs}</main>
+          </div>
+        </DashboardEventsProvider>
       </SidebarProvider>
     </div>
   );

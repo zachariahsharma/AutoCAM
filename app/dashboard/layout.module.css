@@ -30,6 +30,7 @@
 .logoicon {
   width: 40px;
   height: auto;
+  cursor: pointer;
 }
 
 .topSidebar {
@@ -61,15 +62,19 @@
   min-height: 0;
 }
 
-#teamdropdown {
-  height: 40px;
+.teamDropdownContainer {
+  position: relative;
   width: 80%;
   margin-left: auto;
   margin-right: auto;
+}
+
+#teamdropdown {
+  height: 40px;
+  width: 100%;
   position: relative;
-  background-color: white;
-  border-radius: 5px;
   background-color: black;
+  border-radius: 5px;
   border: 1px solid #4F4F4F;
   color: #A1A1A1;
   display: flex;
@@ -102,9 +107,9 @@
 
 #teamdropdownMenu {
   position: absolute;
-  top: 80px;
-  left: var(--sidebar-width, 300px);
-  width: 175px;
+  top: 45px;
+  left: 0;
+  width: 100%;
   background-color: black;
   border: 1px solid #4F4F4F;
   border-radius: 5px;
@@ -116,7 +121,6 @@
   font-size: 16px;
   font-weight: 200;
   padding: 5px 0px;
-  transition: left 0.3s ease;
 }
 
 .teamdropdownItem {

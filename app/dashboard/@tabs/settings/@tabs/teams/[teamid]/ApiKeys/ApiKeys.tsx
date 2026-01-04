@@ -186,7 +186,24 @@ export default function ApiKeysPage() {
 
   return (
     <div className={styles.apikeyspage}>
-      <h1>API Keys</h1>
+      <div className={styles.apiKeysHeader}>
+        <h1>API Keys</h1>
+        <a
+          href="/api/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.docsLink}
+        >
+          <span>API Docs</span>
+          <Image
+            src="/dashboard/Open.svg"
+            width={2000}
+            height={2000}
+            alt="open in new tab"
+            className={styles.externalLinkIcon}
+          />
+        </a>
+      </div>
       <div id={styles.addApiKey} onClick={() => setModalOpen(true)}>
         <Image
           src="/settings/teams/Plus.svg"

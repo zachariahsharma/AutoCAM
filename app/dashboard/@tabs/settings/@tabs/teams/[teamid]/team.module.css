@@ -44,34 +44,9 @@
   gap: 10px;
 }
 
-/* Team Actions Container */
-.teamActions {
-  display: flex;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-/* Leave Team Button */
-.leaveTeamButton {
-  background-color: black;
-  color: #636363;
-  border: 1px solid #636363;
-  padding: 5px 20px;
-  border-radius: 8px;
-  font-family: var(--font-roboto);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.leaveTeamButton:hover {
-  background-color: #636363;
-  color: white;
-}
-
 /* Delete Team Button */
 .deleteTeamButton {
+  margin-top: 20px;
   background-color: black;
   color: #A81717;
   border: 1px solid #A81717;
@@ -175,138 +150,13 @@
   cursor: not-allowed;
 }
 
-/* Leave Modal */
-.leaveModal {
-  background-color: black;
-  width: 400px;
-  padding: 25px;
-  border-radius: 12px;
-  border: 1px solid #636363;
-  color: white;
-  font-family: var(--font-roboto);
-  text-align: center;
-}
-
-.leaveModal h3 {
-  margin: 0 0 15px 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: white;
-}
-
-.leaveModal p {
-  font-size: 14px;
-  color: #ccc;
-  margin-bottom: 25px;
-  line-height: 1.5;
-}
-
-.confirmLeaveButton {
-  background-color: #636363;
-  color: white;
-  border: 1px solid #636363;
-}
-
-.confirmLeaveButton:hover {
-  background-color: #4a4a4a;
-}
-
-.confirmLeaveButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Leave Error */
-.leaveError {
-  color: #f87171;
-  font-size: 13px;
-  font-family: var(--font-roboto);
-  margin-top: 10px;
-}
-
-/* Transfer Modal */
-.transferModal {
-  background-color: black;
-  width: 450px;
-  padding: 25px;
-  border-radius: 12px;
-  border: 1px solid var(--yellow-1);
-  color: white;
-  font-family: var(--font-roboto);
-  text-align: center;
-}
-
-.transferModal h3 {
-  margin: 0 0 15px 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--yellow-1);
-}
-
-.transferModal p {
-  font-size: 14px;
-  color: #ccc;
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-
-.transferLabel {
-  display: block;
-  text-align: left;
-  font-size: 14px;
-  color: #aaa;
-  margin-bottom: 8px;
-}
-
-.transferSelect {
-  width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #636363;
-  background-color: #1a1a1a;
-  color: white;
-  font-family: var(--font-roboto);
-  font-size: 14px;
-  margin-bottom: 20px;
-  cursor: pointer;
-}
-
-.transferSelect:focus {
-  outline: none;
-  border-color: var(--yellow-1);
-}
-
-.confirmTransferButton {
-  background: linear-gradient(90deg, var(--yellow-1), var(--yellow-2));
-  color: black;
-  border: none;
-  font-weight: 600;
-}
-
-.confirmTransferButton:hover {
-  opacity: 0.9;
-}
-
-.confirmTransferButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 @media (max-width: 500px) {
-  .teamActions {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .leaveTeamButton,
   .deleteTeamButton {
     padding: 8px 16px;
     font-size: 12px;
   }
   
-  .deleteModal,
-  .leaveModal,
-  .transferModal {
+  .deleteModal {
     width: 90%;
     padding: 20px;
   }

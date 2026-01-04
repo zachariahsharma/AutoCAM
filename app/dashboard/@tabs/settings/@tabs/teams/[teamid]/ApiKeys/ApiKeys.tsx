@@ -187,7 +187,7 @@ export default function ApiKeysPage() {
   return (
     <div className={styles.apikeyspage}>
       <div className={styles.apiKeysHeader}>
-      <h1>API Keys</h1>
+        <h1>API Keys</h1>
         <a
           href="/api/docs"
           target="_blank"
@@ -233,7 +233,7 @@ export default function ApiKeysPage() {
               <ConditionalMarquee
                 text={
                   apiKey.scopes === undefined
-                  ? ""
+                    ? ""
                     : apiKey.scopes.join(", ")
                 }
                 className={styles.apiKeyValue}
@@ -398,7 +398,7 @@ export default function ApiKeysPage() {
                   *************************************************************************************************************************************************************
                 </span>
                 <div id={styles.copyIconContainer}>
-                    <Image
+                  <Image
                       src={copied ? "/settings/teams/apikey/Check.svg" : "/settings/teams/apikey/Copy.svg"}
                       width={2000}
                       height={2000}

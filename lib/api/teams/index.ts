@@ -182,6 +182,8 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     if (!teamExists) return routeResponse(404);
     if ("logo" in files) {
       const file = formData.get("logo")! as File;
+      // TODO: Optimize into prev update query
+      await tx.update(Teams).set({ logo: `https://${process.env.AUTOCAM_BUCKET}.s3.amazonaws.com/teams/${id}/logo` });
       await client.send(new PutObjectCommand({
         Bucket: process.env.AUTOCAM_BUCKET,
         Key: `teams/${id}/logo`,

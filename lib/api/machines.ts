@@ -5,6 +5,9 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
+import { teamIdFromDigest } from "../auth/server";
+import { eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
@@ -109,3 +112,34 @@ registry.registerPath({
     ...ValidationError
   }
 });
+
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  id ??= await teamIdFromDigest(tx, authType);
+  return routeResponse(200, await parseJsonBody(await tx.query.Machines.findMany({
+    where: eq(Machines.team_id, id)
+  }), zod.array(Machine)));
+});
+
+export const POST = routeFactory(async (req, authType, tx, team_id) => {
+  team_id ??= await teamIdFromDigest(tx, authType);
+  const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
+  if (!data) return routeResponse(422);
+  const [id] = await tx.insert(Machines).values({
+    ...data,
+    file: files["file"],
+    team_id
+  }).returning({ id: Machines.id });
+
+  return routeResponse(201, id);
+}, { emailVerifiedNeeded: true });
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  return tx.update(Machines).set(body).where(eq(Machines.id, id)).returning({ id: Machines.id });
+}, { emailVerifiedNeeded: true });
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return tx.delete(Machines).where(eq(Machines.id, id)).returning({ id: Machines.id });
+}, { emailVerifiedNeeded: true });

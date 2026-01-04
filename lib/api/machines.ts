@@ -8,6 +8,8 @@ import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } 
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
+import { client } from "../aws";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
@@ -126,9 +128,16 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   if (!data) return routeResponse(422);
   const [id] = await tx.insert(Machines).values({
     ...data,
-    file: files["file"],
     team_id
   }).returning({ id: Machines.id });
+
+  await client.send(new PutObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${team_id}/machines/${id.id}`,
+    ACL: "private",
+    Body: await files["file"].bytes(),
+    ContentType: files["file"].type
+  }));
 
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });

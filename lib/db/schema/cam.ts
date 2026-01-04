@@ -107,7 +107,6 @@ export const Materials = pgTable("materials", {
 export const Machines = pgTable("machines", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  file: bytea().notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   unique().on(table.name, table.team_id),

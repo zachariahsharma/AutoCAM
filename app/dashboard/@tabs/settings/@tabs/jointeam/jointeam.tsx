@@ -3,21 +3,60 @@
 import styles from "./jointeam.module.css";
 import { TeamInvite } from "@/app/types";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useTabEvents } from "../../teamUpdate";
-export default function JoinTeamSettingsPage({
-  mockInvites,
-}: {
-  mockInvites: TeamInvite[];
-}) {
-  const [invites, setInvites] = useState<TeamInvite[]>(mockInvites);
+
+export default function JoinTeamSettingsPage() {
+  const [invites, setInvites] = useState<TeamInvite[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchInvites = useCallback(async () => {
+    try {
+      const response = await fetch("/api/user/invites");
+      if (response.ok) {
+        const data = await response.json();
+        // Map the API response to match the TeamInvite type
+        const mappedInvites: TeamInvite[] = data.map(
+          (invite: { id: string; team: string }) => ({
+            id: invite.id,
+            teamName: invite.team,
+          })
+        );
+        setInvites(mappedInvites);
+      }
+    } catch (error) {
+      console.error("Error fetching invites:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInvites();
+  }, [fetchInvites]);
+
+  if (loading) {
+    return (
+      <div className={styles.jointeamContainer}>
+        <h1>Join Team</h1>
+        <hr />
+        <p>Loading invites...</p>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.jointeamContainer}>
       <h1>Join Team</h1>
       <hr />
-      {invites.map((invite, index) => (
-        <JoinCard key={index} invite={invite} setInvites={setInvites} />
-      ))}
+      {invites.length === 0 ? (
+        <p className={styles.noInvites}>No pending invites</p>
+      ) : (
+        invites.map((invite) => (
+          <JoinCard key={invite.id} invite={invite} setInvites={setInvites} />
+        ))
+      )}
     </div>
   );
 }
@@ -30,21 +69,31 @@ function JoinCard({
   setInvites: React.Dispatch<React.SetStateAction<TeamInvite[]>>;
 }) {
   const { notifyUpdate } = useTabEvents();
+  const router = useRouter();
+  const [isJoining, setIsJoining] = useState(false);
+
   const handleJoin = () => {
+    setIsJoining(true);
+    // Navigate to the accept endpoint which will accept the invite and redirect to dashboard
+    router.push(`/api/user/invites/accept/${invite.id}`);
     notifyUpdate();
-    setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-    console.log(`Joining team: ${invite.teamName}`);
   };
+
   const handleDecline = () => {
-    notifyUpdate();
+    // Note: There's no API endpoint to decline invites, so we just remove from UI
+    // The invite will remain in the database until it's accepted or cancelled by the team admin
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-    console.log(`Declining invite to team: ${invite.teamName}`);
+    notifyUpdate();
   };
 
   return (
     <div className={styles.joinCard}>
       <span>{invite.teamName}</span>
-      <button className={styles.joinButton} onClick={handleJoin}>
+      <button
+        className={styles.joinButton}
+        onClick={handleJoin}
+        disabled={isJoining}
+      >
         <Image
           src="/settings/join/Join.svg"
           alt="Join Team"

@@ -30,7 +30,7 @@ function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
         <ConditionalMarquee text={part.name} />
       </div>
       <div id={styles.quantitycardinfo}>
-        <p id={styles.quantitycardoriginal}>Original: {part.quantity}</p>
+        <p id={styles.quantitycardoriginal}>Original: {part.original_quantity}</p>
         <p id={styles.quantitycardcurrent}>
           Current: <span>{quantity}</span>
         </p>

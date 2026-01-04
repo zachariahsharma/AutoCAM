@@ -13,8 +13,10 @@
   top: 19px;
   left: var(--sidebar-width, 300px);
   width: calc(100vw - var(--sidebar-width, 300px));
-  height: 40px;
+  height: 52px;
   padding-top: 5px;
+  background-color: black;
+  z-index: 100;
   transition: left 0.3s ease, width 0.3s ease;
 }
 .header h1 {
@@ -23,6 +25,7 @@
   font-family: var(--font-roboto);
   font-size: 32px;
   font-weight: 500;
+  margin-bottom:0px;
 }
 .header hr {
   margin-top: 0px;

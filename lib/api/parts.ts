@@ -8,8 +8,8 @@ import { CommonAuthorization, Conflict, ValidationError } from "./common";
 import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { eq } from "drizzle-orm";
 
-const CreateSchema = createInsertSchema(Parts).omit({ file: true, category_id: true });
-const UpdateSchema = createUpdateSchema(Parts).omit({ file: true, category_id: true });
+const CreateSchema = createInsertSchema(Parts).omit({ file: true, category_id: true, original_quantity: true });
+const UpdateSchema = createUpdateSchema(Parts).omit({ file: true, category_id: true, original_quantity: true });
 const Part = createSelectSchema(Parts).omit({ file: true, category_id: true }).openapi("Part");
 
 registry.registerPath({
@@ -137,7 +137,9 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
   const { data, file } = await parseJsonFile(await req.formData(), CreateSchema);
-  const [id] = await tx.insert(Parts).values({ ...data, file, category_id }).returning({ id: Parts.id });
+  // Set original_quantity to match quantity when part is first created
+  const original_quantity = data.quantity ?? 1;
+  const [id] = await tx.insert(Parts).values({ ...data, file, category_id, original_quantity }).returning({ id: Parts.id });
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });
 

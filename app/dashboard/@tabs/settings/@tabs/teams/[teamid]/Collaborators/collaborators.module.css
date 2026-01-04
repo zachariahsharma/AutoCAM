@@ -172,3 +172,79 @@
     transform: rotate(360deg);
   }
 }
+.alertWrapper {
+  margin-top: 12px;
+}
+
+/* Confirmation Modal */
+.confirmModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.confirmModal {
+  background-color: #1A1A1A;
+  border: 1px solid #3A3A3A;
+  border-radius: 12px;
+  padding: 24px 32px;
+  max-width: 400px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+.confirmModal h3 {
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 12px 0;
+}
+.confirmModal p {
+  color: #BBBBBB;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+}
+.confirmModal p strong {
+  color: white;
+}
+.confirmModalButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.cancelButton {
+  background-color: transparent;
+  border: 1px solid #9A9A9A;
+  border-radius: 6px;
+  color: #BBBBBB;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.cancelButton:hover {
+  background-color: #2A2A2A;
+}
+.confirmButton {
+  background: linear-gradient(90deg, var(--yellow-1), var(--yellow-2));
+  border: none;
+  border-radius: 6px;
+  color: black;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.confirmButton:hover {
+  opacity: 0.9;
+}

@@ -38,6 +38,7 @@ export const Parts = pgTable("parts", {
   ticket: text().notNull(),
   file: bytea().notNull(),
   quantity: integer().default(1).notNull(),
+  original_quantity: integer().default(1).notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 }, table => [
   pgPolicy('parts_query_key', { for: "select", using: KeyAuthorized(TeamFromCategory(table.category_id), scopes.parts.read) }),

@@ -9,7 +9,7 @@ import { auth } from "@/lib/auth/server";
 import db, { withAuth } from "@/lib/db";
 import { headers } from "next/headers";
 
-const Invite = createSelectSchema(TeamInvites).omit({ id: true }).extend({ team: zod.string() });
+const Invite = createSelectSchema(TeamInvites).extend({ team: zod.string() });
 
 export const GET = routeFactory(async (req, authType, tx) => {
   return routeResponse(200, await parseJsonBody((await tx.query.TeamInvites.findMany({

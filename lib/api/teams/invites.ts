@@ -1,4 +1,5 @@
 import { TeamInvites, Teams } from "@/lib/db/schema/entities";
+import { user } from "@/lib/db/schema/auth";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "../common";
@@ -56,6 +57,15 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
 
   const data = await parseJsonBody(await req.json(), CreateSchema);
+
+  // Check if the user exists
+  const existingUser = await tx.query.user.findFirst({
+    where: eq(user.email, data.email)
+  });
+
+  if (!existingUser) {
+    return routeResponse(404, "No user found with this email address");
+  }
 
   const [invite] = await tx
     .insert(TeamInvites)

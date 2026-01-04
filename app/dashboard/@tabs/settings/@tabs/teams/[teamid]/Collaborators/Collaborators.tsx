@@ -5,6 +5,8 @@ import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { useEffect, useRef, useState, FormEvent, useCallback } from "react";
 import { Collaborator } from "@/app/types";
 import Image from "next/image";
+import { authClient } from "@/lib/auth/client";
+import { Alert } from "@/app/signup/page";
 
 interface CollaboratorsProps {
   optional?: boolean;
@@ -35,6 +37,45 @@ export default function CollaboratorsSettingsPage({
   const [isLoading, setIsLoading] = useState(!useLocalState);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const alertTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    collaborator: Collaborator | null;
+    newRole: "Admin" | "Member" | null;
+  }>({ open: false, collaborator: null, newRole: null });
+
+  // Fetch current user's email
+  useEffect(() => {
+    async function loadCurrentUser() {
+      const { data } = await authClient.getSession();
+      if (data?.user?.email) {
+        setCurrentUserEmail(data.user.email);
+      }
+    }
+    loadCurrentUser();
+  }, []);
+
+  // Auto-dismiss alert after 4 seconds
+  useEffect(() => {
+    if (alertMessage) {
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
+      }
+      alertTimeoutRef.current = setTimeout(() => {
+        setAlertMessage(null);
+      }, 4000);
+    }
+    return () => {
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
+      }
+    };
+  }, [alertMessage]);
+
+  // Count number of admins
+  const adminCount = collaborators.filter((c) => c.role === "Admin").length;
 
   // Fetch members and invites from API (only for existing teams)
   const fetchCollaborators = useCallback(async () => {
@@ -122,7 +163,9 @@ export default function CollaboratorsSettingsPage({
 
       if (!response.ok) {
         const text = await response.text();
-        if (response.status === 409) {
+        if (response.status === 404) {
+          setError("No user found with this email address");
+        } else if (response.status === 409) {
           setError("An invite has already been sent to this email");
         } else {
           setError(text || "Failed to send invite");
@@ -152,8 +195,24 @@ export default function CollaboratorsSettingsPage({
 
   async function handleRoleChange(
     collaborator: Collaborator,
-    newRole: "Admin" | "Member"
+    newRole: "Admin" | "Member",
+    confirmed: boolean = false
   ) {
+    // Clear any previous alert
+    setAlertMessage(null);
+
+    // Check if this would remove the last admin
+    if (collaborator.role === "Admin" && newRole === "Member" && adminCount <= 1) {
+      setAlertMessage("There must be at least one admin in the team");
+      return;
+    }
+
+    // Check if user is trying to change their own permissions - show confirmation
+    if (collaborator.email === currentUserEmail && !confirmed) {
+      setConfirmModal({ open: true, collaborator, newRole });
+      return;
+    }
+
     // For new team flow, just update local state
     if (useLocalState) {
       setCollaborators((prev) =>
@@ -178,6 +237,7 @@ export default function CollaboratorsSettingsPage({
 
       if (!response.ok) {
         console.error("Failed to update role:", await response.text());
+        setAlertMessage("Failed to update role");
         return;
       }
 
@@ -188,10 +248,31 @@ export default function CollaboratorsSettingsPage({
       );
     } catch (err) {
       console.error("Error updating role:", err);
+      setAlertMessage("An error occurred while updating the role");
     }
   }
 
+  function handleConfirmRoleChange() {
+    if (confirmModal.collaborator && confirmModal.newRole) {
+      handleRoleChange(confirmModal.collaborator, confirmModal.newRole, true);
+    }
+    setConfirmModal({ open: false, collaborator: null, newRole: null });
+  }
+
+  function handleCancelRoleChange() {
+    setConfirmModal({ open: false, collaborator: null, newRole: null });
+  }
+
   async function handleRemove(collaborator: Collaborator) {
+    // Clear any previous alert
+    setAlertMessage(null);
+
+    // Check if this would remove the last admin
+    if (collaborator.role === "Admin" && adminCount <= 1) {
+      setAlertMessage("There must be at least one admin in the team");
+      return;
+    }
+
     // For new team flow, just remove from local state
     if (useLocalState) {
       setCollaborators((prev) => prev.filter((c) => c.id !== collaborator.id));
@@ -212,12 +293,14 @@ export default function CollaboratorsSettingsPage({
 
       if (!response.ok) {
         console.error("Failed to remove collaborator:", await response.text());
+        setAlertMessage("Failed to remove collaborator");
         return;
       }
 
       setCollaborators((prev) => prev.filter((c) => c.id !== collaborator.id));
     } catch (err) {
       console.error("Error removing collaborator:", err);
+      setAlertMessage("An error occurred while removing the collaborator");
     }
   }
 
@@ -240,51 +323,86 @@ export default function CollaboratorsSettingsPage({
   }
 
   return (
-    <div className={styles.collaboratorsContainer}>
-      <h1>
-        Collaborators{" "}
-        <span className={styles.optional}>
-          {optional ? "(Optional)" : null}
-        </span>
-      </h1>
-      <form onSubmit={handleAddCollaborator}>
-        <div className={styles.addCollaboratorSection}>
-          <div className={styles.addCollaboratorContainer}>
-            <Image
-              alt="search"
-              src="/settings/teams/search.svg"
-              width={2000}
-              height={2000}
-              className={styles.searchIcon}
-            />
-            <input type="email" name="email" placeholder="Enter email" />
+    <>
+      <div className={styles.collaboratorsContainer}>
+        <h1>
+          Collaborators{" "}
+          <span className={styles.optional}>
+            {optional ? "(Optional)" : null}
+          </span>
+        </h1>
+        <form onSubmit={handleAddCollaborator}>
+          <div className={styles.addCollaboratorSection}>
+            <div className={styles.addCollaboratorContainer}>
+              <Image
+                alt="search"
+                src="/settings/teams/search.svg"
+                width={2000}
+                height={2000}
+                className={styles.searchIcon}
+              />
+              <input type="email" name="email" placeholder="Enter email" />
+            </div>
+            <PrimaryButton type="submit" disabled={isSending}>
+              <span className="textGradient">
+                {isSending ? "Sending..." : "Add Collaborator"}
+              </span>
+            </PrimaryButton>
           </div>
-          <PrimaryButton type="submit" disabled={isSending}>
-            <span className="textGradient">
-              {isSending ? "Sending..." : "Add Collaborator"}
-            </span>
-          </PrimaryButton>
+          {error && <p className={styles.error}>{error}</p>}
+        </form>
+        <div className={styles.alertWrapper}>
+          <Alert message={alertMessage || ""} open={!!alertMessage} />
         </div>
-        {error && <p className={styles.error}>{error}</p>}
-      </form>
-      <div className={styles.collaboratorsList}>
-        {collaborators.map((collaborator) => (
-          <CollaboratorCard
-            collaborator={collaborator}
-            key={collaborator.id}
-            onRoleChange={handleRoleChange}
-            onRemove={handleRemove}
-          />
-        ))}
-        {collaborators.length === 0 && (
-          <div className={styles.emptyStateContainer}>
-            <span className={styles.emptyState}>
-              Enter an email to add a collaborator.
-            </span>
-          </div>
-        )}
+        <div className={styles.collaboratorsList}>
+          {collaborators.map((collaborator) => (
+            <CollaboratorCard
+              collaborator={collaborator}
+              key={collaborator.id}
+              onRoleChange={handleRoleChange}
+              onRemove={handleRemove}
+            />
+          ))}
+          {collaborators.length === 0 && (
+            <div className={styles.emptyStateContainer}>
+              <span className={styles.emptyState}>
+                Enter an email to add a collaborator.
+              </span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal.open && (
+        <div className={styles.confirmModalOverlay}>
+          <div className={styles.confirmModal}>
+            <h3>Change Your Own Role?</h3>
+            <p>
+              Are you sure you want to change your role to{" "}
+              <strong>{confirmModal.newRole}</strong>?
+              {confirmModal.newRole === "Member" && (
+                <> You will lose admin privileges.</>
+              )}
+            </p>
+            <div className={styles.confirmModalButtons}>
+              <button
+                className={styles.cancelButton}
+                onClick={handleCancelRoleChange}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmButton}
+                onClick={handleConfirmRoleChange}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -294,7 +412,7 @@ function CollaboratorCard({
   onRemove,
 }: {
   collaborator: Collaborator;
-  onRoleChange: (collaborator: Collaborator, newRole: "Admin" | "Member") => void;
+  onRoleChange: (collaborator: Collaborator, newRole: "Admin" | "Member", confirmed?: boolean) => void;
   onRemove: (collaborator: Collaborator) => void;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -312,7 +430,7 @@ function CollaboratorCard({
 
     // Only add listener when dropdown is open to avoid unnecessary listeners
     if (dropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {

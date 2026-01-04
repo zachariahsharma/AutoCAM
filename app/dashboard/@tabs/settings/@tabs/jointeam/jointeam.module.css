@@ -53,3 +53,8 @@
   position: absolute;
   right: 15px;
 }
+.noInvites {
+  color: #9A9A9A;
+  font-style: italic;
+  margin-top: 20px;
+}

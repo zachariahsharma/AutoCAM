@@ -10,11 +10,11 @@
 }
 .header {
   position: fixed;
-  top: 19px;
+  top: 0px;
   left: var(--sidebar-width, 300px);
   width: calc(100vw - var(--sidebar-width, 300px));
-  height: 52px;
-  padding-top: 5px;
+  height: 71px;
+  padding-top: 24px;
   background-color: black;
   z-index: 100;
   transition: left 0.3s ease, width 0.3s ease;
@@ -30,7 +30,7 @@
 .header hr {
   margin-top: 0px;
   position: absolute;
-  top: 50px;
+  top: 69px;
   width: calc(100vw - var(--sidebar-width, 300px));
   border: 0.5px solid #636363;
   opacity: 1;

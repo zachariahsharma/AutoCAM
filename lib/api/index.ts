@@ -16,6 +16,8 @@ import "./boxTubes";
 import "./user";
 import "./auth";
 import "./tools";
+import { paginateListObjectsV2, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
+import { client } from "../aws";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
@@ -69,7 +71,7 @@ export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T)
   return result.data;
 }
 
-export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T): Promise<{ data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined, files: Record<string, ArrayBuffer> }> {
+export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T): Promise<{ data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined, files: Record<string, File> }> {
   const json = formData.get("data");
   let data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined = undefined;
   if (json) {
@@ -95,13 +97,13 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       };
       throw routeResponse(422, error);
     }
-    data = await parseJsonBody(JSON.parse(rawJson), schema);
+    data = await parseJsonBody(rawJson, schema);
   }
 
-  const files: Record<string, ArrayBuffer> = {};
+  const files: Record<string, File> = {};
   formData.forEach(async (value, key) => {
     if (value instanceof File)
-      files[key] = await value.arrayBuffer();
+      files[key] = value;
   });
 
   return { data, files };
@@ -160,5 +162,23 @@ export function routeFactory(callback: RouteFactoryCallback, config?: RouteFacto
         throw err;
       }
     });
+  }
+}
+
+export async function s3DeleteWithPrefix(Prefix: string) {
+  const paginator = paginateListObjectsV2(
+    { client },
+    { Bucket: process.env.AUTOCAM_BUCKET, Prefix }
+  );
+  for await (const page of paginator) {
+    const objects = page.Contents ?? [];
+    const tagPromises = objects.map(obj => {
+      return client.send(new PutObjectTaggingCommand({
+        Bucket: process.env.AUTOCAM_BUCKET,
+        Key: obj.Key,
+        Tagging: { TagSet: [{ Key: "delete", Value: "true" }] }
+      }));
+    });
+    await Promise.all(tagPromises);
   }
 }

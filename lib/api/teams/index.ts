@@ -1,3 +1,7 @@
+import "./invites";
+import "./keys";
+import "./members";
+
 import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
@@ -5,16 +9,17 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse, s3DeleteWithPrefix } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
+import { client } from "@/lib/aws";
+import { paginateListObjectsV2, PutObjectCommand, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
 
-import "./invites";
-import "./keys";
-import "./members";
-
-const CreateSchema = createInsertSchema(Teams).omit({ owner: true });
-const UpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
+const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });
+const UpdateSchema = createUpdateSchema(Teams).extend({
+  owner: zod.email().optional(),
+  logo: zod.httpUrl().optional()
+});
 const Team = createSelectSchema(Teams).openapi("Team", { description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
 // OpenAPI route definitions
@@ -83,9 +88,16 @@ registry.registerPath({
   request: {
     params: zod.object({ id: zod.number().openapi({ description: "ID of the team that is being updated" }) }),
     body: {
+      description: "If the logo is a URL, use the application/json. If the logo is a file upload, use the multipart/form-data type.",
       content: {
         "application/json": {
           schema: UpdateSchema
+        },
+        "multipart/form-data": {
+          schema: zod.object({
+            data: UpdateSchema.omit({ logo: true }),
+            logo: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Logo upload" })
+          })
         }
       }
     }
@@ -144,18 +156,47 @@ export const POST = routeFactory(async (req, authType, tx) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  const body = await parseJsonBody(await req.json(), UpdateSchema.extend({
+  const schema = UpdateSchema.extend({
     owner: zod.email().optional().transform(async owner => {
       if (!owner) return;
       const newOwner = await tx.query.user.findFirst({ where: eq(user.email, owner) });
       if (!newOwner) throw routeResponse(404);
       return newOwner.id;
     })
-  }));
-  return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  });
+  const contentType = req.headers.get("content-type");
+  if (!contentType) return routeResponse(422, { message: "Content-Type not defined" });
+  if (contentType.includes("application/json")) {
+    const body = await parseJsonBody(await req.json(), schema);
+    return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  } else if (contentType.includes("multipart/form-data")) {
+    const { data, files } = await parseJsonFile(await req.formData(), schema.omit({ logo: true }));
+    let teamExists: boolean;
+    if (data) {
+      const result = await tx.update(Teams).set(data).where(eq(Teams.id, id)).returning({ id: Teams.id });
+      teamExists = result.length > 0;
+    } else {
+      teamExists = (await tx.query.Teams.findFirst({ where: eq(Teams.id, id) })) !== undefined;
+    }
+    if (!teamExists) return routeResponse(404);
+    if ("logo" in files) {
+      // TODO: Optimize into prev update query
+      await tx.update(Teams).set({ logo: `https://${process.env.AUTOCAM_BUCKET}.s3.amazonaws.com/teams/${id}/logo` });
+      await client.send(new PutObjectCommand({
+        Bucket: process.env.AUTOCAM_BUCKET,
+        Key: `teams/${id}/logo`,
+        Body: await files["logo"].bytes(),
+        ACL: "public-read",
+        ContentType: files["logo"].type
+      }));
+    }
+    return routeResponse(204);
+  } else return routeResponse(422, { message: "Content-Type not valid" })
 }, { emailVerifiedNeeded: true });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  const result = tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  await s3DeleteWithPrefix(`teams/${id}/`);
+  return result;
 }, { emailVerifiedNeeded: true });

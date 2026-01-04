@@ -9,8 +9,8 @@ import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
-const CreateSchema = createInsertSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum) }).omit({ team_id: true, digest: true });
-const UpdateSchema = createUpdateSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum).optional() }).omit({ team_id: true, digest: true });
+const CreateSchema = createInsertSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum), is_fusion_server: zod.boolean().optional() }).omit({ team_id: true, digest: true });
+const UpdateSchema = createUpdateSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum).optional(), is_fusion_server: zod.boolean().optional() }).omit({ team_id: true, digest: true });
 const Key = createSelectSchema(TeamKeys).omit({ team_id: true, digest: true }).openapi("API Key");
 
 registry.registerPath({

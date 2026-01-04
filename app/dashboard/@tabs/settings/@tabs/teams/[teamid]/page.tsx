@@ -1,7 +1,7 @@
 "use client";
 
 import styles from "./team.module.css";
-import { Material, Machine, Tool, Collaborator, ApiKey } from "@/app/types";
+import { Material, Machine, Tool } from "@/app/types";
 import { useEffect, useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";
@@ -9,6 +9,7 @@ import CollaboratorsSettingsPage from "./Collaborators/Collaborators";
 import { useTabEvents } from "../../../../settings/teamUpdate";
 import { useParams } from "next/navigation";
 import ApiKeys from "./ApiKeys/ApiKeys";
+import FusionServer from "./FusionServer/FusionServer";
 export function TeamName({
   oldTeamName,
   rename = true,
@@ -51,7 +52,6 @@ export default function TeamSettingsPage() {
   const [teamDbId, setTeamDbId] = useState<number>(0);
   const { teams, notifyUpdate } = useTabEvents();
   const [tools, setTools] = useState<Tool[]>([]);
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   useEffect(() => {
     const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
     const teamIndex = parseInt(idStr, 10);
@@ -63,7 +63,6 @@ export default function TeamSettingsPage() {
       setMaterials(team.materials || []);
       setMachines(team.machines || []);
       setTools(team.tools || []);
-      setCollaborators(team.collaborators || []);
     }
   }, [teamid, teams]);
   return (
@@ -92,6 +91,8 @@ export default function TeamSettingsPage() {
           />
         ) : null}
         <br />
+        <CollaboratorsSettingsPage teamDbId={teamDbId} />
+        <br />
         <FusionInputs
           defaultMachines={machines}
           defaultMaterials={materials}
@@ -99,12 +100,9 @@ export default function TeamSettingsPage() {
         />
       </div>
       <br />
-      <CollaboratorsSettingsPage
-        collaborators={collaborators}
-        setCollaborators={setCollaborators}
-      />
-      <br />
       <ApiKeys />
+      <br />
+      <FusionServer />
     </div>
   );
 }

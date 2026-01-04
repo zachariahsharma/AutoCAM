@@ -34,8 +34,26 @@ export default function NewteamSettingsPage() {
     if (response.ok) {
       const data = await response.json();
       console.log("Team created successfully:", data);
+
+      // Send invites to all collaborators
+      for (const collaborator of collaborators) {
+        try {
+          await fetch(`/api/teams/${data.id}/invites`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: collaborator.email,
+              admin: collaborator.role === "Admin",
+            }),
+          });
+          console.log("Invite sent to:", collaborator.email);
+        } catch (err) {
+          console.error("Failed to send invite to:", collaborator.email, err);
+        }
+      }
+
       notifyUpdate();
-      router.push("/settings/teams/" + (teams.length));
+      router.push("/settings/teams/" + teams.length);
     } else {
       console.error("Error creating team:", response.statusText);
     }

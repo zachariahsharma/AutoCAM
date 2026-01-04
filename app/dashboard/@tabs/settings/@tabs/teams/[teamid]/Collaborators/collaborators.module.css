@@ -145,3 +145,10 @@
   color: #BBBBBB;
   margin-left: 5px;
 }
+
+.error {
+  color: #f87171;
+  font-size: 13px;
+  margin-top: 8px;
+  font-family: var(--font-roboto);
+}

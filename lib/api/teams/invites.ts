@@ -5,7 +5,7 @@ import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } 
 import { scopeNames as scopes } from "@/lib/scopes";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import mailer from "@/lib/mailer";
 
 const CreateSchema = createInsertSchema(TeamInvites).omit({ team_id: true, id: true });
@@ -73,3 +73,33 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   });
   return routeResponse(204);
 }, { emailVerifiedNeeded: true });
+
+const DeleteSchema = zod.object({ email: zod.string().email() });
+
+registerTeamEndpoint([scopes.teams.invites.cancel], {
+  method: "delete",
+  path: "/api/invites",
+  tags: ["Team Invites"],
+  summary: "Cancel Team Invite",
+  responses: {
+    204: {
+      description: "Team invite cancelled successfully"
+    },
+    ...CommonAuthorization,
+    ...ValidationError
+  }
+}, {}, { path: "/api/teams/invites" });
+
+export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
+  team_id ??= await teamIdFromDigest(tx, authType);
+
+  const { email } = await parseJsonBody(await req.json(), DeleteSchema);
+
+  await tx
+    .delete(TeamInvites)
+    .where(
+      sql`${TeamInvites.team_id} = ${team_id} AND ${TeamInvites.email} = ${email}`
+    );
+
+  return routeResponse(204);
+});

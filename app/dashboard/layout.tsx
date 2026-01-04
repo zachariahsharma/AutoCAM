@@ -4,6 +4,7 @@ import {
   DashboardEventsProvider,
   useDashboardEvents,
 } from "@/app/dashboard/dashboardTeam";
+import { SidebarProvider, useSidebar } from "@/app/dashboard/sidebarContext";
 import styles from "./layout.module.css";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
@@ -29,6 +30,8 @@ function TeamDropdown() {
   const { team, setTeam } = useDashboardEvents();
   const [teams, setTeams] = useState<Team[]>([]);
   const dropdownTeamRef = useRef<HTMLDivElement>(null);
+  const { isCollapsed } = useSidebar();
+
   useEffect(() => {
     let mounted = true;
     async function loadTeams() {
@@ -48,6 +51,7 @@ function TeamDropdown() {
       mounted = false;
     };
   }, []);
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -66,6 +70,11 @@ function TeamDropdown() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [teamDropdownOpen]);
+
+  if (isCollapsed) {
+    return null; // Hide team dropdown when collapsed
+  }
+
   return (
     <div>
       <div
@@ -111,13 +120,14 @@ function TeamDropdown() {
 }
 
 function Sidebar() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const itemsRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [scope, animate] = useAnimate();
   const router = useRouter();
   const tab = useCurrentTab();
+  const { isCollapsed, toggleSidebar } = useSidebar();
+
   useEffect(() => {
     console.log("tab changed to:", tab);
     for (const key in itemsRef.current) {
@@ -136,7 +146,7 @@ function Sidebar() {
         }
       }
     }
-  }, [tab, animate, scope]);
+  }, [tab, animate, scope, isCollapsed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,7 +176,7 @@ function Sidebar() {
   }, []);
 
   return (
-    <div className={styles.sidebar}>
+    <div className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ""}`}>
       <div className={styles.sidebarSelected} ref={scope}>
         <span className={styles.selectedYellow} />
         <span className={styles.selectedHighlight} />
@@ -178,23 +188,27 @@ function Sidebar() {
           height={2000}
           alt="toggle sidebar icon"
           className={styles.Hamburgericon}
-          onClick={() => setSidebarOpen(!sidebarOpen)}
+          onClick={toggleSidebar}
         />
-        <Image
-          src="/index/Document.svg"
-          width={2000}
-          height={2000}
-          alt="Logo icon"
-          className={styles.logoicon}
-        />
-        <span className={styles.logoText + " secondarytextGradient"}>
-          AutoCAM
-        </span>
+        {!isCollapsed && (
+          <>
+            <Image
+              src="/index/Document.svg"
+              width={2000}
+              height={2000}
+              alt="Logo icon"
+              className={styles.logoicon}
+            />
+            <span className={styles.logoText + " secondarytextGradient"}>
+              AutoCAM
+            </span>
+          </>
+        )}
       </div>
-      <div>
+      <div className={styles.teamDropdownWrapper}>
         <TeamDropdown />
       </div>
-      <hr id={styles.sidebarDivider} />
+      {!isCollapsed && <hr id={styles.sidebarDivider} />}
       <div className={styles.sidebarItems}>
         <div>
           <div
@@ -205,6 +219,7 @@ function Sidebar() {
             onClick={() => {
               router.push("/dashboard/plates");
             }}
+            title="Plates"
           >
             <Image
               src="/dashboard/Sidebar/Plates.svg"
@@ -213,7 +228,7 @@ function Sidebar() {
               alt="Plates icon"
               className={styles.sidebaricon}
             />
-            <span>Plates</span>
+            {!isCollapsed && <span>Plates</span>}
           </div>
           <div
             className={styles.sidebarItem}
@@ -223,6 +238,7 @@ function Sidebar() {
             onClick={() => {
               router.push("/dashboard/boxtubes");
             }}
+            title="Box Tubes"
           >
             <Image
               src="/dashboard/Sidebar/boxtubes.svg"
@@ -231,7 +247,7 @@ function Sidebar() {
               alt="Box Tubes icon"
               className={styles.sidebaricon}
             />
-            <span>Box Tubes</span>
+            {!isCollapsed && <span>Box Tubes</span>}
           </div>
           <div
             className={styles.sidebarItem}
@@ -241,6 +257,7 @@ function Sidebar() {
             onClick={() => {
               router.push("/dashboard/jobs");
             }}
+            title="Jobs"
           >
             <Image
               src="/dashboard/Sidebar/Jobs.svg"
@@ -249,7 +266,7 @@ function Sidebar() {
               alt="Jobs icon"
               className={styles.sidebaricon}
             />
-            <span>Jobs</span>
+            {!isCollapsed && <span>Jobs</span>}
           </div>
         </div>
         <div>
@@ -261,6 +278,7 @@ function Sidebar() {
             onClick={() => {
               router.push("/dashboard/quantities");
             }}
+            title="Adjust Quantities"
           >
             <Image
               src="/dashboard/Sidebar/quantities.svg"
@@ -269,7 +287,7 @@ function Sidebar() {
               alt="Adjust Quantities icon"
               className={styles.sidebaricon}
             />
-            <span>Adjust Quantities</span>
+            {!isCollapsed && <span>Adjust Quantities</span>}
           </div>
           <div
             className={styles.sidebarItem}
@@ -279,6 +297,7 @@ function Sidebar() {
             onClick={() => {
               router.push("/dashboard/settings/personal");
             }}
+            title="Settings"
           >
             <Image
               src="/dashboard/Sidebar/settings.svg"
@@ -287,7 +306,7 @@ function Sidebar() {
               alt="Settings icon"
               className={styles.sidebaricon}
             />
-            <span>Settings</span>
+            {!isCollapsed && <span>Settings</span>}
           </div>
           <div
             className={styles.sidebarItem}
@@ -295,6 +314,7 @@ function Sidebar() {
               await authClient.signOut();
               router.push("/login");
             }}
+            title="Logout"
           >
             <Image
               src="/dashboard/Sidebar/logout.svg"
@@ -303,12 +323,12 @@ function Sidebar() {
               alt="Logout icon"
               className={styles.sidebaricon}
             />
-            <span id={styles.logout}>Logout</span>
+            {!isCollapsed && <span id={styles.logout}>Logout</span>}
           </div>
         </div>
       </div>
       <div className={styles.profile}>
-        <div id={styles.profileContainer}>
+        <div id={styles.profileContainer} className={isCollapsed ? styles.profileCollapsed : ""}>
           <Image
             src="/dashboard/UserIcon.svg"
             width={2000}
@@ -316,10 +336,12 @@ function Sidebar() {
             alt="user icon"
             id={styles.profileicon}
           />
-          <div id={styles.profileinfo}>
-            <span id={styles.username}>{username}</span>
-            <span id={styles.email}>{email}</span>
-          </div>
+          {!isCollapsed && (
+            <div id={styles.profileinfo}>
+              <span id={styles.username}>{username}</span>
+              <span id={styles.email}>{email}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -328,6 +350,9 @@ function Sidebar() {
 
 export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
   useEffect(() => {
+    // Set default sidebar width
+    document.documentElement.style.setProperty("--sidebar-width", "300px");
+    
     try {
       const perf: any = (globalThis as any).performance;
       if (!perf || typeof perf.measure !== "function") return;
@@ -345,14 +370,17 @@ export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
       /* noop */
     }
   }, []);
+
   return (
     <div className={styles.container}>
-      <DashboardEventsProvider>
-        <div className={styles.mainContent}>
-          <Sidebar />
-          <main className={styles.main}>{tabs}</main>
-        </div>
-      </DashboardEventsProvider>
+      <SidebarProvider>
+        <DashboardEventsProvider>
+          <div className={styles.mainContent}>
+            <Sidebar />
+            <main className={styles.main}>{tabs}</main>
+          </div>
+        </DashboardEventsProvider>
+      </SidebarProvider>
     </div>
   );
 }

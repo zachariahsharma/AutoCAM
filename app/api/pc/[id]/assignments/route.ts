@@ -1,1 +1,1 @@
-export { GET } from "@/lib/api/pc/assignments";
+export { GET, PUT } from "@/lib/api/pc/assignments";

@@ -135,7 +135,7 @@ export default function MaterialThickness({
       {sorting ? (
         <div className={styles.contentSorting}>
           <Unassigned />
-          <PartsToPlates />
+          <PartsToPlates categoryId={partcategory !== null ? partcategory.id : 0} />
         </div>
       ) : null}
     </div>

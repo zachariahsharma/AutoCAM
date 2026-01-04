@@ -1,1 +1,1 @@
-export { GET } from "@/lib/api/teams/members";
+export { GET, PATCH, DELETE } from "@/lib/api/teams/members";

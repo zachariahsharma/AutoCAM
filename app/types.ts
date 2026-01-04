@@ -81,6 +81,7 @@ export interface ApiKey {
   id: number;
   name: string;
   scopes: string[];
+  is_fusion_server: boolean;
 }
 
 export interface TeamInvite {

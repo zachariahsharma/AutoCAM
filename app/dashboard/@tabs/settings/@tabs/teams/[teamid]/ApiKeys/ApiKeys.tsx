@@ -14,6 +14,7 @@ import { useParams } from "next/navigation";
 import { useTabEvents } from "@/app/dashboard/@tabs/settings/teamUpdate";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert } from "@/app/signup/page";
+import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMarquee";
 
 const scopes = [
   "team:read",
@@ -92,7 +93,8 @@ export default function ApiKeysPage() {
           const data: ApiKey[] = await response.json();
           if (mounted) {
             console.log("Loaded API keys:", data);
-            setApiKeys(data);
+            // Filter out fusion server keys - they're shown in a separate section
+            setApiKeys(data.filter((key) => !key.is_fusion_server));
           }
         } catch (error) {
           console.error("Error loading API keys:", error);
@@ -201,13 +203,15 @@ export default function ApiKeysPage() {
               <span className={styles.apiKeyName}>
                 <span>{apiKey.name}</span>
               </span>
-              <span className={styles.apiKeyValue}>
-                {apiKey.scopes === undefined
-                  ? ""
-                  : apiKey.scopes.length > 1
-                  ? apiKey.scopes.map((scope) => `${scope}, `)
-                  : apiKey.scopes[0]}
-              </span>
+              <ConditionalMarquee
+                text={
+                  apiKey.scopes === undefined
+                    ? ""
+                    : apiKey.scopes.join(", ")
+                }
+                className={styles.apiKeyValue}
+                speed={30}
+              />
               <Image
                 src="/settings/teams/apikey/Remove.svg"
                 width={2000}

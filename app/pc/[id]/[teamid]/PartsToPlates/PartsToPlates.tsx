@@ -1,28 +1,34 @@
 import styles from "./partstoplates.module.css";
 import { useMaterialEvents } from "../materialEvents";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { set } from "zod";
 
-export function PartsToPlates() {
+export function PartsToPlates({ categoryId }: { categoryId: number }) {
   const { plates } = useMaterialEvents();
   return (
     <div className={styles.container}>
       <div className={styles.cardsContainer}>
         {Object.entries(plates).map(([name]) => (
-          <PartsToPlatesCard key={name} name={name} />
+          <PartsToPlatesCard key={name} name={name} categoryId={categoryId} />
         ))}
       </div>
     </div>
   );
 }
 
-function PartsToPlatesCard({ name }: { name: string }) {
+function PartsToPlatesCard({
+  name,
+  categoryId,
+}: {
+  name: string;
+  categoryId: number;
+}) {
   const {
     partsToPlates,
     setPartsToPlates,
     plates,
+    setPlates,
     unassignedParts,
     setUnassignedParts,
   } = useMaterialEvents();
@@ -105,7 +111,96 @@ function PartsToPlatesCard({ name }: { name: string }) {
               />
             ))
         : null}
-      <button className={styles.arrangeButton}>
+      <button
+        className={styles.arrangeButton}
+        onClick={async () => {
+          if (categoryId === 0) return;
+          try {
+            const plateIndex = Number.parseInt(name);
+            const localPlate = plates[plateIndex];
+            const plateAssignments = partsToPlates[localPlate.id] || [];
+
+            if (plateAssignments.filter((p) => p.quantity > 0).length === 0) {
+              return;
+            }
+            console.log("body:", {
+              width: localPlate.width,
+              length: localPlate.length,
+              true_depth: localPlate.true_depth,
+            });
+            const createPlateRes = await fetch(`/api/pc/${categoryId}/plates`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                width: localPlate.width,
+                length: localPlate.length,
+                true_depth: localPlate.true_depth,
+                name: `Plate ${Number.parseInt(name) + 1}`,
+              }),
+            });
+
+            if (!createPlateRes.ok) {
+              console.error(
+                "Failed to create plate:",
+                await createPlateRes.text()
+              );
+              return;
+            }
+
+            const { id: realPlateId } = await createPlateRes.json();
+            console.log("Created plate with ID:", realPlateId);
+
+            for (const assignment of plateAssignments) {
+              if (assignment.quantity <= 0) continue;
+
+              const assignRes = await fetch(
+                `/api/pc/${categoryId}/assignments`,
+                {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    plate_id: realPlateId,
+                    part_id: assignment.partId,
+                    quantity: assignment.quantity,
+                  }),
+                }
+              );
+
+              if (!assignRes.ok) {
+                console.error(
+                  "Failed to assign part:",
+                  assignment.partId,
+                  await assignRes.text()
+                );
+              } else {
+                console.log(
+                  "Assigned part",
+                  assignment.partId,
+                  "qty",
+                  assignment.quantity,
+                  "to plate",
+                  realPlateId
+                );
+              }
+            }
+
+            const oldPlateId = localPlate.id;
+            const newPlates = plates.map((p, idx) =>
+              idx === plateIndex ? { ...p, id: realPlateId } : p
+            );
+            setPlates(newPlates);
+
+            const newPartsToPlates = { ...partsToPlates };
+            newPartsToPlates[realPlateId] = newPartsToPlates[oldPlateId];
+            delete newPartsToPlates[oldPlateId];
+            setPartsToPlates(newPartsToPlates);
+
+            console.log("Arrange complete for plate", realPlateId);
+          } catch (err) {
+            console.error("Error during arrange:", err);
+          }
+        }}
+      >
         <span>Arrange</span>
         <Image
           src="/mat_thickness/Arrange.svg"

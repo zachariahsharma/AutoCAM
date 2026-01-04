@@ -1,25 +1,114 @@
 "use client";
 
 import styles from "./personal.module.css";
-// import SettingsLayout from "../../Layout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
+import { authClient } from "@/lib/auth/client";
 
-export default function PersonalSettingsPage({
-  currentUsername,
-  currentEmail,
-}: {
-  currentUsername: string;
-  currentEmail: string;
-}) {
-  const [username, setUsername] = useState(currentUsername);
-  const [email, setEmail] = useState(currentEmail);
+export default function PersonalSettingsPage() {
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [originalUsername, setOriginalUsername] = useState("");
+  const [originalEmail, setOriginalEmail] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadUser() {
+      try {
+        const { data, error } = await authClient.getSession();
+        if (!mounted) return;
+        if (error || !data?.user) {
+          console.error("Failed to get session:", error);
+          return;
+        }
+        setUsername(data.user.name ?? "");
+        setEmail(data.user.email ?? "");
+        setOriginalUsername(data.user.name ?? "");
+        setOriginalEmail(data.user.email ?? "");
+        setEmailVerified(data.user.emailVerified ?? false);
+      } catch (err) {
+        console.error("Error loading user:", err);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    loadUser();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      // Update name if changed
+      if (username !== originalUsername) {
+        const { error } = await authClient.updateUser({
+          name: username,
+        });
+        if (error) {
+          setMessage({ type: "error", text: "Failed to update name" });
+          setIsSaving(false);
+          return;
+        }
+        setOriginalUsername(username);
+      }
+
+      // Update email if changed
+      if (email !== originalEmail) {
+        const { error } = await authClient.changeEmail({
+          newEmail: email,
+        });
+        if (error) {
+          setMessage({
+            type: "error",
+            text: error.message || "Failed to update email",
+          });
+          setIsSaving(false);
+          return;
+        }
+        setOriginalEmail(email);
+        setEmailVerified(false); // Email needs to be re-verified
+        setMessage({
+          type: "success",
+          text: "Email updated. Please check your inbox to verify.",
+        });
+      } else if (username !== originalUsername) {
+        setMessage({ type: "success", text: "Profile updated successfully" });
+      }
+    } catch (err) {
+      console.error("Error saving:", err);
+      setMessage({ type: "error", text: "An error occurred while saving" });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className={styles.personalContainer}>
+        <h1>Personal</h1>
+        <hr />
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
-    // <SettingsLayout selected={"personal"}>
     <div className={styles.personalContainer}>
       <h1>Personal</h1>
       <hr />
-      <form>
+      <form onSubmit={handleSubmit}>
         <label>Username</label>
         <input
           type="text"
@@ -28,15 +117,28 @@ export default function PersonalSettingsPage({
         />
         <label>Email</label>
         <input
-          type="text"
+          type="email"
           value={email}
           onChange={(val) => setEmail(val.target.value)}
         />
-        <PrimaryButton type="submit" id={styles.submitbutton}>
-          <span className="textGradient">Save</span>
+        <span className={styles.emailStatus}>
+          {emailVerified ? "Email verified" : "Email not verified"}
+        </span>
+        {message && (
+          <p
+            className={
+              message.type === "success" ? styles.success : styles.error
+            }
+          >
+            {message.text}
+          </p>
+        )}
+        <PrimaryButton type="submit" id={styles.submitbutton} disabled={isSaving}>
+          <span className="textGradient">
+            {isSaving ? "Saving..." : "Save"}
+          </span>
         </PrimaryButton>
       </form>
     </div>
-    // </SettingsLayout>
   );
 }

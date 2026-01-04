@@ -58,7 +58,8 @@ export const TeamKeys = pgTable("team_keys", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   digest: char({ length: 64 }).notNull(),
   name: text().notNull(),
-  scopes: text().array().notNull()
+  scopes: text().array().notNull(),
+  is_fusion_server: boolean().notNull().default(false)
 }, table => [
   unique().on(table.team_id, table.name),
   // Required so that API keys can check if they are able to access other stuff

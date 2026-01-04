@@ -1,33 +1,66 @@
 .sidebar { 
-  width: 300px;
+  width: var(--sidebar-width, 300px);
   background-color: #0A0A0A;
   height: 100%;
   position: fixed;
   top: 0;
   left: 0;
   padding-top: 20px;
+  padding-bottom: 20px;
   border-radius: 0px 20px 20px 0px;
+  transition: width 0.3s ease;
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
+
+.sidebarCollapsed {
+  width: 70px;
+}
+
 .Hamburgericon {
   width: 30px;
   height: 30px;
   cursor: pointer;
+  flex-shrink: 0;
 }
+
 .logoicon {
   width: 40px;
   height: auto;
 }
+
 .topSidebar {
   display: flex;
   align-items: center;
   padding-left: 20px;
   gap: 10px;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
+
+.sidebarCollapsed .topSidebar {
+  justify-content: center;
+  padding-left: 0;
+}
+
 .logoText {
   font-size: 30px;
   font-family: var(--font-zalando);
+  white-space: nowrap;
 }
+
+.teamDropdownWrapper {
+  min-height: 40px;
+  flex-shrink: 0;
+}
+
+.sidebarCollapsed .teamDropdownWrapper {
+  min-height: 0;
+}
+
 #teamdropdown {
   height: 40px;
   width: 80%;
@@ -56,7 +89,10 @@
   font-weight: 200;
   width: calc(100% - 25px);
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
+
 .teamdropdownIcon {
   height: 12px;
   width: 12px;
@@ -67,7 +103,7 @@
 #teamdropdownMenu {
   position: absolute;
   top: 80px;
-  left: 300px;
+  left: var(--sidebar-width, 300px);
   width: 175px;
   background-color: black;
   border: 1px solid #4F4F4F;
@@ -80,7 +116,9 @@
   font-size: 16px;
   font-weight: 200;
   padding: 5px 0px;
+  transition: left 0.3s ease;
 }
+
 .teamdropdownItem {
   width: 100%;
   height: 40px;
@@ -98,30 +136,49 @@
   width: 20px;
   height: 20px;
   margin-right: 10px;
+  flex-shrink: 0;
 }
+
+.sidebarCollapsed .sidebaricon {
+  margin-right: 0;
+}
+
 .sidebarItem {
   display: flex;
   align-items: center;
-  padding: 5px 20px;margin: 5px 0px;margin-bottom: 10px;
+  padding: 5px 20px;
+  margin: 5px 0px;
+  margin-bottom: 10px;
   cursor: pointer;
   color:#B3B3B3;
   margin-left: 30px;
   font-weight: 600;
   transition: all .2s;
   width: calc(100% - 40px);
+  white-space: nowrap;
 }
+
+.sidebarCollapsed .sidebarItem {
+  margin-left: 10px;
+  padding: 5px 15px;
+  justify-content: center;
+  width: calc(100% - 20px);
+}
+
 #sidebarDivider {
   border-color: #656565;
   opacity: 1;
   width: 90%;
   margin: 10px auto;
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
+
 .sidebarItems {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: calc(100% - 190px);
+  flex: 1;
 }
 
 .sidebarItem:hover {
@@ -132,13 +189,20 @@
 #logout {
   color: #A50303;
 }
+
 .sidebarSelected {
   position: absolute;
   top: -40px;
   z-index: -1;
   width: calc(100% - 40px);
   height: 40px;
+  transition: width 0.3s ease;
 }
+
+.sidebarCollapsed .sidebarSelected {
+  width: calc(100% - 20px);
+}
+
 .selectedYellow {
   position: absolute;
   left: 10px;
@@ -147,6 +211,12 @@
   background-color: var(--yellow-1);
   border-radius: 4px;
 }
+
+.sidebarCollapsed .selectedYellow {
+  left: 5px;
+  width: 8px;
+}
+
 .selectedHighlight {
   position: absolute;
   left: 30px;
@@ -154,12 +224,20 @@
   height: 100%;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
 }
+
+.sidebarCollapsed .selectedHighlight {
+  left: 10px;
+  width: calc(100% - 10px);
+}
+
 #profileicon {
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
 }
+
 #profileContainer {
   display: flex;
   align-items: center;
@@ -170,19 +248,54 @@
   margin-left: auto;
   margin-right: auto;
   height: 50px;
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
+
+.profileCollapsed {
+  width: 50px !important;
+  justify-content: center;
+  padding: 5px;
+}
+
 #profileinfo {
   display: flex;
   flex-direction: column;
   font-family: var(--font-roboto);
+  white-space: nowrap;
+  overflow: hidden;
 }
+
 #username {
   font-size: 14px;
   font-weight: 500;
   color: #FFFFFF;
 }
+
 #email {
   font-size: 12px;
   font-weight: 500;
   color: #8C8C8C;
+}
+
+.profile {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+/* Main content area */
+.container {
+  min-height: 100vh;
+}
+
+.mainContent {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-width, 300px);
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
 }

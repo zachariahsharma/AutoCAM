@@ -6,11 +6,19 @@ import { Part, PartCategory } from "@/app/types";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
 import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMarquee";
-import { set } from "zod";
 
 function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
   if (!part) return null;
   const [quantity, setQuantity] = useState<number>(part.quantity);
+  useEffect(() => {
+    fetch(`/api/parts/${part.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ quantity: quantity }),
+    });
+  }, [quantity]);
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -24,7 +32,7 @@ function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
       <div id={styles.quantitycardinfo}>
         <p id={styles.quantitycardoriginal}>Original: {part.quantity}</p>
         <p id={styles.quantitycardcurrent}>
-          Current: <span>{part.quantity}</span>
+          Current: <span>{quantity}</span>
         </p>
       </div>
       <div id={styles.quantitycardactions}>

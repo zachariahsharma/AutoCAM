@@ -12,53 +12,6 @@ export function useCurrentTab() {
 }
 import { TabEventsProvider, useTabEvents } from "./teamUpdate";
 
-export function Header({
-  delay = 0,
-  duration = 0.0,
-}: {
-  delay?: number;
-  duration?: number;
-}) {
-  const router = useRouter();
-  return (
-    <div id={styles.header}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: delay, duration: duration }}
-      >
-        <button
-          id={styles.headerlogoButton}
-          onClick={() => router.push("/dashboard")}
-        >
-          <Image
-            src="/index/Document.svg"
-            width={2000}
-            height={2000}
-            alt="logo"
-            id={styles.headerlogo}
-          />
-        </button>
-        <h1 id={styles.headertext}>
-          <span className="secondarytextGradient">AutoCAM</span>
-        </h1>
-        <span id={styles.subheadertext}>Settings</span>
-        <div>
-          <div id={styles.usericoncontainer}>
-            <Image
-              src="/dashboard/UserIcon.svg"
-              width={2000}
-              height={2000}
-              alt="user icon"
-              id={styles.usericon}
-            />
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
 function Sidebar() {
   const [top, setTop] = useState(2);
   const router = useRouter();
@@ -222,7 +175,6 @@ export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
   }, []);
   return (
     <div className={styles.container}>
-      <Header />
       <TabEventsProvider>
         <div className={styles.mainContent}>
           <Sidebar />

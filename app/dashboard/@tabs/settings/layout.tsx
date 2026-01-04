@@ -37,13 +37,13 @@ function Sidebar() {
 
   useEffect(() => {
     if (tab === "personal") {
-      setTop(2);
+      setTop(12);
     } else if (tab === "0" || Number.parseInt(tab)) {
-      setTop(2 + 34 * (Number.parseInt(tab) + 1));
+      setTop(12 + 34 * (Number.parseInt(tab) + 1));
     } else if (tab == "newteam") {
-      setTop(2 + 34 * (teams.length + 1) + 8);
+      setTop(12 + 34 * (teams.length + 1) + 8);
     } else if (tab == "jointeam") {
-      setTop(2 + 34 * (teams.length + 2) + 8);
+      setTop(12 + 34 * (teams.length + 2) + 8);
     }
   }, [tab, updateCount]);
   return (
@@ -52,7 +52,7 @@ function Sidebar() {
       <div
         onClick={() => {
           if (tab !== "personal") {
-            router.push("/settings/personal");
+            router.push("/dashboard/settings/personal");
           }
         }}
         style={
@@ -78,7 +78,7 @@ function Sidebar() {
           key={index}
           onClick={() => {
             if (tab !== String(index)) {
-              router.push("/settings/teams/" + index);
+              router.push("/dashboard/settings/teams/" + index);
             }
           }}
           style={
@@ -105,7 +105,7 @@ function Sidebar() {
       <div
         onClick={() => {
           if (tab !== "newteam") {
-            router.push("/settings/newteam");
+            router.push("/dashboard/settings/newteam");
           }
         }}
         style={
@@ -129,7 +129,7 @@ function Sidebar() {
       <div
         onClick={() => {
           if (tab !== "jointeam") {
-            router.push("/settings/jointeam");
+            router.push("/dashboard/settings/jointeam");
           }
         }}
         style={
@@ -175,6 +175,10 @@ export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
   }, []);
   return (
     <div className={styles.container}>
+      <div className={styles.header}>
+        <h1>Settings</h1>
+        <hr />
+      </div>
       <TabEventsProvider>
         <div className={styles.mainContent}>
           <Sidebar />

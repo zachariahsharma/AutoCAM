@@ -8,7 +8,7 @@ import { authClient } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState } from "react";
-import { ErrorModal } from "../settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";
+import { ErrorModal } from "../dashboard/@tabs/settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";
 
 function SignupContainer({
   setErrorModalOpen,

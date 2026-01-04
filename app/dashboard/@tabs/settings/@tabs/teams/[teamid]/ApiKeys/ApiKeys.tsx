@@ -11,7 +11,7 @@ import {
 } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useTabEvents } from "@/app/settings/teamUpdate";
+import { useTabEvents } from "@/app/dashboard/@tabs/settings/teamUpdate";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert } from "@/app/signup/page";
 

@@ -11,10 +11,16 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Team } from "@/app/types";
 import { motion, AnimatePresence, useAnimate } from "framer-motion";
-import { useSelectedLayoutSegment } from "next/navigation";
+import { useSelectedLayoutSegment, usePathname } from "next/navigation";
 
 export function useCurrentTab() {
   const segment = useSelectedLayoutSegment("tabs");
+  const path = usePathname();
+  console.log("Current path:", path, "Segment:", segment);
+  if (!segment && path.includes("/dashboard/settings")) {
+    console.log("Defaulting to settings tab");
+    return "settings";
+  }
   return segment ?? "default";
 }
 
@@ -113,6 +119,7 @@ function Sidebar() {
   const router = useRouter();
   const tab = useCurrentTab();
   useEffect(() => {
+    console.log("tab changed to:", tab);
     for (const key in itemsRef.current) {
       if (key === tab) {
         const element = itemsRef.current[key];

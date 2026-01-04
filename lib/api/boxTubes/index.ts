@@ -130,9 +130,9 @@ export const GET = routeFactory(async (req, authType, tx, teamId) => {
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
 
-  const { data, file } = await parseJsonFile(await req.formData(), CreateSchema);
-
-  const [id] = await tx.insert(BoxTubes).values({ ...data, file, team_id }).returning({ id: BoxTubes.id });
+  const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
+  if (!data) return routeResponse(422);
+  const [id] = await tx.insert(BoxTubes).values({ ...data, file: files["file"], team_id }).returning({ id: BoxTubes.id });
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true })
 

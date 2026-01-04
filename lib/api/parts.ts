@@ -136,10 +136,14 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
-  const { data, file } = await parseJsonFile(await req.formData(), CreateSchema);
-  // Set original_quantity to match quantity when part is first created
-  const original_quantity = data.quantity ?? 1;
-  const [id] = await tx.insert(Parts).values({ ...data, file, category_id, original_quantity }).returning({ id: Parts.id });
+  const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
+  if (!data) return routeResponse(422);
+  const [id] = await tx.insert(Parts).values({
+    ...data,
+    original_quantity: data.quantity,
+    file: files["file"],
+    category_id
+  }).returning({ id: Parts.id });
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });
 

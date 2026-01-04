@@ -1,3 +1,7 @@
+import "./invites";
+import "./keys";
+import "./members";
+
 import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
@@ -5,18 +9,17 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
-
-import "./invites";
-import "./keys";
-import "./members";
 import { client } from "@/lib/aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });
-const UpdateSchema = createUpdateSchema(Teams).extend({ owner: zod.email().optional() });
+const UpdateSchema = createUpdateSchema(Teams).extend({
+  owner: zod.email().optional(),
+  logo: zod.httpUrl().optional()
+});
 const Team = createSelectSchema(Teams).openapi("Team", { description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
 // OpenAPI route definitions
@@ -85,15 +88,16 @@ registry.registerPath({
   request: {
     params: zod.object({ id: zod.number().openapi({ description: "ID of the team that is being updated" }) }),
     body: {
+      description: "If the logo is a URL, use the application/json. If the logo is a file upload, use the multipart/form-data type.",
       content: {
-        "multipart/form-data": {
-          schema: zod.object({
-            data: UpdateSchema,
-            logo: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Logo upload" })
-          })
-        },
         "application/json": {
           schema: UpdateSchema
+        },
+        "multipart/form-data": {
+          schema: zod.object({
+            data: UpdateSchema.omit({ logo: true }),
+            logo: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Logo upload" })
+          })
         }
       }
     }
@@ -160,23 +164,24 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
       return newOwner.id;
     })
   });
-  let body: zod.infer<typeof schema>;
-  try {
-    body = await parseJsonBody(await req.json(), schema);
+  const contentType = req.headers.get("content-type");
+  if (!contentType) return routeResponse(422, { message: "Content-Type not defined" });
+  if (contentType.includes("application/json")) {
+    const body = await parseJsonBody(await req.json(), schema);
     return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
-  } catch (err) {
-    if (!(err instanceof SyntaxError)) throw err;
-  }
-  return;
-  await client.send(new PutObjectCommand({
-    Bucket: process.env.AUTOCAM_BUCKET,
-    Key: `teams/${id}/logo`,
-    Body: ""
-  }));
-  return tx.update(Teams).set({
-    ...body,
-    logo: undefined
-  }).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  } else if (contentType.includes("multipart/form-data")) {
+    const { data, file } = await parseJsonFile(await req.formData(), schema.omit({ logo: true }));
+    if (Object.keys(data).length > 0) {
+      const result = await tx.update(Teams).set(data).where(eq(Teams.id, id)).returning({ id: Teams.id });
+      return result;
+    }
+    await client.send(new PutObjectCommand({
+      Bucket: process.env.AUTOCAM_BUCKET,
+      Key: `teams/${id}/logo`,
+      Body: new Uint8Array(file),
+      ACL: "public-read"
+    }))
+    } else return routeResponse(422, { message: "Content-Type not valid" })
 }, { emailVerifiedNeeded: true });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

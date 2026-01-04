@@ -43,7 +43,9 @@ export default function FileUploadModal({
 
   const validateFile = useCallback(
     (file: File): boolean => {
-      const extension = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+      const extension = file.name
+        .toLowerCase()
+        .slice(file.name.lastIndexOf("."));
       if (extension !== acceptedFileType.toLowerCase()) {
         setError(`Please upload a ${fileTypeLabel} file (${acceptedFileType})`);
         return false;
@@ -126,6 +128,7 @@ export default function FileUploadModal({
                 <Image
                   src="/settings/teams/X.svg"
                   alt="Close"
+                  className={styles.icon}
                   width={16}
                   height={16}
                 />
@@ -147,7 +150,9 @@ export default function FileUploadModal({
               <div className={styles.inputGroup}>
                 <label>File ({fileTypeLabel})</label>
                 <div
-                  className={`${styles.dropZone} ${isDragging ? styles.dragging : ""} ${file ? styles.hasFile : ""}`}
+                  className={`${styles.dropZone} ${
+                    isDragging ? styles.dragging : ""
+                  } ${file ? styles.hasFile : ""}`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
@@ -167,7 +172,7 @@ export default function FileUploadModal({
                         alt="File"
                         width={24}
                         height={24}
-                        className={styles.fileIcon}
+                        className={styles.fileIcon + " " + styles.icon}
                       />
                       <span className={styles.fileName}>{file.name}</span>
                       <button
@@ -192,7 +197,7 @@ export default function FileUploadModal({
                         alt="Upload"
                         width={32}
                         height={32}
-                        className={styles.uploadIcon}
+                        className={styles.uploadIcon + " " + styles.icon}
                       />
                       <p>
                         Drag & drop your {fileTypeLabel} file here
@@ -221,4 +226,3 @@ export default function FileUploadModal({
     </AnimatePresence>
   );
 }
-

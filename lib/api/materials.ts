@@ -133,11 +133,13 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), createUpdateSchema(Materials));
 
-  return tx.update(Materials).set(body).where(eq(Materials.id, id));
+  const result = await tx.update(Materials).set(body).where(eq(Materials.id, id));
+  return routeResponse(result.rowCount === 0 ? 404 : 204);
 });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return tx.delete(Materials).where(eq(Materials.id, id));
+  const result = await tx.delete(Materials).where(eq(Materials.id, id));
+  return routeResponse(result.rowCount === 0 ? 404 : 204);
 });
 

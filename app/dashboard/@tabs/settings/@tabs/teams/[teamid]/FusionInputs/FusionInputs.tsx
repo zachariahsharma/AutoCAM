@@ -3,25 +3,40 @@ import styles from "./fusioninputs.module.css";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import FileUploadModal from "@/components/FileUploadModal/FileUploadModal";
 
 function Machines({ oldMachines }: { oldMachines: Machine[] }) {
   const [machines, setMachines] = useState<Machine[]>(oldMachines);
   const [machineName, setMachineName] = useState(
     machines.map((machine) => machine.name)
   );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleAddMachine = (name: string, file: File) => {
+    const newMachine: Machine = {
+      id: machines.length + 1,
+      name,
+      file: file.name,
+    };
+    setMachines((prev) => [...prev, newMachine]);
+    setMachineName((prev) => [...prev, name]);
+    // TODO: Upload file to API here
+    console.log("Machine added:", name, "File:", file.name);
+  };
+
   return (
     <main id={styles.machinesContainer}>
+      <FileUploadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddMachine}
+        title="Add Machine"
+        acceptedFileType=".cps"
+        fileTypeLabel="CPS"
+      />
       <div
         id={styles.addMachineContainer}
-        onClick={() => {
-          const newMachine: Machine = {
-            id: machines.length + 1,
-            name: "",
-            file: "No file selected",
-          };
-          setMachines((prev) => [...prev, newMachine]);
-          setMachineName((prev) => [...prev, ""]);
-        }}
+        onClick={() => setIsModalOpen(true)}
       >
         <Image
           src="/settings/teams/Plus.svg"
@@ -444,20 +459,34 @@ function Tools({
   totalMachines: Machine[];
 }) {
   const [tools, setTools] = useState<Tool[]>(oldTools);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleAddTool = (name: string, file: File) => {
+    const newTool: Tool = {
+      id: tools.length + 1,
+      name,
+      materials: [],
+      machines: [],
+      file: file.name,
+    };
+    setTools((prev) => [...prev, newTool]);
+    // TODO: Upload file to API here
+    console.log("Tool added:", name, "File:", file.name);
+  };
+
   return (
     <main id={styles.toolsContainer}>
+      <FileUploadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddTool}
+        title="Add Tool"
+        acceptedFileType=".json"
+        fileTypeLabel="JSON"
+      />
       <div
         id={styles.addMachineContainer}
-        onClick={() => {
-          const newTool: Tool = {
-            id: tools.length + 1,
-            name: "",
-            materials: [],
-            machines: [],
-            file: "No file selected",
-          };
-          setTools((prev) => [...prev, newTool]);
-        }}
+        onClick={() => setIsModalOpen(true)}
       >
         <Image
           src="/settings/teams/Plus.svg"

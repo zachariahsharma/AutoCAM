@@ -1,14 +1,14 @@
 #noboxes {
-  text-align: center;
-  display: flex;
+    text-align: center;
+    display: flex;
   width: calc(100vw - var(--sidebar-width, 300px));
   height: 100vh;
-  position: absolute;
+    position: absolute;
   top: 0px;
   left: var(--sidebar-width, 300px);
-  z-index: 1;
-  justify-content: center;
-  align-items: center;
+    z-index: 1;
+    justify-content: center;
+    align-items: center;
   color: #949393;
   transition: left 0.3s ease, width 0.3s ease;
 }
@@ -97,13 +97,13 @@
 .counterValue {
   text-align: center;
   width: calc( 100% - 60px );
-  list-style-type: none;
-  height: 30px;
+    list-style-type: none; 
+    height: 30px;
   border: none;
   color: white;
-  background-color: black;
-  border-top: 1px #757575 solid;
-  border-bottom: 1px #757575 solid;
+    background-color: black;
+    border-top: 1px #757575 solid;
+    border-bottom: 1px #757575 solid;
   -moz-appearance: textfield;
   appearance: textfield;
 }
@@ -120,21 +120,21 @@ input::-webkit-inner-spin-button {
 }
 
 .counterButtonMinus {
-  border-radius: 5px 0px 0px 5px;
-  width: 30px;
-  outline: 0;
+    border-radius: 5px 0px 0px 5px;
+    width: 30px;
+    outline: 0;
   background-color: #3e3e3e;
   color: white;
   border: #d6d6d6 solid 1px;
-  height: 30px;
+    height: 30px;
 }
 
 .counterButtonPlus {
-  border-radius: 0px 5px 5px 0px;
-  width: 30px;
-  outline: 0;
+    border-radius: 0px 5px 5px 0px;
+    width: 30px;
+    outline: 0;
   background-color: #3e3e3e;
   color: white;
   border: #d6d6d6 solid 1px;
-  height: 30px;
+    height: 30px;
 }

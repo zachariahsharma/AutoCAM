@@ -74,8 +74,8 @@
 #inputsContainer {
   width: calc(100% - 141px);
   height: 100%;
-  /* margin-left: 151px; */
   top: 0;
+  position: relative;
 }
 #addMachineContainer {
   position: absolute;
@@ -95,7 +95,7 @@
   height: 14px;
 }
 #materialInput {
-  width: 100% !important;
+  width: calc(100% - 40px) !important;
   border-radius: 10px;
 }
 #toolInput {
@@ -297,11 +297,9 @@
   height: 100%;
   width: 100%;
   color: white;
-  position: relative;
 }
 #toolsContainer {
   height: 100%;
   width: 100%;
   color: white;
-  position: relative;
 }

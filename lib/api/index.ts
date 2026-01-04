@@ -16,6 +16,8 @@ import "./boxTubes";
 import "./user";
 import "./auth";
 import "./tools";
+import { paginateListObjectsV2, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
+import { client } from "../aws";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
@@ -160,5 +162,23 @@ export function routeFactory(callback: RouteFactoryCallback, config?: RouteFacto
         throw err;
       }
     });
+  }
+}
+
+export async function s3DeleteWithPrefix(Prefix: string) {
+  const paginator = paginateListObjectsV2(
+    { client },
+    { Bucket: process.env.AUTOCAM_BUCKET, Prefix }
+  );
+  for await (const page of paginator) {
+    const objects = page.Contents ?? [];
+    const tagPromises = objects.map(obj => {
+      return client.send(new PutObjectTaggingCommand({
+        Bucket: process.env.AUTOCAM_BUCKET,
+        Key: obj.Key,
+        Tagging: { TagSet: [{ Key: "delete", Value: "true" }] }
+      }));
+    });
+    await Promise.all(tagPromises);
   }
 }

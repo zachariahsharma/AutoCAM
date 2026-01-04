@@ -9,7 +9,7 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
-import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse, s3DeleteWithPrefix } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
@@ -197,20 +197,6 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const result = tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
-  const paginator = paginateListObjectsV2(
-    { client },
-    { Bucket: process.env.AUTOCAM_BUCKET, Prefix: `teams/${id}/` }
-  );
-  for await (const page of paginator) {
-    const objects = page.Contents ?? [];
-    const tagPromises = objects.map(obj => {
-      return client.send(new PutObjectTaggingCommand({
-        Bucket: process.env.AUTOCAM_BUCKET,
-        Key: obj.Key,
-        Tagging: { TagSet: [{ Key: "delete", Value: "true" }] }
-      }));
-    });
-    await Promise.all(tagPromises);
-  }
+  await s3DeleteWithPrefix(`teams/${id}/`);
   return result;
 }, { emailVerifiedNeeded: true });

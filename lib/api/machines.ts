@@ -11,9 +11,9 @@ import { eq } from "drizzle-orm";
 import { client } from "../aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
-const CreateSchema = createInsertSchema(Machines).omit({ team_id: true, file: true });
-const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true, file: true });
-const Machine = createSelectSchema(Machines).omit({ team_id: true, file: true }).openapi("Machine")
+const CreateSchema = createInsertSchema(Machines).omit({ team_id: true });
+const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true });
+const Machine = createSelectSchema(Machines).omit({ team_id: true }).openapi("Machine")
 
 registerTeamEndpoint([scopes.machines.read], {
   method: "get",

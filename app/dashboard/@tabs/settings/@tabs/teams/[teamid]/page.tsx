@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";
 import CollaboratorsSettingsPage from "./Collaborators/Collaborators";
-import { useTabEvents } from "@/app/settings/teamUpdate";
+import { useTabEvents } from "../../../../settings/teamUpdate";
 import { useParams } from "next/navigation";
 import ApiKeys from "./ApiKeys/ApiKeys";
 export function TeamName({

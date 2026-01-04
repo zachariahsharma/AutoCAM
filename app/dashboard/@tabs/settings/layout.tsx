@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Team } from "../types";
+import { Team } from "@/app/types";
 import { useSelectedLayoutSegment } from "next/navigation";
 export function useCurrentTab() {
   const segment = useSelectedLayoutSegment("tabs");
@@ -12,76 +12,38 @@ export function useCurrentTab() {
 }
 import { TabEventsProvider, useTabEvents } from "./teamUpdate";
 
-export function Header({
-  delay = 0,
-  duration = 0.0,
-}: {
-  delay?: number;
-  duration?: number;
-}) {
-  const router = useRouter();
-  return (
-    <div id={styles.header}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: delay, duration: duration }}
-      >
-        <button
-          id={styles.headerlogoButton}
-          onClick={() => router.push("/dashboard")}
-        >
-          <Image
-            src="/index/Document.svg"
-            width={2000}
-            height={2000}
-            alt="logo"
-            id={styles.headerlogo}
-          />
-        </button>
-        <h1 id={styles.headertext}>
-          <span className="secondarytextGradient">AutoCAM</span>
-        </h1>
-        <span id={styles.subheadertext}>Settings</span>
-        <div>
-          <div id={styles.usericoncontainer}>
-            <Image
-              src="/dashboard/UserIcon.svg"
-              width={2000}
-              height={2000}
-              alt="user icon"
-              id={styles.usericon}
-            />
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
 function Sidebar() {
   const [top, setTop] = useState(2);
   const router = useRouter();
   const tab = useCurrentTab();
   const { updateCount, teams, setTeams } = useTabEvents();
   useEffect(() => {
+    let mounted = true;
     (async function () {
-      const teamsTemp = await (await fetch("/api/teams")).json();
-      teamsTemp.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
-      console.log("Fetched teams:", teamsTemp);
-      setTeams(teamsTemp);
+      try {
+        const teamsTemp = await (await fetch("/api/teams")).json();
+        if (!mounted) return;
+        teamsTemp.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
+        console.log("Fetched teams:", teamsTemp);
+        setTeams(teamsTemp);
+      } catch (err) {
+        if (mounted) console.error("Failed to fetch teams:", err);
+      }
     })();
+    return () => {
+      mounted = false;
+    };
   }, [updateCount]);
 
   useEffect(() => {
     if (tab === "personal") {
-      setTop(2);
+      setTop(12);
     } else if (tab === "0" || Number.parseInt(tab)) {
-      setTop(2 + 34 * (Number.parseInt(tab) + 1));
+      setTop(12 + 34 * (Number.parseInt(tab) + 1));
     } else if (tab == "newteam") {
-      setTop(2 + 34 * (teams.length + 1) + 8);
+      setTop(12 + 34 * (teams.length + 1) + 8);
     } else if (tab == "jointeam") {
-      setTop(2 + 34 * (teams.length + 2) + 8);
+      setTop(12 + 34 * (teams.length + 2) + 8);
     }
   }, [tab, updateCount]);
   return (
@@ -90,7 +52,7 @@ function Sidebar() {
       <div
         onClick={() => {
           if (tab !== "personal") {
-            router.push("/settings/personal");
+            router.push("/dashboard/settings/personal");
           }
         }}
         style={
@@ -116,7 +78,7 @@ function Sidebar() {
           key={index}
           onClick={() => {
             if (tab !== String(index)) {
-              router.push("/settings/teams/" + index);
+              router.push("/dashboard/settings/teams/" + index);
             }
           }}
           style={
@@ -143,7 +105,7 @@ function Sidebar() {
       <div
         onClick={() => {
           if (tab !== "newteam") {
-            router.push("/settings/newteam");
+            router.push("/dashboard/settings/newteam");
           }
         }}
         style={
@@ -167,7 +129,7 @@ function Sidebar() {
       <div
         onClick={() => {
           if (tab !== "jointeam") {
-            router.push("/settings/jointeam");
+            router.push("/dashboard/settings/jointeam");
           }
         }}
         style={
@@ -213,7 +175,10 @@ export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
   }, []);
   return (
     <div className={styles.container}>
-      <Header />
+      <div className={styles.header}>
+        <h1>Settings</h1>
+        <hr />
+      </div>
       <TabEventsProvider>
         <div className={styles.mainContent}>
           <Sidebar />

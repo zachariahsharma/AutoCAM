@@ -1,0 +1,135 @@
+"use client";
+
+import { motion } from "framer-motion";
+import styles from "./boxtubes.module.css";
+import { BoxTube, Team } from "@/app/types";
+import { useEffect, useState } from "react";
+import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
+import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
+import { ConditionalMarquee } from "./ConditionalMarquee";
+import Image from "next/image";
+
+function BoxTubeCard({ boxtube, delay }: { boxtube: BoxTube; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: delay, duration: 0.3 }}
+      className={styles.boxtubecard}
+    >
+      <div id={styles.boxtubecardheader}>
+        <ConditionalMarquee text={boxtube.name} />
+      </div>
+      <div id={styles.boxtubecardinfo}>
+        <p id={styles.boxtubecardepic}>Epic: {boxtube.epic}</p>
+        <p id={styles.boxtubecardquantity}>Quantity: {boxtube.quantity}</p>
+      </div>
+      <div id={styles.boxtubecardactions}>
+        {boxtube.status === "completed" ? (
+          <div id={styles.boxtubecardcompletedactions}>
+            <PrimaryButton id={styles.downloadboxtubebutton}>
+              <span className="textGradient">
+                <Image
+                  src="/dashboard/download.svg"
+                  alt="download"
+                  width={16}
+                  height={16}
+                />{" "}
+                Download
+              </span>
+            </PrimaryButton>
+            <div id={styles.removeboxtubebutton}>
+              <Image
+                src="/dashboard/remove.svg"
+                alt="remove"
+                width={2000}
+                height={2000}
+                id={styles.removeicon}
+              />
+            </div>
+          </div>
+        ) : boxtube.status === "in progress" ? (
+          <div className={styles.boxtubecardcamdisabled}>
+            <span className={styles.ellipsis1}>.</span>
+            <span className={styles.ellipsis2}>.</span>
+            <span className={styles.ellipsis3}>.</span>
+          </div>
+        ) : (
+          <SecondaryButton id={styles.requestcambutton}>
+            <span className="textGradient">CAM</span>
+          </SecondaryButton>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+export default function boxtubes() {
+  const { team } = useDashboardEvents();
+  const [boxtubes, setBoxTubes] = useState<BoxTube[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    const loadBoxTubes = async () => {
+      if (team === null) return;
+      const response = await fetch(`/api/teams/${team.id}/boxTubes`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (mounted) {
+          let statusedData = await Promise.all(
+            data.map(async (bt: BoxTube) => {
+              const response = await fetch(`/api/boxTubes/${bt.id}/jobs`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              });
+              if (response.ok) {
+                const jobs = await response.json();
+                console.log("Jobs for box tube", bt.id, ":", jobs);
+                if (jobs.length === 0) {
+                  bt.status = "pending";
+                  return bt;
+                }
+                const allCompleted = jobs.every(
+                  (job: any) => job.status === "completed"
+                );
+                return {
+                  ...bt,
+                  status: allCompleted ? "completed" : "in progress",
+                };
+              }
+            })
+          );
+          setBoxTubes(statusedData);
+          console.log("Loaded box tubes:", data);
+        }
+      }
+    };
+    loadBoxTubes();
+    return () => {
+      mounted = false;
+    };
+  }, [team]);
+  return (
+    <>
+      {boxtubes.length === 0 ? (
+        <p id={styles.noboxes}>No Box Tubes available.</p>
+      ) : (
+        <div className={styles.boxtubeslist}>
+          {boxtubes.map((boxtube, index) => (
+            <BoxTubeCard
+              key={index}
+              boxtube={boxtube}
+              delay={index * 0.2 + 0.3}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}

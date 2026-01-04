@@ -95,7 +95,12 @@ function CollaboratorCard({
         setDropdownOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
+    
+    // Only add listener when dropdown is open to avoid unnecessary listeners
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };

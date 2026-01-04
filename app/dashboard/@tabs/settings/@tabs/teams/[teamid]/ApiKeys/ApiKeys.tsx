@@ -4,12 +4,14 @@ import {
   Dispatch,
   ReactNode,
   SetStateAction,
+  useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useTabEvents } from "@/app/settings/teamUpdate";
+import { useTabEvents } from "@/app/dashboard/@tabs/settings/teamUpdate";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert } from "@/app/signup/page";
 
@@ -61,6 +63,26 @@ export default function ApiKeysPage() {
   const [generatedapikey, setGeneratedapikey] = useState("");
   const id = teams[Number(teamid)];
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(generatedapikey);
+    setCopied(true);
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+  }, [generatedapikey]);
+
   useEffect(() => {
     if (id) {
       let mounted = true;
@@ -345,33 +367,14 @@ export default function ApiKeysPage() {
                   *************************************************************************************************************************************************************
                 </span>
                 <div id={styles.copyIconContainer}>
-                  {copied ? (
-                    <Image
-                      src="/settings/teams/apikey/Check.svg"
+                  <Image
+                      src={copied ? "/settings/teams/apikey/Check.svg" : "/settings/teams/apikey/Copy.svg"}
                       width={2000}
                       height={2000}
                       alt="copy"
                       className={styles.copyIcon}
-                      onClick={() => {
-                        navigator.clipboard.writeText(generatedapikey);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
+                      onClick={handleCopy}
                     />
-                  ) : (
-                    <Image
-                      src="/settings/teams/apikey/Copy.svg"
-                      width={2000}
-                      height={2000}
-                      alt="copy"
-                      className={styles.copyIcon}
-                      onClick={() => {
-                        navigator.clipboard.writeText(generatedapikey);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
-                    />
-                  )}
                 </div>
               </div>
             </div>

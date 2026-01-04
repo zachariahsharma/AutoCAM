@@ -95,7 +95,7 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
       };
       throw routeResponse(422, error);
     }
-    data = await parseJsonBody(JSON.parse(rawJson), schema);
+    data = await parseJsonBody(rawJson, schema);
   }
 
   const files: Record<string, ArrayBuffer> = {};

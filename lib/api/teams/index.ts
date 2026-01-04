@@ -170,18 +170,25 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     const body = await parseJsonBody(await req.json(), schema);
     return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
   } else if (contentType.includes("multipart/form-data")) {
-    const { data, file } = await parseJsonFile(await req.formData(), schema.omit({ logo: true }));
-    if (Object.keys(data).length > 0) {
+    const { data, files } = await parseJsonFile(await req.formData(), schema.omit({ logo: true }));
+    let teamExists: boolean;
+    if (data) {
       const result = await tx.update(Teams).set(data).where(eq(Teams.id, id)).returning({ id: Teams.id });
-      return result;
+      teamExists = result.length > 0;
+    } else {
+      teamExists = (await tx.query.Teams.findFirst({ where: eq(Teams.id, id) })) !== undefined;
     }
-    await client.send(new PutObjectCommand({
-      Bucket: process.env.AUTOCAM_BUCKET,
-      Key: `teams/${id}/logo`,
-      Body: new Uint8Array(file),
-      ACL: "public-read"
-    }))
-    } else return routeResponse(422, { message: "Content-Type not valid" })
+    if (!teamExists) return routeResponse(404);
+    if ("logo" in files) {
+      await client.send(new PutObjectCommand({
+        Bucket: process.env.AUTOCAM_BUCKET,
+        Key: `teams/${id}/logo`,
+        Body: new Uint8Array(files["logo"]),
+        ACL: "public-read"
+      }));
+    }
+    return routeResponse(204);
+  } else return routeResponse(422, { message: "Content-Type not valid" })
 }, { emailVerifiedNeeded: true });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

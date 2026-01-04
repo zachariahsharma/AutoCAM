@@ -170,7 +170,8 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     const body = await parseJsonBody(await req.json(), schema);
     return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
   } else if (contentType.includes("multipart/form-data")) {
-    const { data, files } = await parseJsonFile(await req.formData(), schema.omit({ logo: true }));
+    const formData = await req.formData();
+    const { data, files } = await parseJsonFile(formData, schema.omit({ logo: true }));
     let teamExists: boolean;
     if (data) {
       const result = await tx.update(Teams).set(data).where(eq(Teams.id, id)).returning({ id: Teams.id });
@@ -180,11 +181,13 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     }
     if (!teamExists) return routeResponse(404);
     if ("logo" in files) {
+      const file = formData.get("logo")! as File;
       await client.send(new PutObjectCommand({
         Bucket: process.env.AUTOCAM_BUCKET,
         Key: `teams/${id}/logo`,
         Body: new Uint8Array(files["logo"]),
-        ACL: "public-read"
+        ACL: "public-read",
+        ContentType: file.type
       }));
     }
     return routeResponse(204);

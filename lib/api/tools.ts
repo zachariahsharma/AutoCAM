@@ -5,6 +5,9 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from "driz
 import { Tools } from "../db/schema/cam";
 import { registry } from "../openapi/registry";
 import { apiKey, userSession } from "./auth";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
+import { teamIdFromDigest } from "../auth/server";
+import { eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(Tools).omit({ file: true, team_id: true });
 const UpdateSchema = createUpdateSchema(Tools).omit({ file: true, team_id: true });
@@ -110,3 +113,32 @@ registry.registerPath({
   }
 });
 
+export const GET = routeFactory(async (req, authType, tx, id) => {
+  id ??= await teamIdFromDigest(tx, authType);
+  return routeResponse(200, await parseJsonBody(await tx.query.Materials.findMany({
+    where: eq(Tools.team_id, id)
+  }), zod.array(Tool)));
+});
+
+export const POST = routeFactory(async (req, authType, tx, team_id) => {
+  team_id ??= await teamIdFromDigest(tx, authType);
+  const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
+  if (!data) return routeResponse(422);
+  const [id] = await tx.insert(Tools).values({
+    ...data,
+    file: files["file"],
+    team_id
+  }).returning({ id: Tools.id });
+  return routeResponse(201, id);
+}, { emailVerifiedNeeded: true });
+
+export const PATCH = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  return tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
+}, { emailVerifiedNeeded: true });
+
+export const DELETE = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  return tx.delete(Tools).where(eq(Tools.id, id)).returning({ id: Tools.id });
+}, { emailVerifiedNeeded: true });

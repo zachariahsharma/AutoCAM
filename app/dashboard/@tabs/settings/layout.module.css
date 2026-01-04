@@ -78,4 +78,5 @@
   left: calc(var(--sidebar-width, 300px) + 240px);
   width: calc(95vw - var(--sidebar-width, 300px) - 240px);
   transition: left 0.3s ease, width 0.3s ease;
+  min-height: calc(100vh - 130px);
 }

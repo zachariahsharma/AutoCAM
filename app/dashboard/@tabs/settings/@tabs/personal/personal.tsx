@@ -5,8 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { authClient } from "@/lib/auth/client";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function PersonalSettingsPage() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [originalUsername, setOriginalUsername] = useState("");
@@ -14,6 +16,8 @@ export default function PersonalSettingsPage() {
   const [emailVerified, setEmailVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -109,6 +113,20 @@ export default function PersonalSettingsPage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await authClient.deleteUser();
+      router.push("/");
+    } catch (err) {
+      console.error("Error deleting account:", err);
+      setMessage({ type: "error", text: "Failed to delete account" });
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className={styles.personalContainer}>
@@ -187,6 +205,41 @@ export default function PersonalSettingsPage() {
           <span className={styles.profileUsername}>{username}</span>
         </div>
       </div>
+
+      <button
+        className={styles.deleteAccountButton}
+        onClick={() => setShowDeleteModal(true)}
+      >
+        Delete Account
+      </button>
+
+      {showDeleteModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.deleteModal}>
+            <h3>Delete Account?</h3>
+            <p>
+              This action is <strong>permanent</strong> and cannot be undone.
+              All your data will be deleted.
+            </p>
+            <div className={styles.modalButtons}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmDeleteButton}
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

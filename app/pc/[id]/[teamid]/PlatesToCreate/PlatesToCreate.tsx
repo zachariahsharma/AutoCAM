@@ -20,6 +20,7 @@ export default function PlatesToCreate({
           setPlates([
             ...plates,
             {
+              name: "",
               width: 24,
               length: 48,
               true_depth: 0.25,

@@ -125,8 +125,8 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   const params = req.nextUrl.searchParams;
 
   const data = await parseJsonBody({
-    material: params.get("material")?.toString(),
-    thickness: params.get("thickness")?.toString()
+    material: params.get("material"),
+    thickness: params.get("thickness")
   }, SearchParams);
   return routeResponse(200, await parseJsonBody(await tx.query.PartCategories.findMany({
     where: and(

@@ -2,10 +2,10 @@
 import styles from "./page.module.css";
 import { motion } from "framer-motion";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
+import HeroBackground from "@/components/HeroBackground/HeroBackground";
 import localFont from "next/font/local";
 import { Roboto } from "next/font/google";
 import { authClient } from "@/lib/auth/client";
-import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -20,27 +20,6 @@ const roboto = Roboto({
   display: "swap",
 });
 
-function Background() {
-  return (
-    <div>
-      <span id={styles.blur} />
-      <video
-        width="320"
-        height="240"
-        // preload="none"
-        autoPlay
-        playsInline
-        muted
-        loop
-        id={styles.video}
-      >
-        <source src="/index/263121_small.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-    </div>
-  );
-}
-
 function DashboardPreview() {
   return (
     <div className={styles.dashboardPreview}>
@@ -53,7 +32,7 @@ function DashboardPreview() {
         </div>
         <span className={styles.previewUrl}>autocam.app/dashboard</span>
       </div>
-      
+
       {/* Dashboard content */}
       <div className={styles.previewContent}>
         {/* Sidebar */}
@@ -64,7 +43,7 @@ function DashboardPreview() {
           <div className={styles.previewNavItem} />
           <div className={styles.previewNavItem} />
         </div>
-        
+
         {/* Main area */}
         <div className={styles.previewMain}>
           {/* Cards grid */}
@@ -110,7 +89,7 @@ export function Header({
   const router = useRouter();
   const [session, setSession] = useState<boolean | null>(null);
   useEffect(() => {
-    authClient.getSession().then(s => setSession(s.data != null));
+    authClient.getSession().then((s) => setSession(s.data != null));
   });
   if (session === null) return;
   console.log(session);
@@ -122,10 +101,7 @@ export function Header({
         animate={{ opacity: 1 }}
         transition={{ delay: delay, duration: duration }}
       >
-        <button
-          id={styles.headerlogoButton}
-          onClick={() => router.push("/")}
-        >
+        <button id={styles.headerlogoButton} onClick={() => router.push("/")}>
           <Image
             src="/index/Document.svg"
             width={2000}
@@ -143,20 +119,22 @@ export function Header({
             >
               <span className={styles.textGradient}>DASHBOARD</span>
             </PrimaryButton>
-          ) : <>
-            <SecondaryButton
-              id={styles.loginbutton}
-              onClick={() => router.push("/login")}
-            >
-              <span className={styles.textGradient}>LOGIN</span>
-            </SecondaryButton>
-            <PrimaryButton
-              id={styles.signupbutton}
-              onClick={() => router.push("/signup")}
-            >
-              <span className={styles.textGradient}>SIGNUP</span>
-            </PrimaryButton>
-          </>}
+          ) : (
+            <>
+              <SecondaryButton
+                id={styles.loginbutton}
+                onClick={() => router.push("/login")}
+              >
+                <span className={styles.textGradient}>LOGIN</span>
+              </SecondaryButton>
+              <PrimaryButton
+                id={styles.signupbutton}
+                onClick={() => router.push("/signup")}
+              >
+                <span className={styles.textGradient}>SIGNUP</span>
+              </PrimaryButton>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
@@ -165,8 +143,11 @@ export function Header({
 
 export default function Home() {
   return (
-    <div className={zalando.variable + " " + roboto.variable} id={styles.container}>
-      <Background />
+    <div
+      className={zalando.variable + " " + roboto.variable}
+      id={styles.container}
+    >
+      <HeroBackground />
 
       <Header />
 
@@ -207,15 +188,17 @@ export default function Home() {
           <div className={styles.aboutText}>
             <h2 className={styles.sectionTitle}>What is AutoCAM?</h2>
             <p className={styles.aboutDescription}>
-              AutoCAM is a revolutionary platform designed specifically for FIRST Robotics Competition (FRC) teams. 
-              It streamlines the manufacturing process by automating CAM (Computer-Aided Manufacturing) toolpath 
-              generation directly from your CAD designs.
+              AutoCAM is a revolutionary platform designed specifically for
+              FIRST Robotics Competition (FRC) teams. It streamlines the
+              manufacturing process by automating CAM (Computer-Aided
+              Manufacturing) toolpath generation directly from your CAD designs.
             </p>
             <p className={styles.aboutDescription}>
-              Born from the challenges faced during competition season, AutoCAM eliminates hours of manual CAM 
-              programming, allowing teams to focus on what matters most—building winning robots. Our platform 
-              integrates seamlessly with Fusion 360, providing instant toolpaths for plates, box tubes, and 
-              complex parts.
+              Born from the challenges faced during competition season, AutoCAM
+              eliminates hours of manual CAM programming, allowing teams to
+              focus on what matters most—building winning robots. Our platform
+              integrates seamlessly with Fusion 360, providing instant toolpaths
+              for plates, box tubes, and complex parts.
             </p>
             <div className={styles.aboutFeatures}>
               <div className={styles.featureItem}>
@@ -268,8 +251,12 @@ export default function Home() {
             <p className={styles.teamRole}>Lead Developer & Designer</p>
             <div className={styles.teamDivider} />
             <ul className={styles.teamContributions}>
-              <li>Designed and developed the entire web interface from scratch</li>
-              <li>Built the Fusion 360 AutoCAM integration from the ground up</li>
+              <li>
+                Designed and developed the entire web interface from scratch
+              </li>
+              <li>
+                Built the Fusion 360 AutoCAM integration from the ground up
+              </li>
               <li>Developed plate and box tube workflow components</li>
               <li>Implemented responsive UI/UX across the platform</li>
             </ul>

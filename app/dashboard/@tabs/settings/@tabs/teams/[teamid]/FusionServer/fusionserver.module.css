@@ -19,6 +19,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 5px;
+  cursor: pointer;
 }
 .addIcon {
   width: 12px;
@@ -277,4 +278,3 @@
     transform: rotate(360deg);
   }
 }
-

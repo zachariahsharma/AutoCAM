@@ -26,6 +26,21 @@ body {
 	color: var(--text);
 }
 
+/* Cursors for interactive elements */
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+[role="button"] {
+	cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+[role="button"][aria-disabled="true"] {
+	cursor: not-allowed;
+}
+
 /* Header */
 .gh-header {
 	background: var(--header) !important;

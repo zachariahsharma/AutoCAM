@@ -9,7 +9,9 @@ function Machines({ teamId }: { teamId: number }) {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pendingUpdates, setPendingUpdates] = useState<Record<number, NodeJS.Timeout>>({});
+  const [pendingUpdates, setPendingUpdates] = useState<
+    Record<number, NodeJS.Timeout>
+  >({});
 
   // Load machines from API
   useEffect(() => {
@@ -123,10 +125,7 @@ function Machines({ teamId }: { teamId: number }) {
         acceptedFileType=".cps"
         fileTypeLabel="CPS"
       />
-      <div
-        id={styles.addMachineContainer}
-        onClick={() => setIsModalOpen(true)}
-      >
+      <div id={styles.addMachineContainer} onClick={() => setIsModalOpen(true)}>
         <Image
           src="/settings/teams/Plus.svg"
           width={2000}
@@ -142,23 +141,23 @@ function Machines({ teamId }: { teamId: number }) {
       ) : (
         machines.map((machine) => (
           <div key={machine.id} className={styles.machineContainer}>
-          <input
-            type="text"
+            <input
+              type="text"
               value={machine.name}
-            placeholder="Name"
+              placeholder="Name"
               onChange={(e) => updateMachineLocal(machine.id, e.target.value)}
-          />
-          <span id={styles.machineVertical} />
-          <span>{machine.file}</span>
-          <Image
-            alt="Trash"
-            src="/settings/teams/Trash.svg"
-            width={2000}
-            height={2000}
+            />
+            <span id={styles.machineVertical} />
+            <span>{machine.file}</span>
+            <Image
+              alt="Trash"
+              src="/settings/teams/Trash.svg"
+              width={2000}
+              height={2000}
               onClick={() => deleteMachine(machine.id)}
-            className={styles.trashIcon}
-          />
-        </div>
+              className={styles.trashIcon}
+            />
+          </div>
         ))
       )}
     </main>
@@ -168,7 +167,9 @@ function Machines({ teamId }: { teamId: number }) {
 function Materials({ teamId }: { teamId: number }) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [pendingUpdates, setPendingUpdates] = useState<Record<number, NodeJS.Timeout>>({});
+  const [pendingUpdates, setPendingUpdates] = useState<
+    Record<number, NodeJS.Timeout>
+  >({});
 
   // Load materials from API
   useEffect(() => {
@@ -317,9 +318,9 @@ function ToolItem({
 }: {
   tool: Tool;
   setTools: React.Dispatch<React.SetStateAction<Tool[]>>;
-  tools: Tool[];
   totalMaterials: Material[];
   totalMachines: Machine[];
+  tools: Tool[];
 }) {
   const [machines, setMachines] = useState<Machine[]>(tool.machines);
   const [dropdownMaterialsEnabled, setDropdownMaterialsEnabled] =
@@ -536,18 +537,11 @@ function ToolItem({
   );
 }
 
-function Tools({
-  oldTools,
-  totalMaterials,
-  totalMachines,
-}: {
-  oldTools: Tool[];
-  totalMaterials: Material[];
-  totalMachines: Machine[];
-}) {
-  const [tools, setTools] = useState<Tool[]>(oldTools);
+function Tools({ teamId }: { teamId: number }) {
+  const [tools, setTools] = useState<Tool[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [totalMaterials, setTotalMaterials] = useState<Material[]>([]);
+  const [totalMachines, setTotalMachines] = useState<Machine[]>([]);
   const handleAddTool = (name: string, file: File) => {
     const newTool: Tool = {
       id: tools.length + 1,
@@ -571,10 +565,7 @@ function Tools({
         acceptedFileType=".json"
         fileTypeLabel="JSON"
       />
-      <div
-        id={styles.addMachineContainer}
-        onClick={() => setIsModalOpen(true)}
-      >
+      <div id={styles.addMachineContainer} onClick={() => setIsModalOpen(true)}>
         <Image
           src="/settings/teams/Plus.svg"
           width={2000}
@@ -597,17 +588,7 @@ function Tools({
   );
 }
 
-export default function FusionInputs({
-  defaultMachines,
-  defaultMaterials,
-  defaultTools,
-  teamId,
-}: {
-  defaultMachines: Machine[];
-  defaultMaterials: Material[];
-  defaultTools: Tool[];
-  teamId: number;
-}) {
+export default function FusionInputs({ teamId }: { teamId: number }) {
   const [selectedTab, setSelectedTab] = useState<string>("Machines");
   return (
     <form>
@@ -655,19 +636,9 @@ export default function FusionInputs({
           </div>
         </div>
         <div id={styles.inputsContainer}>
-          {selectedTab === "Machines" && (
-            <Machines teamId={teamId} />
-          )}
-          {selectedTab === "Materials" && (
-            <Materials teamId={teamId} />
-          )}
-          {selectedTab === "Tools" && (
-            <Tools
-              oldTools={defaultTools}
-              totalMaterials={defaultMaterials}
-              totalMachines={defaultMachines}
-            />
-          )}
+          {selectedTab === "Machines" && <Machines teamId={teamId} />}
+          {selectedTab === "Materials" && <Materials teamId={teamId} />}
+          {selectedTab === "Tools" && <Tools teamId={teamId} />}
         </div>
         <span id={styles.verticalrule} />
       </div>

@@ -121,6 +121,282 @@ function TeamDropdown() {
   );
 }
 
+type SidebarSearchResults = {
+  parts: Array<{
+    id: number;
+    name: string;
+    epic: string;
+    ticket: string;
+    quantity: number;
+    category: { id: number; material: string; thickness: number };
+  }>;
+  partCategories: Array<{ id: number; material: string; thickness: number }>;
+  boxTubes: Array<{
+    id: number;
+    name: string;
+    epic: string;
+    ticket: string;
+    quantity: number;
+  }>;
+};
+
+function SidebarSearch() {
+  const { team } = useDashboardEvents();
+  const { isCollapsed } = useSidebar();
+  const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<SidebarSearchResults | null>(null);
+
+  useEffect(() => {
+    setQuery("");
+    setIsOpen(false);
+    setIsLoading(false);
+    setError(null);
+    setResults(null);
+  }, [team?.id]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setIsOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!team) {
+      setIsLoading(false);
+      setResults(null);
+      setError(null);
+      return;
+    }
+
+    const q = query.trim();
+    if (q.length < 2) {
+      setIsLoading(false);
+      setResults(null);
+      setError(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/teams/${team.id}/search?q=${encodeURIComponent(q)}&limit=6`,
+          { signal: controller.signal }
+        );
+        if (!res.ok) throw new Error(`Search failed (${res.status})`);
+        const data: SidebarSearchResults = await res.json();
+        setResults(data);
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        console.error("Sidebar search error:", err);
+        setError("Search failed");
+        setResults(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [query, team]);
+
+  if (isCollapsed) return null;
+
+  const q = query.trim();
+  const parts = results?.parts ?? [];
+  const partCategories = results?.partCategories ?? [];
+  const boxTubes = results?.boxTubes ?? [];
+  const hasAnyResults =
+    parts.length > 0 || partCategories.length > 0 || boxTubes.length > 0;
+
+  function closeAndClear() {
+    setIsOpen(false);
+    setQuery("");
+    setResults(null);
+    setError(null);
+    setIsLoading(false);
+  }
+
+  function openCategory(categoryId: number) {
+    if (!team) return;
+    router.push(`/pc/${categoryId}/${team.id}`);
+    closeAndClear();
+  }
+
+  function openBoxTubes() {
+    router.push("/dashboard/boxtubes");
+    closeAndClear();
+  }
+
+  return (
+    <div className={styles.sidebarSearchContainer} ref={containerRef}>
+      <div className={styles.sidebarSearchInput}>
+        <Image
+          src="/settings/teams/search.svg"
+          width={14}
+          height={14}
+          alt="Search"
+          className={styles.sidebarSearchIcon}
+        />
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          placeholder={team ? "Search parts, box tubes, categories" : "Select a team"}
+          disabled={!team}
+        />
+        {query.length > 0 && (
+          <button
+            type="button"
+            className={styles.sidebarSearchClear}
+            onClick={closeAndClear}
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {isOpen && q.length >= 2 && (isLoading || error || results) && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+            className={styles.sidebarSearchResults}
+          >
+            {isLoading ? (
+              <div className={styles.sidebarSearchEmpty}>Searching…</div>
+            ) : error ? (
+              <div className={styles.sidebarSearchEmpty}>{error}</div>
+            ) : !hasAnyResults ? (
+              <div className={styles.sidebarSearchEmpty}>No results</div>
+            ) : (
+              <>
+                {parts.length > 0 && (
+                  <div>
+                    <div className={styles.sidebarSearchSectionHeader}>
+                      Parts
+                    </div>
+                    {parts.map((p) => (
+                      <div
+                        key={`part-${p.id}`}
+                        className={styles.sidebarSearchResultRow}
+                        onClick={() => openCategory(p.category.id)}
+                      >
+                        <div className={styles.sidebarSearchResultMain}>
+                          <div className={styles.sidebarSearchResultTitle}>
+                            {p.name}
+                          </div>
+                          <div className={styles.sidebarSearchResultMeta}>
+                            Epic {p.epic} · Ticket {p.ticket} · Qty {p.quantity}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.sidebarSearchCategoryPill}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCategory(p.category.id);
+                          }}
+                          title="Open part category"
+                        >
+                          {p.category.material} · {p.category.thickness}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {partCategories.length > 0 && (
+                  <div>
+                    <div className={styles.sidebarSearchSectionHeader}>
+                      Part Categories
+                    </div>
+                    {partCategories.map((c) => (
+                      <div
+                        key={`cat-${c.id}`}
+                        className={styles.sidebarSearchResultRow}
+                        onClick={() => openCategory(c.id)}
+                      >
+                        <div className={styles.sidebarSearchResultMain}>
+                          <div className={styles.sidebarSearchResultTitle}>
+                            {c.material}
+                          </div>
+                          <div className={styles.sidebarSearchResultMeta}>
+                            Thickness {c.thickness}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {boxTubes.length > 0 && (
+                  <div>
+                    <div className={styles.sidebarSearchSectionHeader}>
+                      Box Tubes
+                    </div>
+                    {boxTubes.map((bt) => (
+                      <div
+                        key={`bt-${bt.id}`}
+                        className={styles.sidebarSearchResultRow}
+                        onClick={openBoxTubes}
+                      >
+                        <div className={styles.sidebarSearchResultMain}>
+                          <div className={styles.sidebarSearchResultTitle}>
+                            {bt.name}
+                          </div>
+                          <div className={styles.sidebarSearchResultMeta}>
+                            Epic {bt.epic} · Ticket {bt.ticket} · Qty {bt.quantity}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function Sidebar() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -215,6 +491,11 @@ function Sidebar() {
       <div className={styles.teamDropdownWrapper}>
         <TeamDropdown />
       </div>
+      {!isCollapsed && (
+        <div className={styles.sidebarSearchWrapper}>
+          <SidebarSearch />
+        </div>
+      )}
       {!isCollapsed && <hr id={styles.sidebarDivider} />}
       <div className={styles.sidebarItems}>
         <div>

@@ -29,6 +29,7 @@
   display: flex;
   align-items: center;
   width: 130px;
+  cursor: pointer;
 }
 #machinesContainer {
   /* display: flex;
@@ -89,6 +90,7 @@
   align-items: center;
   background-color: var(--yellow-1);
   border-radius: 5px;
+  cursor: pointer;
 }
 .addIcon {
   width: 14px;
@@ -280,6 +282,7 @@
   width: 16px;
   position: absolute;
   right: 5px;
+  cursor: pointer;
 }
 .loadingContainer {
   width: 100%;

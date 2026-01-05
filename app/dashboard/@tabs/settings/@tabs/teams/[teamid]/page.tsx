@@ -53,12 +53,9 @@ export function TeamName({
 export default function TeamSettingsPage() {
   const router = useRouter();
   const [teamName, setTeamName] = useState<string>("");
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [machines, setMachines] = useState<Machine[]>([]);
   const { teamid } = useParams();
   const [teamDbId, setTeamDbId] = useState<number>(0);
   const { teams, notifyUpdate } = useTabEvents();
-  const [tools, setTools] = useState<Tool[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
@@ -75,7 +72,6 @@ export default function TeamSettingsPage() {
   const [isLeaving, setIsLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
 
-  // Check if current user is the owner and get their email
   useEffect(() => {
     async function checkOwnership() {
       const { data } = await authClient.getSession();
@@ -95,7 +91,6 @@ export default function TeamSettingsPage() {
     checkOwnership();
   }, [teamid, teams]);
 
-  // Fetch members to check admin status
   useEffect(() => {
     if (!teamDbId || !currentUserEmail) return;
     async function fetchMembers() {
@@ -114,10 +109,7 @@ export default function TeamSettingsPage() {
           const currentMember = members.find(
             (m) => m.email === currentUserEmail
           );
-          // Owner is always treated as admin for settings access
           setIsAdmin(currentMember?.admin ?? currentMember?.isOwner ?? false);
-
-          // Get other members (excluding current user) for ownership transfer
           setOtherMembers(members.filter((m) => m.email !== currentUserEmail));
         }
       } catch (err) {
@@ -128,15 +120,12 @@ export default function TeamSettingsPage() {
   }, [teamDbId, currentUserEmail]);
 
   useEffect(() => {
-    // Wait for teams to load before checking access
     if (teams.length === 0) return;
 
     const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
     const teamIndex = parseInt(idStr, 10);
     console.log("Loading team with id:", idStr, "and index:", teamIndex);
     const team = teams[teamIndex];
-
-    // If team doesn't exist at this index, user doesn't have access - redirect
     console.log(
       !team || isNaN(teamIndex) || teamIndex < 0 || teamIndex >= teams.length
     );
@@ -152,9 +141,6 @@ export default function TeamSettingsPage() {
 
     setTeamName(team.name);
     setTeamDbId(team.id);
-    setMaterials(team.materials || []);
-    setMachines(team.machines || []);
-    setTools(team.tools || []);
   }, [teamid, teams, router]);
 
   const handleDeleteTeam = async () => {
@@ -313,9 +299,9 @@ export default function TeamSettingsPage() {
       className={styles.teamPage}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ 
-        duration: 0.5, 
-        ease: [0.25, 0.46, 0.45, 0.94] 
+      transition={{
+        duration: 0.5,
+        ease: [0.25, 0.46, 0.45, 0.94],
       }}
     >
       <div className={styles.teamContainer}>
@@ -355,12 +341,7 @@ export default function TeamSettingsPage() {
         <br />
         {isAdmin && emailVerified && (
           <motion.div {...getNextSectionMotion()}>
-            <FusionInputs
-              defaultMachines={machines}
-              defaultMaterials={materials}
-              defaultTools={tools}
-              teamId={teamDbId}
-            />
+            <FusionInputs teamId={teamDbId} />
           </motion.div>
         )}
       </div>
@@ -378,8 +359,8 @@ export default function TeamSettingsPage() {
       )}
 
       <motion.div className={styles.teamActions} {...getNextSectionMotion()}>
-        <motion.button 
-          className={styles.leaveTeamButton} 
+        <motion.button
+          className={styles.leaveTeamButton}
           onClick={handleLeaveClick}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}

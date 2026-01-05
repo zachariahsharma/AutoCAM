@@ -44,6 +44,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 5px;
+  cursor: pointer;
 }
 .addIcon {
   width: 12px;
@@ -233,7 +234,8 @@
 }
 
 .scopeInput {
-  overflow:hidden
+  overflow:hidden;
+  cursor: pointer;
 }
 #scopeTitle {
   margin-right: 5px;

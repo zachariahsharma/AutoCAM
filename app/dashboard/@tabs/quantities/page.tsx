@@ -23,9 +23,15 @@ function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
   }, [quantity]);
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: delay, duration: 0.3 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ 
+        delay: delay, 
+        duration: 0.4,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
+      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
       className={styles.quantitycard}
     >
       <div id={styles.quantitycardheader}>
@@ -74,21 +80,41 @@ function NoTeamCard() {
   return (
     <div className={styles.noTeamContainer}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ 
+          duration: 0.5,
+          ease: [0.25, 0.46, 0.45, 0.94]
+        }}
         className={styles.noTeamCard}
       >
-        <h2>No Team Found</h2>
-        <p>You need to be part of a team to adjust part quantities.</p>
-        <div className={styles.noTeamButtons}>
+        <motion.h2
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
+        >
+          No Team Found
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.3 }}
+        >
+          You need to be part of a team to adjust part quantities.
+        </motion.p>
+        <motion.div 
+          className={styles.noTeamButtons}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.3 }}
+        >
           <PrimaryButton onClick={() => router.push("/dashboard/settings/newteam")}>
             <span className="textGradient">Create a Team</span>
           </PrimaryButton>
           <SecondaryButton onClick={() => router.push("/dashboard/settings/jointeam")}>
             <span className="textGradient">Join a Team</span>
           </SecondaryButton>
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );
@@ -129,7 +155,7 @@ export default function Quantitys() {
       );
 
       if (mounted) {
-        setParts(partsByCategory.flat());
+      setParts(partsByCategory.flat());
         setIsLoading(false);
       }
     };

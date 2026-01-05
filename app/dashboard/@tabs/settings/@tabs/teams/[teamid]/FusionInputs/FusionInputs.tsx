@@ -142,23 +142,23 @@ function Machines({ teamId }: { teamId: number }) {
       ) : (
         machines.map((machine) => (
           <div key={machine.id} className={styles.machineContainer}>
-            <input
-              type="text"
+          <input
+            type="text"
               value={machine.name}
-              placeholder="Name"
+            placeholder="Name"
               onChange={(e) => updateMachineLocal(machine.id, e.target.value)}
-            />
-            <span id={styles.machineVertical} />
-            <span>{machine.file}</span>
-            <Image
-              alt="Trash"
-              src="/settings/teams/Trash.svg"
-              width={2000}
-              height={2000}
+          />
+          <span id={styles.machineVertical} />
+          <span>{machine.file}</span>
+          <Image
+            alt="Trash"
+            src="/settings/teams/Trash.svg"
+            width={2000}
+            height={2000}
               onClick={() => deleteMachine(machine.id)}
-              className={styles.trashIcon}
-            />
-          </div>
+            className={styles.trashIcon}
+          />
+        </div>
         ))
       )}
     </main>
@@ -611,7 +611,7 @@ export default function FusionInputs({
   const [selectedTab, setSelectedTab] = useState<string>("Machines");
   return (
     <form>
-      <label>Machines, Tools & Materials</label>
+      <label className={styles.sectionLabel}>Machines, Tools & Materials</label>
       <div id={styles.container}>
         <div id={styles.sidebar}>
           <div

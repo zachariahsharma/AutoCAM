@@ -1,6 +1,6 @@
 "use client";
 import styles from "./layout.module.css";
-import { useAnimate } from "framer-motion";
+import { motion, useAnimate } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
@@ -66,7 +66,13 @@ function Sidebar() {
   }, [tab, teams, animate, scope]);
 
   return (
-    <aside className={styles.sidebar} ref={sidebarRef}>
+    <motion.aside 
+      className={styles.sidebar} 
+      ref={sidebarRef}
+      initial={{ x: -160, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
       <span id={styles.selected} ref={scope} />
       <div
         ref={(el) => { itemsRef.current["personal"] = el; }}
@@ -173,7 +179,7 @@ function Sidebar() {
         />
         <span>Join Team</span>
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 
@@ -198,14 +204,26 @@ export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
   }, []);
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
+      <motion.div 
+        className={styles.header}
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
         <h1>Settings</h1>
         <hr />
-      </div>
+      </motion.div>
       <TabEventsProvider>
         <div className={styles.mainContent}>
           <Sidebar />
-          <main className={styles.main}>{tabs}</main>
+          <motion.main 
+            className={styles.main}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+            {tabs}
+          </motion.main>
         </div>
       </TabEventsProvider>
     </div>

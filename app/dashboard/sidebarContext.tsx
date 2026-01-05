@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useLayoutEffect, ReactNode } from "react";
 
 interface SidebarContextType {
   isCollapsed: boolean;
@@ -10,16 +10,47 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
-export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const EXPANDED_WIDTH = "220px";
+const COLLAPSED_WIDTH = "60px";
+const MOBILE_BREAKPOINT = 768; // Tablet and below
 
-  // Update CSS variable when collapsed state changes
-  useEffect(() => {
+// Check if we should start collapsed (mobile/tablet)
+function getInitialCollapsed(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth <= MOBILE_BREAKPOINT;
+}
+
+export function SidebarProvider({ children }: { children: ReactNode }) {
+  const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsed);
+
+  // Set CSS variable immediately on mount and when collapsed changes
+  useLayoutEffect(() => {
     document.documentElement.style.setProperty(
       "--sidebar-width",
-      isCollapsed ? "70px" : "300px"
+      isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH
     );
   }, [isCollapsed]);
+
+  // Also set it immediately on first render (before paint)
+  useLayoutEffect(() => {
+    const shouldCollapse = window.innerWidth <= MOBILE_BREAKPOINT;
+    setIsCollapsed(shouldCollapse);
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      shouldCollapse ? COLLAPSED_WIDTH : EXPANDED_WIDTH
+    );
+  }, []);
+
+  // Listen for resize to auto-collapse on mobile
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth <= MOBILE_BREAKPOINT) {
+        setIsCollapsed(true);
+      }
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const toggleSidebar = () => setIsCollapsed((prev) => !prev);
 

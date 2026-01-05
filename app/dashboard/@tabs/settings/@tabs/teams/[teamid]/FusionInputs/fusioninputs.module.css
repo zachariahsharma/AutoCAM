@@ -183,6 +183,14 @@
   align-items: center;
   justify-content: center;
 }
+.sectionLabel {
+  display: inline-block;
+  margin-bottom: 5px;
+  font-family: var(--font-roboto);
+  font-size: 18px;
+  font-weight: 400;
+  color: white;
+}
 
 .checkbox input:checked + .checkboxBox {
   background-color: #9A9A9A;

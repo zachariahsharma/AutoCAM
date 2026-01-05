@@ -361,7 +361,7 @@ function Sidebar() {
 export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
   useEffect(() => {
     // Set default sidebar width
-    document.documentElement.style.setProperty("--sidebar-width", "300px");
+    document.documentElement.style.setProperty("--sidebar-width", "220px");
 
     try {
       const perf: any = (globalThis as any).performance;

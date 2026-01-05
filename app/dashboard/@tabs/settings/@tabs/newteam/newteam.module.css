@@ -4,8 +4,8 @@
   border: .25px solid #636363;
 }
 .newteamContainer > h1{
-  font-size: 35px;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 500;
 }
 .newteamContainer > form {
   display: flex;
@@ -14,18 +14,18 @@
 .newteamContainer > form > label {
   color: white;
   font-family: var(--font-roboto);
-  margin-bottom: 5px;
-  font-size: 18px;
+  margin-bottom: 4px;
+  font-size: 14px;
 }
 .newteamContainer > form > input, .newteamContainer > form >div >input {
   border-radius: 5px;
-  padding: 10px;
-  height: 40px;
-  width: calc(100% - 200px);
+  padding: 8px 10px;
+  height: 36px;
+  width: calc(100% - 160px);
   border: 1px solid rgba(255,255,255,.53);
   background-color: rgba(217,217,217, .19);
   color: #BCBCBC;
-  font-size: 15px;
+  font-size: 14px;
   transition: all .25s;
 }
 .newteamContainer > form > div > input:focus {
@@ -43,19 +43,19 @@
 .teamNameSection > label {
   color: white;
   font-family: var(--font-roboto);
-  margin-bottom: 5px;
-  font-size: 18px;
+  margin-bottom: 4px;
+  font-size: 14px;
 }
 
 .teamNameInput {
   border-radius: 5px;
-  padding: 10px;
-  height: 40px;
+  padding: 8px 10px;
+  height: 36px;
   width: 100%;
   border: 1px solid rgba(255,255,255,.53);
   background-color: rgba(217,217,217, .19);
   color: #BCBCBC;
-  font-size: 15px;
+  font-size: 14px;
   transition: all .25s;
 }
 

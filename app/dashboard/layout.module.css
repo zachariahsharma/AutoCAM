@@ -1,13 +1,14 @@
 .sidebar { 
-  width: var(--sidebar-width, 300px);
+  width: var(--sidebar-width, 220px);
   background-color: #0A0A0A;
   height: 100%;
   position: fixed;
   top: 0;
   left: 0;
-  padding-top: 20px;
-  padding-bottom: 20px;
-  border-radius: 0px 20px 20px 0px;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  border-radius: 0px 16px 16px 0px;
+  border-right: 1px solid #2a2a2a;
   transition: width 0.3s ease;
   z-index: 100;
   overflow: hidden;
@@ -17,18 +18,18 @@
 }
 
 .sidebarCollapsed {
-  width: 70px;
+  width: 60px;
 }
 
 .Hamburgericon {
-  width: 30px;
-  height: 30px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .logoicon {
-  width: 40px;
+  width: 28px;
   height: auto;
   cursor: pointer;
 }
@@ -36,9 +37,9 @@
 .topSidebar {
   display: flex;
   align-items: center;
-  padding-left: 20px;
-  gap: 10px;
-  margin-bottom: 10px;
+  padding-left: 15px;
+  gap: 8px;
+  margin-bottom: 8px;
   flex-shrink: 0;
 }
 
@@ -48,13 +49,13 @@
 }
 
 .logoText {
-  font-size: 30px;
+  font-size: 22px;
   font-family: var(--font-zalando);
   white-space: nowrap;
 }
 
 .teamDropdownWrapper {
-  min-height: 40px;
+  min-height: 32px;
   flex-shrink: 0;
 }
 
@@ -64,17 +65,17 @@
 
 .teamDropdownContainer {
   position: relative;
-  width: 80%;
+  width: 85%;
   margin-left: auto;
   margin-right: auto;
 }
 
 #teamdropdown {
-  height: 40px;
+  height: 32px;
   width: 100%;
   position: relative;
   background-color: black;
-  border-radius: 5px;
+  border-radius: 4px;
   border: 1px solid #4F4F4F;
   color: #A1A1A1;
   display: flex;
@@ -90,42 +91,42 @@
 
 #teamdropdown > span {
   font-family: var(--font-roboto);
-  font-size: 16px;
-  font-weight: 200;
-  width: calc(100% - 25px);
+  font-size: 14px;
+  font-weight: 300;
+  width: calc(100% - 22px);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .teamdropdownIcon {
-  height: 12px;
-  width: 12px;
+  height: 10px;
+  width: 10px;
   position: absolute;
-  right: 10px;
+  right: 8px;
 }
 
 #teamdropdownMenu {
   position: absolute;
-  top: 45px;
+  top: 36px;
   left: 0;
   width: 100%;
   background-color: black;
   border: 1px solid #4F4F4F;
-  border-radius: 5px;
+  border-radius: 4px;
   z-index: 10;
   display: flex;
   flex-direction: column;
   color: #A1A1A1;
   font-family: var(--font-roboto);
-  font-size: 16px;
-  font-weight: 200;
-  padding: 5px 0px;
+  font-size: 14px;
+  font-weight: 300;
+  padding: 4px 0px;
 }
 
 .teamdropdownItem {
   width: 100%;
-  height: 40px;
+  height: 32px;
   display: flex;
   align-items: center;
   padding-left: 10px;
@@ -137,9 +138,9 @@
 }
 
 .sidebaricon {
-  width: 20px;
-  height: 20px;
-  margin-right: 10px;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
   flex-shrink: 0;
 }
 
@@ -150,31 +151,32 @@
 .sidebarItem {
   display: flex;
   align-items: center;
-  padding: 5px 20px;
-  margin: 5px 0px;
-  margin-bottom: 10px;
+  padding: 6px 12px;
+  margin: 3px 0px;
+  margin-bottom: 6px;
   cursor: pointer;
   color:#B3B3B3;
-  margin-left: 30px;
-  font-weight: 600;
+  margin-left: 20px;
+  font-weight: 500;
+  font-size: 14px;
   transition: all .2s;
-  width: calc(100% - 40px);
+  width: calc(100% - 30px);
   white-space: nowrap;
 }
 
 .sidebarCollapsed .sidebarItem {
-  margin-left: 10px;
-  padding: 5px 15px;
+  margin-left: 8px;
+  padding: 6px 12px;
   justify-content: center;
-  width: calc(100% - 20px);
+  width: calc(100% - 16px);
 }
 
 #sidebarDivider {
   border-color: #656565;
   opacity: 1;
   width: 90%;
-  margin: 10px auto;
-  margin-bottom: 20px;
+  margin: 8px auto;
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
 
@@ -196,70 +198,72 @@
 
 .sidebarSelected {
   position: absolute;
-  top: -40px;
+  top: -32px;
   z-index: -1;
-  width: calc(100% - 40px);
-  height: 40px;
+  width: calc(100% - 30px);
+  height: 32px;
   transition: width 0.3s ease;
 }
 
 .sidebarCollapsed .sidebarSelected {
-  width: calc(100% - 20px);
+  width: calc(100% - 16px);
 }
 
 .selectedYellow {
   position: absolute;
-  left: 10px;
-  width: 12px;
+  left: 8px;
+  width: 5px;
   height: 100%;
   background-color: var(--yellow-1);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .sidebarCollapsed .selectedYellow {
-  left: 5px;
-  width: 8px;
+  left: 4px;
+  width: 6px;
 }
 
 .selectedHighlight {
   position: absolute;
-  left: 30px;
+  left: 20px;
   width: 100%;
   height: 100%;
   background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 6px;
   transition: all 0.3s ease;
 }
 
 .sidebarCollapsed .selectedHighlight {
-  left: 10px;
-  width: calc(100% - 10px);
+  left: 8px;
+  width: calc(100% - 8px);
 }
 
 #profileicon {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
 }
 
 #profileContainer {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 90%;
   background-color: #191919;
-  border-radius: 10px;
+  border-radius: 8px;
   margin-left: auto;
   margin-right: auto;
-  height: 50px;
+  height: 42px;
+  padding-left: 6px;
   transition: all 0.3s ease;
   overflow: hidden;
 }
 
 .profileCollapsed {
-  width: 50px !important;
+  width: 42px !important;
   justify-content: center;
-  padding: 5px;
+  padding: 4px;
+  padding-left: 4px;
 }
 
 #profileinfo {
@@ -271,14 +275,14 @@
 }
 
 #username {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: #FFFFFF;
 }
 
 #email {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 400;
   color: #8C8C8C;
 }
 
@@ -299,7 +303,7 @@
 
 .main {
   flex: 1;
-  margin-left: var(--sidebar-width, 300px);
+  margin-left: var(--sidebar-width, 220px);
   transition: margin-left 0.3s ease;
   min-height: 100vh;
 }

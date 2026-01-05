@@ -132,11 +132,11 @@ export default function CollaboratorsSettingsPage({
   }, [teamDbId, fetchCollaborators, useLocalState]);
 
   async function handleAddCollaborator(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+          e.preventDefault();
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const email = (formData.get("email") as string) || "";
+          const form = e.currentTarget;
+          const formData = new FormData(form);
+          const email = (formData.get("email") as string) || "";
 
     if (!email) return;
 
@@ -183,11 +183,11 @@ export default function CollaboratorsSettingsPage({
         ...prev,
         {
           id: prev.length + 1,
-          email,
+                email,
           name: email.split("@")[0] || "Unknown",
-          role: "pending",
-        },
-      ]);
+                role: "pending",
+              },
+            ]);
 
       form.reset();
     } catch (err) {
@@ -340,50 +340,50 @@ export default function CollaboratorsSettingsPage({
         </h1>
         {!readOnly && (
           <form onSubmit={handleAddCollaborator}>
-            <div className={styles.addCollaboratorSection}>
-              <div className={styles.addCollaboratorContainer}>
-                <Image
-                  alt="search"
-                  src="/settings/teams/search.svg"
-                  width={2000}
-                  height={2000}
-                  className={styles.searchIcon}
-                />
+        <div className={styles.addCollaboratorSection}>
+          <div className={styles.addCollaboratorContainer}>
+            <Image
+              alt="search"
+              src="/settings/teams/search.svg"
+              width={2000}
+              height={2000}
+              className={styles.searchIcon}
+            />
                 <input type="email" name="email" placeholder="Enter email" />
-              </div>
+          </div>
               <PrimaryButton type="submit" disabled={isSending}>
                 <span className="textGradient">
                   {isSending ? "Sending..." : "Add Collaborator"}
                 </span>
-              </PrimaryButton>
-            </div>
+          </PrimaryButton>
+        </div>
             {error && <p className={styles.error}>{error}</p>}
-          </form>
+      </form>
         )}
         {!readOnly && (
           <div className={styles.alertWrapper}>
             <Alert message={alertMessage || ""} open={!!alertMessage} />
           </div>
         )}
-        <div className={styles.collaboratorsList}>
+      <div className={styles.collaboratorsList}>
           {collaborators.map((collaborator) => (
-            <CollaboratorCard
-              collaborator={collaborator}
+          <CollaboratorCard
+            collaborator={collaborator}
               key={collaborator.id}
               onRoleChange={handleRoleChange}
               onRemove={handleRemove}
               readOnly={readOnly}
-            />
-          ))}
-          {collaborators.length === 0 && (
-            <div className={styles.emptyStateContainer}>
-              <span className={styles.emptyState}>
+          />
+        ))}
+        {collaborators.length === 0 && (
+          <div className={styles.emptyStateContainer}>
+            <span className={styles.emptyState}>
                 {readOnly ? "No collaborators." : "Enter an email to add a collaborator."}
-              </span>
-            </div>
-          )}
-        </div>
+            </span>
+          </div>
+        )}
       </div>
+    </div>
 
       {/* Confirmation Modal */}
       {confirmModal.open && (
@@ -493,14 +493,14 @@ function CollaboratorCard({
         )}
       </div>
       {collaborator.role !== "Owner" && !readOnly && (
-        <Image
-          alt="remove"
-          src="/settings/teams/remove.svg"
-          width={2000}
-          height={2000}
-          className={styles.removeIcon}
+      <Image
+        alt="remove"
+        src="/settings/teams/remove.svg"
+        width={2000}
+        height={2000}
+        className={styles.removeIcon}
           onClick={() => onRemove(collaborator)}
-        />
+      />
       )}
     </div>
   );

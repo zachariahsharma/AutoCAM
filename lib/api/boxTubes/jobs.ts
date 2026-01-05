@@ -85,16 +85,15 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 
 export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   if (!box_tube_id) return routeResponse(422);
-  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const payload = await parseJsonBody(await req.json(), CreateSchema);
 
   const tube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, box_tube_id) });
   if (!tube) return routeResponse(404);
 
   const [id] = await tx.insert(Jobs).values({
     team_id: tube.team_id,
-    machine_id: body.machine_id,
-    tool_id: body.tool_id,
-    kind: "box_tube"
+    kind: "box_tube",
+    payload
   }).returning({ id: Jobs.id });
   await tx.insert(BoxTubeJobs).values({ job_id: id.id, box_tube_id });
   return routeResponse(201, id);

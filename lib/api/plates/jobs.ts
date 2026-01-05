@@ -1,4 +1,4 @@
-import { Jobs, PlateJobs, PlateJobType, Plates } from "@/lib/db/schema/cam";
+import { Jobs, PlateJobs, Plates } from "@/lib/db/schema/cam";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq, inArray } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
@@ -8,13 +8,22 @@ import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 
-const CreateSchema = zod.object({
-  machine_id: zod.number(),
-  tool_id: zod.number(),
-  type: zod.enum(PlateJobType.enumValues)
-});
-const Job = createSelectSchema(Jobs).omit({ kind: true, team_id: true })
-  .extend(createSelectSchema(PlateJobs).omit({ plate_id: true, job_id: true }).shape).openapi("Plate Job");
+const CreateSchema = zod.discriminatedUnion("type", [
+  zod.object({ type: zod.literal("arrange") }),
+  zod.object({
+    type: zod.literal("cam"),
+    machine_id: zod.number(),
+    tool_id: zod.number()
+  })
+]);
+
+const Job = zod.discriminatedUnion("type", [
+  zod.object({ type: zod.literal("arrange") }),
+  zod.object({
+    type: zod.literal("cam"),
+    machine_id: zod.number()
+  })
+])
 
 registry.registerPath({
   method: "get",
@@ -94,18 +103,13 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
     with: { category: true }
   });
   if (!plate) return routeResponse(404);
-  // Create generic job
+  const { type, ...payload } = body;
   const [id] = await tx.insert(Jobs).values({
-    machine_id: body.machine_id,
-    tool_id: body.tool_id,
     team_id: plate.category.team_id,
-    kind: "plate"
+    kind: `plate:${type}`,
+    payload
   }).returning({ id: Jobs.id });
   // Create plate job
-  await tx.insert(PlateJobs).values({
-    job_id: id.id,
-    plate_id,
-    type: body.type
-  });
+  await tx.insert(PlateJobs).values({ job_id: id.id, plate_id });
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });

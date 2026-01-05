@@ -10,7 +10,6 @@ import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMa
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 
 function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
-  if (!part) return null;
   const [quantity, setQuantity] = useState<number>(part.quantity);
   useEffect(() => {
     fetch(`/api/parts/${part.id}`, {

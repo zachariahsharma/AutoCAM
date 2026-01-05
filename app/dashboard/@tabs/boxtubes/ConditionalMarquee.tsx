@@ -46,7 +46,8 @@ export function ConditionalMarquee({
     if (textRef.current) ro.observe(textRef.current);
 
     // Fonts can change widths after initial render
-    (document as any).fonts?.ready?.then?.(measure);
+    const fontSet = (document as unknown as { fonts?: { ready?: Promise<unknown> } }).fonts;
+    fontSet?.ready?.then(() => measure());
 
     return () => ro.disconnect();
   }, [text]);

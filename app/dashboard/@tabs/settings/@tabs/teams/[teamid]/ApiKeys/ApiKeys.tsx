@@ -458,7 +458,7 @@ export function ErrorModal({
         <hr className={styles.divider} />
         <div id={styles.inputContainer}>
           <span>
-            Check your internet connection, reload, and try again. I'm sorry for
+            Check your internet connection, reload, and try again. I&apos;m sorry for
             the inconvenience!{" "}
           </span>
         </div>

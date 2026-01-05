@@ -139,29 +139,23 @@ export default function Boxtubes() {
       if (response.ok) {
         const data = await response.json();
         if (mounted) {
-          let statusedData = await Promise.all(
-            data.map(async (bt: BoxTube) => {
+          const statusedData = await Promise.all(
+            data.map(async (bt: BoxTube): Promise<BoxTube> => {
               const response = await fetch(`/api/boxTubes/${bt.id}/jobs`, {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
                 },
               });
-              if (response.ok) {
-                const jobs = await response.json();
-                console.log("Jobs for box tube", bt.id, ":", jobs);
-                if (jobs.length === 0) {
-                  bt.status = "pending";
-                  return bt;
-                }
-                const allCompleted = jobs.every(
-                  (job: any) => job.status === "completed"
-                );
-                return {
-                  ...bt,
-                  status: allCompleted ? "completed" : "in progress",
-                };
-              }
+              if (!response.ok) return { ...bt, status: "pending" };
+
+              const jobs: Array<{ status: string }> = await response.json();
+              console.log("Jobs for box tube", bt.id, ":", jobs);
+
+              if (jobs.length === 0) return { ...bt, status: "pending" };
+
+              const allCompleted = jobs.every((job) => job.status === "completed");
+              return { ...bt, status: allCompleted ? "completed" : "in progress" };
             })
           );
           setBoxTubes(statusedData);

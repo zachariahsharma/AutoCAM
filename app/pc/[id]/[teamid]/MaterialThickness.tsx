@@ -35,13 +35,19 @@ export default function MaterialThickness({
   } = useMaterialEvents();
 
   useEffect(() => {
-    for (const plate of plates) {
-      if (!partsToPlates![plate.id]) {
-        partsToPlates![plate.id] = [];
+    if (!setPartsToPlates) return;
+    setPartsToPlates((prev) => {
+      let didChange = false;
+      const next = { ...prev };
+      for (const plate of plates) {
+        if (next[plate.id] == null) {
+          next[plate.id] = [];
+          didChange = true;
+        }
       }
-    }
-    setPartsToPlates!({ ...partsToPlates });
-  }, [plates]);
+      return didChange ? next : prev;
+    });
+  }, [plates, setPartsToPlates]);
 
   useEffect(() => {
     let mounted = true;
@@ -70,9 +76,9 @@ export default function MaterialThickness({
           "Content-Type": "application/json",
         },
       });
-      let partsData = await response.json();
+      const partsData = await response.json();
       setParts(partsData);
-      let selectedPartsInit: { [key: string]: number } = {};
+      const selectedPartsInit: { [key: string]: number } = {};
       for (const part of partsData) {
         selectedPartsInit[part.id] = 0;
       }
@@ -96,28 +102,19 @@ export default function MaterialThickness({
       mounted = false;
     };
   }, [pcid]);
-  const [sorting, setSorting] = useState(false);
+  const totalSelectedParts = Object.values(selectedParts).reduce(
+    (total, quantity) => total + quantity,
+    0
+  );
+  const sorting = plates.length > 0 && totalSelectedParts > 0;
+
   useEffect(() => {
-    let total = 0;
-    for (const partId in selectedParts) {
-      total += selectedParts[partId];
-    }
-    if (plates.length > 0 && total > 0) {
-      animate(
-        scope.current,
-        { height: "calc(50vh - 180px)" },
-        { duration: 0.5 }
-      );
-      setSorting(true);
-    } else {
-      animate(
-        scope.current,
-        { height: "calc(100vh - 180px)" },
-        { duration: 0.5 }
-      );
-      setSorting(false);
-    }
-  }, [plates, selectedParts]);
+    animate(
+      scope.current,
+      { height: sorting ? "calc(50vh - 180px)" : "calc(100vh - 180px)" },
+      { duration: 0.5 }
+    );
+  }, [animate, scope, sorting]);
   return (
     <div className={styles.container}>
       <Header

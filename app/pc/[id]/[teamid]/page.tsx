@@ -6,8 +6,7 @@ export default async function PC({
 }: {
   params: Promise<{ id: string; teamid: string }>;
 }) {
-  let id = (await params).id;
-  let teamid = (await params).teamid;
+  const { id, teamid } = await params;
   return (
     <MaterialEventsProvider>
       <MaterialThickness pcid={id} teamid={teamid} />

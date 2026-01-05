@@ -213,8 +213,12 @@ function SidebarSearch() {
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
         const data: SidebarSearchResults = await res.json();
         setResults(data);
-      } catch (err: any) {
-        if (err?.name === "AbortError") return;
+      } catch (err) {
+        if (
+          (err instanceof DOMException || err instanceof Error) &&
+          err.name === "AbortError"
+        )
+          return;
         console.error("Sidebar search error:", err);
         setError("Search failed");
         setResults(null);
@@ -645,14 +649,21 @@ export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
     document.documentElement.style.setProperty("--sidebar-width", "220px");
 
     try {
-      const perf: any = (globalThis as any).performance;
+      const perf = (
+        globalThis as {
+          performance?: { measure?: (...args: unknown[]) => unknown };
+        }
+      ).performance;
       if (!perf || typeof perf.measure !== "function") return;
       const orig = perf.measure.bind(perf);
-      perf.measure = (...args: any[]) => {
+      perf.measure = (...args: unknown[]) => {
         try {
           return orig(...args);
-        } catch (err: any) {
-          if (err?.message?.includes("cannot have a negative time stamp"))
+        } catch (err) {
+          if (
+            err instanceof Error &&
+            err.message.includes("cannot have a negative time stamp")
+          )
             return;
           throw err;
         }

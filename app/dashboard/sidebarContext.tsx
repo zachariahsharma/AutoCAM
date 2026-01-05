@@ -31,16 +31,6 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     );
   }, [isCollapsed]);
 
-  // Also set it immediately on first render (before paint)
-  useLayoutEffect(() => {
-    const shouldCollapse = window.innerWidth <= MOBILE_BREAKPOINT;
-    setIsCollapsed(shouldCollapse);
-    document.documentElement.style.setProperty(
-      "--sidebar-width",
-      shouldCollapse ? COLLAPSED_WIDTH : EXPANDED_WIDTH
-    );
-  }, []);
-
   // Listen for resize to auto-collapse on mobile
   useEffect(() => {
     function handleResize() {
@@ -68,4 +58,3 @@ export function useSidebar() {
   }
   return context;
 }
-

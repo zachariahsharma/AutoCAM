@@ -56,17 +56,17 @@ export default function HeroBackground() {
     function setAuroraTransform() {
       if (!aurora) return;
 
-      const x = randomBetween(-8, 8);
-      const y = randomBetween(-6, 6);
-      const rotate = randomBetween(-10, 10);
-      const scale = randomBetween(1.02, 1.14);
-      const duration = randomBetween(7, 12);
+      const x = randomBetween(-24, 24);
+      const y = randomBetween(-18, 18);
+      const rotate = randomBetween(-22, 22);
+      const scale = randomBetween(1.1, 1.3);
+      const duration = randomBetween(2.5, 4.5);
 
+      aurora.style.setProperty("--aurora-duration", `${duration}s`);
       aurora.style.setProperty("--aurora-x", `${x}%`);
       aurora.style.setProperty("--aurora-y", `${y}%`);
       aurora.style.setProperty("--aurora-rotate", `${rotate}deg`);
       aurora.style.setProperty("--aurora-scale", `${scale}`);
-      aurora.style.setProperty("--aurora-duration", `${duration}s`);
 
       if (auroraTimeoutId != null) window.clearTimeout(auroraTimeoutId);
       auroraTimeoutId = window.setTimeout(setAuroraTransform, duration * 1000);
@@ -214,7 +214,7 @@ export default function HeroBackground() {
       aurora.style.setProperty("--aurora-y", `${auroraDefaults.y}%`);
       aurora.style.setProperty("--aurora-rotate", `${auroraDefaults.rotate}deg`);
       aurora.style.setProperty("--aurora-scale", `${auroraDefaults.scale}`);
-      aurora.style.setProperty("--aurora-duration", "10s");
+      aurora.style.setProperty("--aurora-duration", "3.5s");
     }
     start();
 

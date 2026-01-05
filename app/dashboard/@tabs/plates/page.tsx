@@ -169,21 +169,26 @@ export default function Plates() {
   
   useEffect(() => {
     let mounted = true;
+    const setLoading = (value: boolean) => {
+      if (mounted) setIsLoading(value);
+    };
+    const clear = () => {
+      if (mounted) setCategories([]);
+      setLoading(false);
+    };
     const load = async () => {
-      setIsLoading(true);
+      setLoading(true);
       const categories = await fetchPartCategories({ team });
       if (mounted && categories) {
         console.log("categories", categories);
         setCategories(categories);
       }
-      if (mounted) {
-        setIsLoading(false);
-      }
+      setLoading(false);
     };
     if (team) {
       load();
     } else {
-      setIsLoading(false);
+      clear();
     }
     return () => {
       mounted = false;

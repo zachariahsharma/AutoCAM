@@ -19,33 +19,28 @@ export function Unassigned() {
   }) {
     if (!partsToPlates || !setPartsToPlates) return;
     console.log("Received data:", data);
-    if (data.from) {
-      const oldPlateId = data.from;
-      console.log("Removing from plate:", oldPlateId);
-      const oldPlate = partsToPlates[oldPlateId] || [];
-      partsToPlates[oldPlateId] = oldPlate.map((part) => {
-        if (part.partId === data.partId) {
-          return {
-            partId: part.partId,
-            quantity: part.quantity - data.quantity,
-          };
-        }
-        return part;
-      });
-      setPartsToPlates({ ...partsToPlates });
-    } else if (!data.from) {
-      return;
-    }
+    if (data.from == null) return;
 
-    if (unassignedParts[data.partId] > 0) {
-      console.log("Adding back to unassigned:", data.partId, data.quantity);
-      unassignedParts[data.partId] =
-        unassignedParts[data.partId] + data.quantity;
-      setUnassignedParts({ ...unassignedParts });
-      return;
-    }
-    unassignedParts[data.partId] = data.quantity;
-    setUnassignedParts({ ...unassignedParts });
+    const oldPlateId = data.from;
+    console.log("Removing from plate:", oldPlateId);
+    setPartsToPlates((prev) => {
+      const next = { ...prev };
+      const oldPlate = next[oldPlateId] ?? [];
+      next[oldPlateId] = oldPlate
+        .map((part) =>
+          part.partId === data.partId
+            ? { partId: part.partId, quantity: part.quantity - data.quantity }
+            : part
+        )
+        .filter((part) => part.quantity > 0);
+      return next;
+    });
+
+    console.log("Adding back to unassigned:", data.partId, data.quantity);
+    setUnassignedParts((prev) => ({
+      ...prev,
+      [data.partId]: (prev[data.partId] ?? 0) + data.quantity,
+    }));
   }
   return (
     <div

@@ -38,6 +38,15 @@ function parseNameFromEmail(email: string): string {
   return name || localPart;
 }
 
+function getPasswordStrength(password: string): number {
+  let strengthCount = 0;
+  if (password.length >= 8) strengthCount++;
+  if (/[A-Z]/.test(password)) strengthCount++;
+  if (/[0-9]/.test(password)) strengthCount++;
+  if (/[^A-Za-z0-9]/.test(password)) strengthCount++;
+  return strengthCount;
+}
+
 function SignupContainer({
   setErrorModalOpen,
 }: {
@@ -52,14 +61,8 @@ function SignupContainer({
   const [userExists, setUserExists] = useState(false);
   const [insecure, setInsecurePassword] = useState(false);
   const [mismatch, setMismatch] = useState(false);
-  const [strength, setStrength] = useState(0);
   useEffect(() => {
-    let strengthCount = 0;
-    if (password.length >= 8) strengthCount++;
-    if (/[A-Z]/.test(password)) strengthCount++;
-    if (/[0-9]/.test(password)) strengthCount++;
-    if (/[^A-Za-z0-9]/.test(password)) strengthCount++;
-    setStrength(strengthCount);
+    const strengthCount = getPasswordStrength(password);
     animate1(
       scope1.current,
       { backgroundColor: strengthCount >= 1 ? "#4ade80" : "rgba(0,0,0,0)" },
@@ -85,16 +88,16 @@ function SignupContainer({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get("email") ?? "");
-    const password = String(formData.get("password") ?? "");
+    const passwordValue = String(formData.get("password") ?? "");
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
     let failure = false;
-    if (password !== confirmPassword) {
+    if (passwordValue !== confirmPassword) {
       setMismatch(true);
       failure = true;
     } else {
       setMismatch(false);
     }
-    if (strength < 4) {
+    if (getPasswordStrength(passwordValue) < 4) {
       setInsecurePassword(true);
       failure = true;
     } else {
@@ -105,7 +108,7 @@ function SignupContainer({
     const { error } = await authClient.signUp.email(
       {
         email,
-        password,
+        password: passwordValue,
         name: parsedName,
         callbackURL: "/dashboard",
       },

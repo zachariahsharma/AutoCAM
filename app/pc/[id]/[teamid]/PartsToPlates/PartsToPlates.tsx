@@ -39,48 +39,47 @@ function PartsToPlatesCard({
   }) {
     if (!partsToPlates || !setPartsToPlates) return;
     console.log("Received data:", data);
-    if (data.from) {
-      const oldPlateId = data.from;
-      console.log("Removing from plate:", oldPlateId);
-      const oldPlate = partsToPlates[oldPlateId] || [];
-      partsToPlates[oldPlateId] = oldPlate.map((part) => {
-        if (part.partId === data.partId) {
-          return {
-            partId: part.partId,
-            quantity: part.quantity - data.quantity,
-          };
-        }
-        return part;
+
+    const plateIndex = Number.parseInt(name);
+    const currentPlateId = plates[plateIndex]?.id;
+    if (currentPlateId == null) return;
+    if (data.from != null && data.from === currentPlateId) return;
+
+    if (data.from == null) {
+      setUnassignedParts((prev) => {
+        const currentQuantity = prev[data.partId] || 0;
+        const newQuantity = Math.max(0, currentQuantity - data.quantity);
+        return { ...prev, [data.partId]: newQuantity };
       });
-      setPartsToPlates({ ...partsToPlates });
-    } else if (!data.from) {
-      const currentQuantity = unassignedParts[data.partId] || 0;
-      const newQuantity = Math.max(0, currentQuantity - data.quantity);
-      setUnassignedParts({ ...unassignedParts, [data.partId]: newQuantity });
     }
-    const currentPlateId = plates[Number.parseInt(name)].id;
-    const current = partsToPlates[currentPlateId] || [];
-    if (
-      partsToPlates[currentPlateId].filter((p) => p.partId === data.partId)
-        .length > 0
-    ) {
-      partsToPlates[currentPlateId] = current.map((part) => {
-        if (part.partId === data.partId) {
-          return {
-            partId: part.partId,
-            quantity: part.quantity + data.quantity,
-          };
-        }
-        return part;
-      });
-      setPartsToPlates({ ...partsToPlates });
-      return;
-    }
-    partsToPlates[currentPlateId] = [
-      ...current,
-      { partId: data.partId, quantity: data.quantity },
-    ];
-    setPartsToPlates({ ...partsToPlates });
+
+    setPartsToPlates((prev) => {
+      const next = { ...prev };
+
+      if (data.from != null) {
+        console.log("Removing from plate:", data.from);
+        const oldPlate = next[data.from] ?? [];
+        next[data.from] = oldPlate
+          .map((part) =>
+            part.partId === data.partId
+              ? { ...part, quantity: part.quantity - data.quantity }
+              : part
+          )
+          .filter((part) => part.quantity > 0);
+      }
+
+      const current = next[currentPlateId] ?? [];
+      const exists = current.some((part) => part.partId === data.partId);
+      next[currentPlateId] = exists
+        ? current.map((part) =>
+            part.partId === data.partId
+              ? { ...part, quantity: part.quantity + data.quantity }
+              : part
+          )
+        : [...current, { partId: data.partId, quantity: data.quantity }];
+
+      return next;
+    });
   }
   return (
     <div

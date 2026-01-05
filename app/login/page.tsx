@@ -93,7 +93,7 @@ function LoginContainer({
   );
 }
 
-export default function loginPage() {
+export default function LoginPage() {
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   return (
     <div>

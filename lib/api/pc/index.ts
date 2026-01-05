@@ -15,8 +15,8 @@ const CreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
 const PartCategory = createSelectSchema(PartCategories).omit({ team_id: true }).openapi("Part Category");
 const SearchParams = zod.object({
-  material: zod.string().optional(),
-  thickness: zod.coerce.number().positive().optional()
+  material: zod.string().nullable(),
+  thickness: zod.coerce.number().positive().nullable()
 });
 
 registerTeamEndpoint([scopes.pc.read], {

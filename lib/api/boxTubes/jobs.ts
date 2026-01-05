@@ -95,7 +95,7 @@ export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
     team_id: tube.team_id,
     kind: "box_tube",
     claimed_by: authType.keyDigest,
-    payload
+    payload: { ...payload, box_tube_id }
   }).returning({ id: Jobs.id });
   await tx.insert(BoxTubeJobs).values({ job_id: id.id, box_tube_id });
   return routeResponse(201, id);

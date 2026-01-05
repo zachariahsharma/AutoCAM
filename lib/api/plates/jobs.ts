@@ -113,7 +113,7 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
     team_id: plate.category.team_id,
     kind: `plate:${type}`,
     claimed_by: authType.keyDigest,
-    payload: { ...payload, assignments }
+    payload: { ...payload, assignments, plate_id }
   }).returning({ id: Jobs.id });
   // Create plate job
   await tx.insert(PlateJobs).values({ job_id: id.id, plate_id });

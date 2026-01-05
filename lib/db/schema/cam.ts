@@ -233,6 +233,7 @@ export const PlatesRelations = relations(Plates, ({ one, many }) => ({
     fields: [Plates.category_id],
     references: [PartCategories.id]
   }),
+  assignments: many(PartsToPlates),
   jobs: many(PlateJobs)
 }));
 

@@ -14,7 +14,7 @@ const CreateSchema = zod.object({
   type: zod.enum(PlateJobType.enumValues)
 });
 const Job = createSelectSchema(Jobs).omit({ kind: true, team_id: true })
-  .extend(createSelectSchema(PlateJobs).omit({ plate_id: true, job_id: true })).openapi("Plate Job");
+  .extend(createSelectSchema(PlateJobs).omit({ plate_id: true, job_id: true }).shape).openapi("Plate Job");
 
 registry.registerPath({
   method: "get",

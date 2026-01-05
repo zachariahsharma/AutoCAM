@@ -1,25 +1,12 @@
 import { asc, eq } from "drizzle-orm";
-import { routeFactory, routeResponse } from ".";
-import { JobKind, Jobs, PlateJobType } from "../db/schema/cam";
+import { parseJsonBody, routeFactory, routeResponse } from ".";
+import { JobKind, Jobs } from "../db/schema/cam";
 import zod from "zod";
 
 const RequestSchema = zod.object({
-  tool: zod.httpUrl(),
-  machine: zod.httpUrl(),
-  details: zod.discriminatedUnion("kind", [
-    zod.object({
-      kind: zod.literal("plate"),
-      type: zod.enum(PlateJobType.enumValues),
-      parts: zod.array(zod.object({
-        part: zod.httpUrl(),
-        quantity: zod.number()
-      }))
-    }),
-    zod.object({
-      kind: zod.literal("box_tube"),
-      box_tube: zod.httpUrl()
-    })
-  ])
+  machine_id: zod.number(),
+  tool_id: zod.number(),
+  kind: zod.enum(JobKind.enumValues)
 });
 
 export const Request = routeFactory(async (req, authType, tx) => {
@@ -30,22 +17,9 @@ export const Request = routeFactory(async (req, authType, tx) => {
       .for("update", { skipLocked: true }).limit(1))).returning({ id: Jobs.id });
   if (result.length === 0) return routeResponse(204);
   const [{ id }] = result;
-  const job = await tx.query.Jobs.findFirst({
-    where: eq(Jobs.id, id),
-    with: {
-      plate_job: {
-        with: {
-          plate: {
-            with: {
-              category: true
-            }
-          }
-        }
-      },
-      box_tube_job: true
-    }
-  });
-  console.log(job);
+  const job = await tx.query.Jobs.findFirst({ where: eq(Jobs.id, id) });
+  if (!job) return routeResponse(204);
+  return routeResponse(200, await parseJsonBody(job, RequestSchema));
 });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

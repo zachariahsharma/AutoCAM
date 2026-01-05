@@ -2,7 +2,7 @@ import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, uniq
 import { user } from "./auth";
 import { and, eq, getTableName, relations, SQL, sql } from "drizzle-orm";
 import { Machines, Materials, PartCategories, Tools, BoxTubes } from "./cam";
-import { KeyAuthorized, KeyDigest, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { EmailFromId, KeyAuthorized, KeyDigest, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 import { scopeNames as scopes } from "../../scopes";
 
 function TeamInvitedRule(): SQL {
@@ -10,10 +10,7 @@ function TeamInvitedRule(): SQL {
   EXISTS (
     SELECT 1 FROM ${user}
     INNER JOIN ${TeamInvites} ON ${eq(TeamInvites.email, user.email)}
-    WHERE ${and(
-      eq(user.id, UserId()),
-      eq(TeamInvites.team_id, Teams.id)
-    )}
+    WHERE ${eq(TeamInvites.email, EmailFromId())}
   )
   `
 }
@@ -55,7 +52,8 @@ export const TeamInvites = pgTable("team_invites", {
   pgPolicy('team_invites_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
   pgPolicy('team_invites_update', { for: 'update', using: sql`false` }),
   pgPolicy('team_invites_delete_key', { for: 'delete', using: KeyAuthorized(table.team_id, scopes.teams.invites.cancel) }),
-  pgPolicy('team_invites_delete_user', { for: 'delete', using: UserIsTeamAdmin(table.team_id) })
+  pgPolicy('team_invites_delete_user', { for: 'delete', using: UserIsTeamAdmin(table.team_id) }),
+  pgPolicy('team_invites_delete_invited', { for: 'delete', using: eq(table.email, EmailFromId()) })
 ]);
 
 export const TeamMembers = pgTable("team_members", {

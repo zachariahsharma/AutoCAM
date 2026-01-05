@@ -1,6 +1,8 @@
 import { and, eq, getTableName, SQL, sql } from "drizzle-orm"
 import { TeamKeys, TeamMembers } from "./entities"
 import { BoxTubeJobs, BoxTubes, Jobs, Machines, Materials, PartCategories, Parts, PartsToPlates, PlateJobs, Plates, ToolMachines, ToolMaterials, Tools } from "./cam"
+import db from ".."
+import { user } from "./auth"
 
 export function UserId() {
   return sql`current_setting('app.user_id', true)`
@@ -106,4 +108,13 @@ export function CheckToolMachinesTeam(): SQL<boolean> {
     WHERE ${and(eq(Tools.id, ToolMachines.tool_id), eq(Tools.team_id, Machines.team_id))}
   )
   `
+}
+
+export function EmailFromId(): SQL {
+  return sql`
+  (
+    SELECT email FROM ${sql.identifier(getTableName(user))}
+    WHERE ${eq(user.id, UserId())}
+  )
+  `;
 }

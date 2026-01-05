@@ -6,6 +6,7 @@ import { and, eq, sql } from "drizzle-orm";
 import zod from "zod";
 import { CommonAuthorization, registerTeamEndpoint, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
+import { registry } from "@/lib/openapi/registry";
 
 const Member = zod.object({ 
   email: zod.string().email(), 
@@ -52,16 +53,26 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   })), zod.array(Member)));
 });
 
-const UpdateMemberSchema = zod.object({ 
-  email: zod.string().email(),
+const UpdateSchema = zod.object({ 
+  email: zod.email(),
   admin: zod.boolean()
 });
 
-registerTeamEndpoint([scopes.teams.write], {
+registry.registerPath({
   method: "patch",
-  path: "/api/members",
+  path: "/api/teams/{id}/members",
   tags: ["Teams"],
   summary: "Update Team Member Role",
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "Team ID" }) }),
+    body: {
+      content: {
+        "application/json": {
+          schema: UpdateSchema
+        }
+      }
+    }
+  },
   responses: {
     204: {
       description: "Member role updated successfully"
@@ -69,12 +80,12 @@ registerTeamEndpoint([scopes.teams.write], {
     ...CommonAuthorization,
     ...ValidationError
   }
-}, {}, { path: "/api/teams/members" });
+});
 
 export const PATCH = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
 
-  const { email, admin } = await parseJsonBody(await req.json(), UpdateMemberSchema);
+  const { email, admin } = await parseJsonBody(await req.json(), UpdateSchema);
 
   // Find the user by email
   const foundUser = await tx.query.user.findFirst({
@@ -98,13 +109,17 @@ export const PATCH = routeFactory(async (req, authType, tx, team_id) => {
   return routeResponse(204);
 });
 
-const DeleteMemberSchema = zod.object({ email: zod.string().email() });
+const DeleteSchema = zod.object({ email: zod.email() });
 
-registerTeamEndpoint([scopes.teams.write], {
+registry.registerPath({
   method: "delete",
-  path: "/api/members",
+  path: "/api/teams/{id}/members",
   tags: ["Teams"],
   summary: "Remove Team Member",
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "Team ID" }) }),
+    query: DeleteSchema
+  },
   responses: {
     204: {
       description: "Member removed successfully"
@@ -112,12 +127,14 @@ registerTeamEndpoint([scopes.teams.write], {
     ...CommonAuthorization,
     ...ValidationError
   }
-}, {}, { path: "/api/teams/members" });
+});
 
 export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
 
-  const { email } = await parseJsonBody(await req.json(), DeleteMemberSchema);
+  const { email } = await parseJsonBody({
+    email: req.nextUrl.searchParams.get("email")
+  }, DeleteSchema);
 
   // Find the user by email
   const foundUser = await tx.query.user.findFirst({

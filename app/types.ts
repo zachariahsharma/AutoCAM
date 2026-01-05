@@ -17,14 +17,8 @@ export type PartCategory = Omit<
   parts?: Part[];
 };
 export type Part = InferSelectModel<typeof Parts> & { category?: PartCategory };
-export type Plate = Omit<
-  InferSelectModel<typeof Plates>,
-  "width" | "length" | "true_depth"
-> & {
+export type Plate = InferSelectModel<typeof Plates> & {
   category?: PartCategory;
-  width: number;
-  length: number;
-  true_depth: number;
 };
 export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
   plate?: Plate;

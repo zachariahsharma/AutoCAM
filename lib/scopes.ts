@@ -102,7 +102,6 @@ export const scopes = {
     }
   },
   jobs: {
-<<<<<<< HEAD
     read: {
       name: "jobs:read",
       description: "Read all jobs for a team"
@@ -118,15 +117,6 @@ export const scopes = {
     delete: {
       name: "jobs:delete",
       description: "Delete a job"
-=======
-    request: {
-      name: "jobs:request",
-      description: "Request a job (primarily for runners)"
-    },
-    complete: {
-      name: "jobs:complete",
-      description: "Complete a job (primarily for runners)"
->>>>>>> 30ebfdc (WIP on OpenAPI routes)
     }
   }
 };

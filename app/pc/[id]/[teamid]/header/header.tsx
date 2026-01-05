@@ -1,7 +1,6 @@
 import styles from "./header.module.css";
 import { motion } from "framer-motion";
-import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 export function Header({
@@ -9,17 +8,15 @@ export function Header({
   duration = 0.5,
   material,
   thickness,
-  topOffset = 0,
 }: {
   delay?: number;
   duration?: number;
   material: string | undefined;
   thickness: number | undefined;
-  topOffset?: number;
 }) {
   const router = useRouter();
   return (
-    <div id={styles.header} style={{ top: topOffset }}>
+    <div id={styles.header}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

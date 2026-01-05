@@ -4,7 +4,7 @@ import { Material, PartCategory, Part } from "@/app/types";
 import AvailableParts from "./AvailableParts/AvailableParts";
 import { Header } from "./header/header";
 import PlatesToCreate from "./PlatesToCreate/PlatesToCreate";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAnimate } from "framer-motion";
 import { Unassigned } from "./PlateAssignment/Unassigned";
 import { PartsToPlates } from "./PartsToPlates/PartsToPlates";
@@ -28,8 +28,6 @@ export default function MaterialThickness({
   const [isAdminOrOwner, setIsAdminOrOwner] = useState(false);
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [addMaterialError, setAddMaterialError] = useState<string | null>(null);
-  const warningRef = useRef<HTMLDivElement>(null);
-  const [warningOffset, setWarningOffset] = useState(0);
   const [epicsMap, setEpicsMap] = useState<{ [key: string]: Part[] }>({});
   const router = useRouter();
   const {
@@ -177,15 +175,6 @@ export default function MaterialThickness({
   const toolsMissing = teamTools !== null && teamTools.length === 0;
 
   const showWarnings = materialMissing || toolsMissing;
-  const headerTopOffset = showWarnings ? warningOffset : 0;
-
-  useLayoutEffect(() => {
-    if (!showWarnings) {
-      setWarningOffset(0);
-      return;
-    }
-    setWarningOffset(warningRef.current?.offsetHeight ?? 0);
-  }, [showWarnings, materialMissing, toolsMissing, isAdminOrOwner, addMaterialError, isAddingMaterial]);
 
   async function goToTeamSettings(tab: "Machines" | "Materials" | "Tools") {
     try {
@@ -250,69 +239,9 @@ export default function MaterialThickness({
   }, [animate, scope, sorting]);
   return (
     <div className={styles.container}>
-      {showWarnings ? (
-        <div ref={warningRef} className={styles.warningStack}>
-          {materialMissing ? (
-            <div className={styles.warningBox}>
-              <div className={styles.warningText}>
-                {isAdminOrOwner ? (
-                  <>
-                    There is no material in Team Settings matching{" "}
-                    <span className={styles.warningEmphasis}>
-                      {partcategory?.material}
-                    </span>
-                    .
-                  </>
-                ) : (
-                  <>
-                    This material doesn’t exist in Team Settings. Please contact
-                    an admin to adjust this.
-                  </>
-                )}
-                {addMaterialError ? (
-                  <div className={styles.warningError}>{addMaterialError}</div>
-                ) : null}
-              </div>
-              {isAdminOrOwner ? (
-                <button
-                  className={styles.warningButton}
-                  onClick={addMissingMaterialAndGo}
-                  disabled={isAddingMaterial}
-                >
-                  {isAddingMaterial ? "Adding..." : "Add to settings"}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-
-          {toolsMissing ? (
-            <div className={styles.warningBox}>
-              <div className={styles.warningText}>
-                {isAdminOrOwner ? (
-                  <>There are no tools set up in Team Settings for this team.</>
-                ) : (
-                  <>
-                    No tools are set up in Team Settings. Please contact an
-                    admin to adjust this.
-                  </>
-                )}
-              </div>
-              {isAdminOrOwner ? (
-                <button
-                  className={styles.warningButton}
-                  onClick={() => goToTeamSettings("Tools")}
-                >
-                  Add tools
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
       <Header
         material={partcategory?.material}
         thickness={partcategory?.thickness}
-        topOffset={headerTopOffset}
       />
       <div className={styles.contentData} ref={scope}>
         <AvailableParts epicsMap={epicsMap} />
@@ -326,6 +255,68 @@ export default function MaterialThickness({
         <div className={styles.contentSorting}>
           <Unassigned />
           <PartsToPlates categoryId={partcategory !== null ? partcategory.id : 0} />
+        </div>
+      ) : null}
+      {showWarnings ? (
+        <div className={styles.warningToast} role="status" aria-live="polite">
+          <div className={styles.warningToastTitle}>Team settings required</div>
+          {materialMissing ? (
+            <div className={styles.warningToastRow}>
+              <div className={styles.warningToastText}>
+                {isAdminOrOwner ? (
+                  <>
+                    No Team Settings material matches{" "}
+                    <span className={styles.warningToastEmphasis}>
+                      {partcategory?.material}
+                    </span>
+                    .
+                  </>
+                ) : (
+                  <>
+                    This material doesn’t exist in Team Settings. Please contact
+                    an admin to adjust this.
+                  </>
+                )}
+                {addMaterialError ? (
+                  <div className={styles.warningToastError}>
+                    {addMaterialError}
+                  </div>
+                ) : null}
+              </div>
+              {isAdminOrOwner ? (
+                <button
+                  className={styles.warningToastButton}
+                  onClick={addMissingMaterialAndGo}
+                  disabled={isAddingMaterial}
+                >
+                  {isAddingMaterial ? "Adding..." : "Add material"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {toolsMissing ? (
+            <div className={styles.warningToastRow}>
+              <div className={styles.warningToastText}>
+                {isAdminOrOwner ? (
+                  <>No tools are set up in Team Settings for this team.</>
+                ) : (
+                  <>
+                    No tools are set up in Team Settings. Please contact an
+                    admin to adjust this.
+                  </>
+                )}
+              </div>
+              {isAdminOrOwner ? (
+                <button
+                  className={styles.warningToastButton}
+                  onClick={() => goToTeamSettings("Tools")}
+                >
+                  Add tools
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

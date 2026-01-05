@@ -1,9 +1,22 @@
 import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
-import { and, eq, getTableName, relations, sql } from "drizzle-orm";
+import { and, eq, getTableName, relations, SQL, sql } from "drizzle-orm";
 import { Machines, Materials, PartCategories, Tools, BoxTubes } from "./cam";
 import { KeyAuthorized, KeyDigest, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 import { scopeNames as scopes } from "../../scopes";
+
+function TeamInvitedRule(): SQL {
+  return sql`
+  EXISTS (
+    SELECT 1 FROM ${user}
+    INNER JOIN ${TeamInvites} ON ${eq(TeamInvites.email, user.email)}
+    WHERE ${and(
+      eq(user.id, UserId()),
+      eq(TeamInvites.team_id, Teams.id)
+    )}
+  )
+  `
+}
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -13,6 +26,7 @@ export const Teams = pgTable("teams", {
 }, table => [
   pgPolicy('teams_query_key', { for: 'select', using: KeyAuthorized(table.id, scopes.teams.read) }),
   pgPolicy('teams_query_user', { for: 'select', using: sql`${UserInTeam(table.id)} OR owner = ${UserId()}` }),
+  pgPolicy('teams_query_invited', { for: 'select', using: TeamInvitedRule() }),
   pgPolicy('teams_update', { for: 'update', using: UserIsTeamAdmin(table.id) }),
   pgPolicy('teams_delete', { for: 'delete', using: sql`owner = ${UserId()}` }),
   pgPolicy('teams_insert', { for: 'insert', withCheck: sql`true` }),

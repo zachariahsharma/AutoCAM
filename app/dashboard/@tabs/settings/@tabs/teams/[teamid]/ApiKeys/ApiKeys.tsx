@@ -15,19 +15,9 @@ import { useTabEvents } from "@/app/dashboard/@tabs/settings/teamUpdate";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert } from "@/app/signup/page";
 import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMarquee";
+import { ScopeEnum } from "@/lib/scopes";
 
-const scopes = [
-  "teams:read",
-  "teams:invites:read",
-  "teams:invites:send",
-  "teams:invites:cancel",
-  "part_categories:read",
-  "part_categories:write",
-  "parts:read",
-  "parts:write",
-  "plates:read",
-  "plates:write",
-];
+const scopes = ScopeEnum.options;
 
 export function Modal({
   children,

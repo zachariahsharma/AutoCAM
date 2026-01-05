@@ -107,32 +107,3 @@ export function CheckToolMachinesTeam(): SQL<boolean> {
   )
   `
 }
-
-export function CheckJobTeams(): SQL<boolean> {
-  return sql`
-  EXISTS (
-    SELECT 1 FROM ${Jobs}
-    INNER JOIN ${Tools} ON ${eq(Tools.id, Jobs.tool_id)}
-    INNER JOIN ${Machines} ON ${eq(Machines.id, Jobs.machine_id)}
-    WHERE ${and(
-      eq(Machines.team_id, Tools.team_id),
-      eq(Machines.team_id, Jobs.team_id)
-    )}
-  )
-  `
-}
-
-export function CheckBoxTubeJobsTeams(): SQL<boolean> {
-  return sql`
-  EXISTS (
-    SELECT 1 FROM ${BoxTubes}
-    INNER JOIN ${Tools} ON ${eq(Tools.id, BoxTubeJobs.tool_id)}
-    INNER JOIN ${Machines} ON ${eq(Machines.id, BoxTubeJobs.machine_id)}
-    WHERE ${and(
-      eq(BoxTubes.id, BoxTubeJobs.box_tube_id),
-      eq(BoxTubes.team_id, Machines.team_id),
-      eq(Machines.team_id, Tools.team_id)
-    )}
-  )
-  `
-}

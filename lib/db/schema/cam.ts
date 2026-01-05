@@ -1,7 +1,7 @@
-import { relations, sql, SQL } from "drizzle-orm";
-import { customType, doublePrecision, integer, pgEnum, pgPolicy, pgTable, primaryKey, text, timestamp, unique } from "drizzle-orm/pg-core";
-import { Teams } from "./entities";
-import { CheckBoxTubeJobsTeams, CheckJobTeams, CheckPartsPlatesTeam, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { eq, relations, sql, SQL } from "drizzle-orm";
+import { customType, doublePrecision, integer, jsonb, pgEnum, pgPolicy, pgTable, primaryKey, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import { TeamKeys, Teams } from "./entities";
+import { CheckPartsPlatesTeam, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
 import { scopeNames as scopes } from "../../scopes";
 
 const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
@@ -186,19 +186,20 @@ export const PartsToPlates = pgTable("parts_to_plates", {
 ]);
 
 export const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
-export const JobKind = pgEnum('job_kind', ["plate", "box_tube"])
+export const JobKind = pgEnum('job_kind', ["plate:arrange", "plate:cam", "box_tube"])
 
 export const Jobs = pgTable("jobs", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   status: JobStatus().notNull().default("pending"),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   kind: JobKind().notNull(),
-  claimed_by: text(),
-  tool_id: integer().notNull().references(() => Tools.id),
-  machine_id: integer().notNull().references(() => Machines.id),
-  created_at: timestamp().defaultNow()
+  created_at: timestamp().defaultNow(),
+  claimed_by: text().notNull().references(() => TeamKeys.digest),
+  payload: jsonb().notNull(),
+  response: jsonb()
 }, table => [
-  pgPolicy('jobs_insert', { for: "insert", as: "restrictive", withCheck: CheckJobTeams() }),
+  // Make sure that a single runner can't pick up more than one job at a time
+  uniqueIndex("claimed_by_index").on(table.claimed_by).where(eq(table.status, sql`'in progress'`)),
   pgPolicy('jobs_query_user', { for: "select", using: UserInTeam(table.team_id) }),
   pgPolicy('jobs_query_key', { for: "select", using: KeyAuthorized(table.team_id, scopes.jobs.read) }),
   pgPolicy('jobs_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) }),
@@ -207,12 +208,10 @@ export const Jobs = pgTable("jobs", {
   pgPolicy('jobs_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, scopes.jobs.delete) })
 ]);
 
-export const PlateJobType = pgEnum("plate_job_type", ["arrange", "cam"]);
 export const PlateJobs = pgTable("plate_jobs", {
   job_id: integer().notNull().primaryKey().references(() => Jobs.id, { onDelete: "cascade" }),
   // No ON DELETE CASCADE here because we need the backend to explicitly delete the jobs entries to avoid orphaning jobs
   plate_id: integer().notNull().references(() => Plates.id),
-  type: PlateJobType().notNull(),
 });
 
 export const BoxTubeJobs = pgTable("box_tube_jobs", {
@@ -235,19 +234,6 @@ export const PlatesRelations = relations(Plates, ({ one, many }) => ({
   }),
   assignments: many(PartsToPlates),
   jobs: many(PlateJobs)
-}));
-
-export const JobsRelations = relations(Jobs, ({ one }) => ({
-  machine: one(Machines, {
-    fields: [Jobs.machine_id],
-    references: [Machines.id]
-  }),
-  tool: one(Tools, {
-    fields: [Jobs.tool_id],
-    references: [Tools.id]
-  }),
-  plate_job: one(PlateJobs),
-  box_tube_job: one(BoxTubeJobs)
 }));
 
 export const PlateJobsRelations = relations(PlateJobs, ({ one }) => ({

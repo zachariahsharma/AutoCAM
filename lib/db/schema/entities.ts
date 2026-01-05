@@ -57,7 +57,7 @@ export const TeamMembers = pgTable("team_members", {
 export const TeamKeys = pgTable("team_keys", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
-  digest: char({ length: 64 }).notNull(),
+  digest: char({ length: 64 }).notNull().unique(),
   name: text().notNull(),
   scopes: text().array().notNull(),
   is_fusion_server: boolean().notNull().default(false)

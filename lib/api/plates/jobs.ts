@@ -95,6 +95,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {
+  if (!authType.keyDigest) return routeResponse(401);
   if (!plate_id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), CreateSchema);
 
@@ -107,6 +108,7 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   const [id] = await tx.insert(Jobs).values({
     team_id: plate.category.team_id,
     kind: `plate:${type}`,
+    claimed_by: authType.keyDigest,
     payload
   }).returning({ id: Jobs.id });
   // Create plate job

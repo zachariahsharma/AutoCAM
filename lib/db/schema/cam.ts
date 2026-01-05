@@ -1,7 +1,7 @@
-import { relations, sql, SQL } from "drizzle-orm";
-import { customType, doublePrecision, integer, jsonb, pgEnum, pgPolicy, pgTable, primaryKey, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { eq, relations, sql, SQL } from "drizzle-orm";
+import { customType, doublePrecision, integer, jsonb, pgEnum, pgPolicy, pgTable, primaryKey, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { TeamKeys, Teams } from "./entities";
-import { CheckBoxTubeJobsTeams, CheckJobTeams, CheckPartsPlatesTeam, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
+import { CheckPartsPlatesTeam, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
 import { scopeNames as scopes } from "../../scopes";
 
 const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
@@ -194,10 +194,12 @@ export const Jobs = pgTable("jobs", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   kind: JobKind().notNull(),
   created_at: timestamp().defaultNow(),
+  claimed_by: text().notNull().references(() => TeamKeys.digest),
   payload: jsonb().notNull(),
   response: jsonb()
 }, table => [
-  pgPolicy('jobs_insert', { for: "insert", as: "restrictive", withCheck: CheckJobTeams() }),
+  // Make sure that a single runner can't pick up more than one job at a time
+  uniqueIndex("claimed_by_index").on(table.claimed_by).where(eq(table.status, sql`'in progress'`)),
   pgPolicy('jobs_query_user', { for: "select", using: UserInTeam(table.team_id) }),
   pgPolicy('jobs_query_key', { for: "select", using: KeyAuthorized(table.team_id, scopes.jobs.read) }),
   pgPolicy('jobs_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) }),

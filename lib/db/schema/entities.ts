@@ -1,6 +1,6 @@
 import { boolean, char, integer, json, pgPolicy, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
-import { getTableName, relations, sql } from "drizzle-orm";
+import { and, eq, getTableName, relations, sql } from "drizzle-orm";
 import { Machines, Materials, PartCategories, Tools, BoxTubes } from "./cam";
 import { KeyAuthorized, KeyDigest, UserId, UserInTeam, UserIsTeamAdmin } from "./rls";
 import { scopeNames as scopes } from "../../scopes";
@@ -33,8 +33,7 @@ export const TeamInvites = pgTable("team_invites", {
     EXISTS (
       SELECT 1
       FROM ${sql.identifier(getTableName(user))}
-      WHERE ${user.id} = ${UserId()}
-        AND ${user.email} = ${table.email}
+      WHERE ${and(eq(user.id, UserId()), eq(user.email, table.email))}
     )
     `
   }),

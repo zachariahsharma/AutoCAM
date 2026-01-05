@@ -12,8 +12,11 @@ import { headers } from "next/headers";
 const Invite = createSelectSchema(TeamInvites).extend({ team: zod.string() });
 
 export const GET = routeFactory(async (req, authType, tx) => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return routeResponse(401);
   return routeResponse(200, await parseJsonBody((await tx.query.TeamInvites.findMany({
     with: { team: true },
+    where: eq(TeamInvites.email, session.user.email)
   })).map(x => ({ ...x, team: x.team.name })), zod.array(Invite)))
 });
 

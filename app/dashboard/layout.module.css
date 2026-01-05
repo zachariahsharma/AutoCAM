@@ -1,6 +1,6 @@
 .sidebar { 
   width: var(--sidebar-width, 220px);
-  background-color: #0A0A0A;
+  background-color: #141414;
   height: 100%;
   position: fixed;
   top: 0;

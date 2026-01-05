@@ -1,3 +1,81 @@
+.container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.warningStack {
+  width: 100%;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.warningBox {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 12px;
+  border: 1px solid rgba(219, 200, 38, 0.55);
+  background: rgba(217, 217, 217, 0.12);
+  padding: 12px 14px;
+  box-shadow: rgba(0,0,0,.25) 0px 10px 30px -18px;
+  backdrop-filter: blur(4px);
+}
+
+.warningText {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.warningEmphasis {
+  color: rgba(255, 255, 255, 1);
+  font-weight: 600;
+}
+
+.warningError {
+  margin-top: 6px;
+  color: rgba(255, 120, 120, 0.95);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.warningButton {
+  border-radius: 8px;
+  background-color: var(--yellow-2);
+  border: none;
+  height: 36px;
+  padding: 0 16px;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  box-shadow: rgba(255,255,255,.35) 0px 4px 12px -6px;
+  transition: all .2s;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.warningButton:hover {
+  background-color: var(--yellow-3);
+}
+
+.warningButton:active {
+  box-shadow: none;
+}
+
+.warningButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .contentData {
   margin-top: 170px;
   width: 100%;

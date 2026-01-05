@@ -117,7 +117,7 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
-  return routeResponse(200, await parseJsonBody(await tx.query.Materials.findMany({
+  return routeResponse(200, await parseJsonBody(await tx.query.Tools.findMany({
     where: eq(Tools.team_id, id)
   }), zod.array(Tool)));
 });

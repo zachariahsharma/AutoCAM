@@ -9,15 +9,17 @@ export function Header({
   duration = 0.5,
   material,
   thickness,
+  topOffset = 0,
 }: {
   delay?: number;
   duration?: number;
   material: string | undefined;
   thickness: number | undefined;
+  topOffset?: number;
 }) {
   const router = useRouter();
   return (
-    <div id={styles.header}>
+    <div id={styles.header} style={{ top: topOffset }}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

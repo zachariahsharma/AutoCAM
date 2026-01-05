@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import FileUploadModal from "@/components/FileUploadModal/FileUploadModal";
+import { useSearchParams } from "next/navigation";
 
 function Machines({ teamId }: { teamId: number }) {
   const [machines, setMachines] = useState<Machine[]>([]);
@@ -138,6 +139,8 @@ function Machines({ teamId }: { teamId: number }) {
         <div className={styles.loadingContainer}>
           <span className={styles.loadingSpinner} />
         </div>
+      ) : machines.length === 0 ? (
+        <div className={styles.emptyState}>Add a machine to get started</div>
       ) : (
         machines.map((machine) => (
           <div key={machine.id} className={styles.machineContainer}>
@@ -145,10 +148,9 @@ function Machines({ teamId }: { teamId: number }) {
               type="text"
               value={machine.name}
               placeholder="Name"
+              id={styles.machineInput}
               onChange={(e) => updateMachineLocal(machine.id, e.target.value)}
             />
-            <span id={styles.machineVertical} />
-            <span>{machine.file}</span>
             <Image
               alt="Trash"
               src="/settings/teams/Trash.svg"
@@ -284,6 +286,8 @@ function Materials({ teamId }: { teamId: number }) {
         <div className={styles.loadingContainer}>
           <span className={styles.loadingSpinner} />
         </div>
+      ) : materials.length === 0 ? (
+        <div className={styles.emptyState}>Add a material to get started</div>
       ) : (
         materials.map((material) => (
           <div key={material.id} className={styles.machineContainer}>
@@ -310,24 +314,26 @@ function Materials({ teamId }: { teamId: number }) {
 }
 
 function ToolItem({
-  tools,
   setTools,
   tool,
   totalMaterials,
   totalMachines,
+  onDeleteTool,
+  onUpdateToolName,
 }: {
   tool: Tool;
   setTools: React.Dispatch<React.SetStateAction<Tool[]>>;
   totalMaterials: Material[];
   totalMachines: Machine[];
-  tools: Tool[];
+  onDeleteTool: (toolId: number) => void;
+  onUpdateToolName: (toolId: number, name: string) => void;
 }) {
-  const [machines, setMachines] = useState<Machine[]>(tool.machines);
   const [dropdownMaterialsEnabled, setDropdownMaterialsEnabled] =
     useState<boolean>(false);
   const [dropdownMachinesEnabled, setDropdownMachinesEnabled] =
     useState<boolean>(false);
-  const [materials, setMaterials] = useState<Material[]>(tool.materials);
+  const materials = tool.materials;
+  const machines = tool.machines;
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -369,13 +375,7 @@ function ToolItem({
         placeholder="Name"
         id={styles.toolInput}
         onChange={(e) => {
-          const newTools = tools.map((t: Tool) => {
-            if (t.id === tool.id) {
-              return { ...t, name: e.target.value };
-            }
-            return t;
-          });
-          setTools(newTools);
+          onUpdateToolName(tool.id, e.target.value);
         }}
       />
       <div className={styles.materialDropdown}>
@@ -418,15 +418,22 @@ function ToolItem({
                           type="checkbox"
                           checked={materials.some((m) => m.id === material.id)}
                           onChange={() => {
-                            setMaterials((prev) => {
-                              const exists = prev.some(
-                                (m) => m.id === material.id
-                              );
-
-                              return exists
-                                ? prev.filter((m) => m.id !== material.id)
-                                : [...prev, material];
-                            });
+                            setTools((prev) =>
+                              prev.map((t) => {
+                                if (t.id !== tool.id) return t;
+                                const exists = t.materials.some(
+                                  (m) => m.id === material.id
+                                );
+                                return {
+                                  ...t,
+                                  materials: exists
+                                    ? t.materials.filter(
+                                        (m) => m.id !== material.id
+                                      )
+                                    : [...t.materials, material],
+                                };
+                              })
+                            );
                           }}
                         />
                         <span className={styles.checkboxBox}>
@@ -490,15 +497,22 @@ function ToolItem({
                           type="checkbox"
                           checked={machines.some((m) => m.id === machine.id)}
                           onChange={() => {
-                            setMachines((prev) => {
-                              const exists = prev.some(
-                                (m) => m.id === machine.id
-                              );
-
-                              return exists
-                                ? prev.filter((m) => m.id !== machine.id)
-                                : [...prev, machine];
-                            });
+                            setTools((prev) =>
+                              prev.map((t) => {
+                                if (t.id !== tool.id) return t;
+                                const exists = t.machines.some(
+                                  (m) => m.id === machine.id
+                                );
+                                return {
+                                  ...t,
+                                  machines: exists
+                                    ? t.machines.filter(
+                                        (m) => m.id !== machine.id
+                                      )
+                                    : [...t.machines, machine],
+                                };
+                              })
+                            );
                           }}
                         />
                         <span className={styles.checkboxBox}>
@@ -523,14 +537,14 @@ function ToolItem({
         </div>
       </div>
       <div className={styles.fileName}>
-        <span>{tool.file}</span>
+        <span>{tool.file || "Uploaded"}</span>
       </div>
       <Image
         alt="Trash"
         src="/settings/teams/Trash.svg"
         width={2000}
         height={2000}
-        onClick={() => setTools((prev) => prev.filter((t) => t.id !== tool.id))}
+        onClick={() => onDeleteTool(tool.id)}
         className={styles.trashIcon}
       />
     </div>
@@ -540,20 +554,163 @@ function ToolItem({
 function Tools({ teamId }: { teamId: number }) {
   const [tools, setTools] = useState<Tool[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pendingUpdates, setPendingUpdates] = useState<
+    Record<number, NodeJS.Timeout>
+  >({});
   const [totalMaterials, setTotalMaterials] = useState<Material[]>([]);
   const [totalMachines, setTotalMachines] = useState<Machine[]>([]);
-  const handleAddTool = (name: string, file: File) => {
-    const newTool: Tool = {
-      id: tools.length + 1,
-      name,
-      materials: [],
-      machines: [],
-      file: file.name,
+
+  // Load tools/materials/machines from API
+  useEffect(() => {
+    if (!teamId) return;
+    let mounted = true;
+    setIsLoading(true);
+
+    async function loadAll() {
+      try {
+        const [toolsRes, materialsRes, machinesRes] = await Promise.all([
+          fetch(`/api/teams/${teamId}/tools`),
+          fetch(`/api/teams/${teamId}/materials`),
+          fetch(`/api/teams/${teamId}/machines`),
+        ]);
+
+        if (!mounted) return;
+
+        if (materialsRes.ok) {
+          const materials = (await materialsRes.json()) as Material[];
+          setTotalMaterials(materials);
+        } else {
+          setTotalMaterials([]);
+        }
+
+        if (machinesRes.ok) {
+          const machines = (await machinesRes.json()) as Partial<Machine>[];
+          setTotalMachines(
+            machines.map((m) => ({
+              id: m.id as number,
+              name: m.name as string,
+              file: typeof m.file === "string" ? m.file : "",
+            }))
+          );
+        } else {
+          setTotalMachines([]);
+        }
+
+        if (toolsRes.ok) {
+          const tools = (await toolsRes.json()) as { id: number; name: string }[];
+          setTools(
+            tools.map((t) => ({
+              id: t.id,
+              name: t.name,
+              materials: [],
+              machines: [],
+              file: "",
+            }))
+          );
+        } else {
+          setTools([]);
+        }
+      } catch (error) {
+        console.error("Error loading tools:", error);
+        if (!mounted) return;
+        setTools([]);
+        setTotalMaterials([]);
+        setTotalMachines([]);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+
+    loadAll();
+    return () => {
+      mounted = false;
     };
-    setTools((prev) => [...prev, newTool]);
-    // TODO: Upload file to API here
-    console.log("Tool added:", name, "File:", file.name);
+  }, [teamId]);
+
+  // Cleanup pending timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(pendingUpdates).forEach(clearTimeout);
+    };
+  }, [pendingUpdates]);
+
+  const handleAddTool = async (name: string, file: File) => {
+    if (!teamId) return;
+    try {
+      const formData = new FormData();
+      formData.append("data", JSON.stringify({ name }));
+      formData.append("file", file);
+
+      const response = await fetch(`/api/teams/${teamId}/tools`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        console.error("Failed to add tool:", await response.text());
+        return;
+      }
+
+      const { id } = (await response.json()) as { id: number };
+      setTools((prev) => [
+        ...prev,
+        { id, name, materials: [], machines: [], file: file.name },
+      ]);
+    } catch (error) {
+      console.error("Error adding tool:", error);
+    }
   };
+
+  function updateToolNameLocal(toolId: number, name: string) {
+    setTools((prev) =>
+      prev.map((t) => (t.id === toolId ? { ...t, name } : t))
+    );
+
+    if (pendingUpdates[toolId]) {
+      clearTimeout(pendingUpdates[toolId]);
+    }
+
+    const timeout = setTimeout(() => {
+      updateToolNameApi(toolId, name);
+      setPendingUpdates((prev) => {
+        const { [toolId]: _, ...rest } = prev;
+        return rest;
+      });
+    }, 500);
+
+    setPendingUpdates((prev) => ({ ...prev, [toolId]: timeout }));
+  }
+
+  async function updateToolNameApi(toolId: number, name: string) {
+    try {
+      const response = await fetch(`/api/tools/${toolId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!response.ok) {
+        console.error("Failed to update tool:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error updating tool:", error);
+    }
+  }
+
+  async function deleteTool(toolId: number) {
+    try {
+      const response = await fetch(`/api/tools/${toolId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setTools((prev) => prev.filter((t) => t.id !== toolId));
+      } else {
+        console.error("Failed to delete tool:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error deleting tool:", error);
+    }
+  }
 
   return (
     <main id={styles.toolsContainer}>
@@ -574,22 +731,44 @@ function Tools({ teamId }: { teamId: number }) {
           className={styles.addIcon}
         />
       </div>
-      {tools.map((tool) => (
-        <ToolItem
-          key={tool.id}
-          tool={tool}
-          tools={tools}
-          setTools={setTools}
-          totalMaterials={totalMaterials}
-          totalMachines={totalMachines}
-        />
-      ))}
+      {isLoading ? (
+        <div className={styles.loadingContainer}>
+          <span className={styles.loadingSpinner} />
+        </div>
+      ) : tools.length === 0 ? (
+        <div className={styles.emptyState}>Add a tool to get started</div>
+      ) : (
+        tools.map((tool) => (
+          <ToolItem
+            key={tool.id}
+            tool={tool}
+            setTools={setTools}
+            totalMaterials={totalMaterials}
+            totalMachines={totalMachines}
+            onDeleteTool={deleteTool}
+            onUpdateToolName={updateToolNameLocal}
+          />
+        ))
+      )}
     </main>
   );
 }
 
 export default function FusionInputs({ teamId }: { teamId: number }) {
-  const [selectedTab, setSelectedTab] = useState<string>("Machines");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab")?.toLowerCase();
+  const initialTab =
+    tabParam === "materials"
+      ? "Materials"
+      : tabParam === "tools"
+        ? "Tools"
+        : "Machines";
+
+  const [selectedTab, setSelectedTab] = useState<string>(initialTab);
+
+  useEffect(() => {
+    setSelectedTab(initialTab);
+  }, [initialTab]);
   return (
     <form>
       <label className={styles.sectionLabel}>Machines, Tools & Materials</label>

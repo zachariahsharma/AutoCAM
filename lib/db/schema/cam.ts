@@ -234,15 +234,6 @@ export const PlatesRelations = relations(Plates, ({ one, many }) => ({
   jobs: many(PlateJobs)
 }));
 
-export const JobsRelations = relations(Jobs, ({ one }) => ({
-  tool: one(Tools, {
-    fields: [Jobs.tool_id],
-    references: [Tools.id]
-  }),
-  plate_job: one(PlateJobs),
-  box_tube_job: one(BoxTubeJobs)
-}));
-
 export const PlateJobsRelations = relations(PlateJobs, ({ one }) => ({
   job: one(Jobs, {
     fields: [PlateJobs.job_id],

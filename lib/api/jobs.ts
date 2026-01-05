@@ -2,12 +2,9 @@ import { asc, eq } from "drizzle-orm";
 import { parseJsonBody, routeFactory, routeResponse } from ".";
 import { JobKind, Jobs } from "../db/schema/cam";
 import zod from "zod";
+import { createSelectSchema } from "drizzle-zod";
 
-const RequestSchema = zod.object({
-  machine_id: zod.number(),
-  tool_id: zod.number(),
-  kind: zod.enum(JobKind.enumValues)
-});
+const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
 
 export const Request = routeFactory(async (req, authType, tx) => {
   const result = await tx.update(Jobs).set({ status: "in progress" }).where(eq(Jobs.id,

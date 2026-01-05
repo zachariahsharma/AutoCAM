@@ -1,8 +1,6 @@
 import { eq, relations, sql, SQL } from "drizzle-orm";
-import { customType, doublePrecision, integer, jsonb, pgEnum, pgPolicy, pgTable, primaryKey, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import { customType, doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { TeamKeys, Teams } from "./entities";
-import { CheckPartsPlatesTeam, CheckToolMachinesTeam, CheckToolMaterialsTeam, KeyAuthorized, TeamFromBoxTube, TeamFromCategory, TeamFromPlate, TeamFromTool, UserInTeam, UserIsTeamAdmin } from "./rls";
-import { scopeNames as scopes } from "../../scopes";
 
 const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
   dataType() { return "bytea"; },
@@ -21,14 +19,6 @@ export const PartCategories = pgTable("part_categories", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
 }, table => [
   unique().on(table.team_id, table.material, table.thickness),
-  pgPolicy('part_categories_query_key', { for: "select", using: KeyAuthorized(table.team_id, scopes.pc.read) }),
-  pgPolicy('part_categories_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('part_categories_update_key', { for: "update", using: KeyAuthorized(table.team_id, scopes.pc.write) }),
-  pgPolicy('part_categories_update_user', { for: 'update', using: UserInTeam(table.team_id) }),
-  pgPolicy('part_categories_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, scopes.pc.write) }),
-  pgPolicy('part_categories_delete_user', { for: "delete", using: UserInTeam(table.team_id) }),
-  pgPolicy('part_categories_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, scopes.pc.write) }),
-  pgPolicy('part_categories_insert_user', { for: 'insert', withCheck: UserInTeam(table.team_id) })
 ]);
 
 export const Parts = pgTable("parts", {
@@ -39,16 +29,7 @@ export const Parts = pgTable("parts", {
   quantity: integer().notNull(),
   original_quantity: integer().notNull().default(1),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
-}, table => [
-  pgPolicy('parts_query_key', { for: "select", using: KeyAuthorized(TeamFromCategory(table.category_id), scopes.parts.read) }),
-  pgPolicy('parts_query_user', { for: "select", using: UserInTeam(TeamFromCategory(table.category_id)) }),
-  pgPolicy("parts_update_key", { for: "update", using: KeyAuthorized(TeamFromCategory(table.category_id), scopes.parts.write) }),
-  pgPolicy("parts_update_user", { for: "update", using: UserInTeam(TeamFromCategory(table.category_id)) }),
-  pgPolicy("parts_delete_key", { for: "delete", using: KeyAuthorized(TeamFromCategory(table.category_id), scopes.parts.write) }),
-  pgPolicy("parts_delete_user", { for: "delete", using: UserInTeam(TeamFromCategory(table.category_id)) }),
-  pgPolicy('parts_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromCategory(table.category_id), scopes.parts.write) }),
-  pgPolicy('parts_insert_user', { for: 'insert', withCheck: UserInTeam(TeamFromCategory(table.category_id)) })
-]);
+});
 
 export const Plates = pgTable("plates", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -57,16 +38,7 @@ export const Plates = pgTable("plates", {
   length: doublePrecision().notNull(),
   true_depth: doublePrecision().notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
-}, table => [
-  pgPolicy('plates_query_key', { for: "select", using: KeyAuthorized(TeamFromCategory(table.category_id), scopes.plates.read) }),
-  pgPolicy('plates_query_user', { for: "select", using: UserInTeam(TeamFromCategory(table.category_id)) }),
-  pgPolicy("plates_update_key", { for: "update", using: KeyAuthorized(TeamFromCategory(table.category_id), scopes.plates.write) }),
-  pgPolicy("plates_update_user", { for: "update", using: UserInTeam(TeamFromCategory(table.category_id)) }),
-  pgPolicy("plates_delete_key", { for: "delete", using: KeyAuthorized(TeamFromCategory(table.category_id), scopes.plates.write) }),
-  pgPolicy("plates_delete_user", { for: "delete", using: UserInTeam(TeamFromCategory(table.category_id)) }),
-  pgPolicy('plates_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromCategory(table.category_id), scopes.plates.write) }),
-  pgPolicy('plates_insert_user', { for: 'insert', withCheck: UserInTeam(TeamFromCategory(table.category_id)) })
-]);
+});
 
 export const BoxTubes = pgTable("box_tubes", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -76,16 +48,7 @@ export const BoxTubes = pgTable("box_tubes", {
   file: bytea().notNull(),
   quantity: integer().default(1).notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
-}, table => [
-  pgPolicy('box_tubes_query_user', { for: "select", using: UserInTeam(table.team_id) }),
-  pgPolicy('box_tubes_query_key', { for: "select", using: KeyAuthorized(table.team_id, scopes.boxTubes.read) }),
-  pgPolicy('box_tubes_update_user', { for: "update", using: UserInTeam(table.team_id) }),
-  pgPolicy('box_tubes_update_key', { for: "update", using: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
-  pgPolicy('box_tubes_delete_user', { for: "delete", using: UserInTeam(table.team_id) }),
-  pgPolicy('box_tubes_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
-  pgPolicy('box_tubes_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) }),
-  pgPolicy('box_tubes_insert_key', { for: "insert", withCheck: KeyAuthorized(table.team_id, scopes.boxTubes.write) }),
-]);
+});
 
 export const Materials = pgTable("materials", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -93,14 +56,6 @@ export const Materials = pgTable("materials", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   unique().on(table.name, table.team_id),
-  pgPolicy('materials_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('materials_query_key', { for: 'select', using: KeyAuthorized(table.team_id, scopes.materials.read) }),
-  pgPolicy('materials_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('materials_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, scopes.materials.write) }),
-  pgPolicy('materials_update_user', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('materials_update_key', { for: 'update', using: KeyAuthorized(table.team_id, scopes.materials.write) }),
-  pgPolicy('materials_delete_user', { for: 'delete', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('materials_delete_key', { for: 'delete', using: KeyAuthorized(table.team_id, scopes.materials.write) }),
 ]);
 
 export const Machines = pgTable("machines", {
@@ -109,14 +64,6 @@ export const Machines = pgTable("machines", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   unique().on(table.name, table.team_id),
-  pgPolicy('machines_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('machines_query_key', { for: 'select', using: KeyAuthorized(table.team_id, scopes.machines.read) }),
-  pgPolicy('machines_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('machines_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, scopes.machines.write) }),
-  pgPolicy('machines_update_user', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('machines_update_key', { for: 'update', using: KeyAuthorized(table.team_id, scopes.machines.write) }),
-  pgPolicy('machines_delete_user', { for: 'delete', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('machines_delete_key', { for: 'delete', using: KeyAuthorized(table.team_id, scopes.machines.write) }),
 ]);
 
 export const Tools = pgTable("tools", {
@@ -125,47 +72,17 @@ export const Tools = pgTable("tools", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 }, table => [
   unique().on(table.name, table.team_id),
-  pgPolicy('tools_query_user', { for: 'select', using: UserInTeam(table.team_id) }),
-  pgPolicy('tools_query_key', { for: 'select', using: KeyAuthorized(table.team_id, scopes.tools.read) }),
-  pgPolicy('tools_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('tools_insert_key', { for: 'insert', withCheck: KeyAuthorized(table.team_id, scopes.tools.write) }),
-  pgPolicy('tools_update_user', { for: 'update', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('tools_update_key', { for: 'update', using: KeyAuthorized(table.team_id, scopes.tools.write) }),
-  pgPolicy('tools_delete_user', { for: 'delete', using: UserIsTeamAdmin(table.team_id) }),
-  pgPolicy('tools_delete_key', { for: 'delete', using: KeyAuthorized(table.team_id, scopes.tools.write) }),
 ]);
 
 export const ToolMaterials = pgTable("tool_materials", {
   tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
   material_id: integer().notNull().references(() => Materials.id, { onDelete: "cascade" }),
-}, table => [
-  pgPolicy('tool_materials_insert', { for: 'insert', as: "restrictive", withCheck: CheckToolMaterialsTeam() }),
-  pgPolicy('tool_materials_update', { for: 'update', as: "restrictive", using: CheckToolMaterialsTeam() }),
-  pgPolicy('tool_materials_query_user', { for: 'select', using: UserInTeam(TeamFromTool(table.tool_id)) }),
-  pgPolicy('tool_materials_query_key', { for: 'select', using: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.read) }),
-  pgPolicy('tool_materials_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromTool(table.tool_id)) }),
-  pgPolicy('tool_materials_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.write) }),
-  pgPolicy('tool_materials_update_user', { for: 'update', using: UserIsTeamAdmin(TeamFromTool(table.tool_id)) }),
-  pgPolicy('tool_materials_update_key', { for: 'update', using: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.write) }),
-  pgPolicy('tool_materials_delete_user', { for: 'delete', using: UserIsTeamAdmin(TeamFromTool(table.tool_id)) }),
-  pgPolicy('tool_materials_delete_key', { for: 'delete', using: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.write) }),
-]);
+});
 
 export const ToolMachines = pgTable("tool_machines", {
   tool_id: integer().notNull().references(() => Tools.id, { onDelete: "cascade" }),
   machine_id: integer().notNull().references(() => Machines.id, { onDelete: "cascade" })
-}, table => [
-  pgPolicy('tool_machines_insert', { for: 'insert', as: "restrictive", withCheck: CheckToolMachinesTeam() }),
-  pgPolicy('tool_machines_update', { for: 'update', as: "restrictive", using: CheckToolMachinesTeam() }),
-  pgPolicy('tool_machines_query_user', { for: 'select', using: UserInTeam(TeamFromTool(table.tool_id)) }),
-  pgPolicy('tool_machines_query_key', { for: 'select', using: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.read) }),
-  pgPolicy('tool_machines_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromTool(table.tool_id)) }),
-  pgPolicy('tool_machines_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.write) }),
-  pgPolicy('tool_machines_update_user', { for: 'update', using: UserIsTeamAdmin(TeamFromTool(table.tool_id)) }),
-  pgPolicy('tool_machines_update_key', { for: 'update', using: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.write) }),
-  pgPolicy('tool_machines_delete_user', { for: 'delete', using: UserIsTeamAdmin(TeamFromTool(table.tool_id)) }),
-  pgPolicy('tool_machines_delete_key', { for: 'delete', using: KeyAuthorized(TeamFromTool(table.tool_id), scopes.tools.write) }),
-])
+})
 
 export const PartsToPlates = pgTable("parts_to_plates", {
   plate_id: integer().notNull().references(() => Plates.id, { onDelete: "cascade" }),
@@ -173,16 +90,6 @@ export const PartsToPlates = pgTable("parts_to_plates", {
   quantity: integer().notNull()
 }, table => [
   unique().on(table.plate_id, table.part_id),
-  pgPolicy('parts_to_plates_insert', { for: 'insert', as: "restrictive", withCheck: CheckPartsPlatesTeam() }),
-  pgPolicy('parts_to_plates_update', { for: 'update', as: "restrictive", using: CheckPartsPlatesTeam() }),
-  pgPolicy('parts_to_plates_query_user', { for: 'select', using: UserInTeam(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('parts_to_plates_query_key', { for: 'select', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.pc.assignments.read) }),
-  pgPolicy('parts_to_plates_insert_user', { for: 'insert', withCheck: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('parts_to_plates_insert_key', { for: 'insert', withCheck: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.pc.assignments.write) }),
-  pgPolicy('parts_to_plates_update_user', { for: 'update', using: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('parts_to_plates_update_key', { for: 'update', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.pc.assignments.write) }),
-  pgPolicy('parts_to_plates_delete_user', { for: 'delete', using: UserIsTeamAdmin(TeamFromPlate(table.plate_id)) }),
-  pgPolicy('parts_to_plates_delete_key', { for: 'delete', using: KeyAuthorized(TeamFromPlate(table.plate_id), scopes.pc.assignments.write) }),
 ]);
 
 export const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
@@ -200,12 +107,6 @@ export const Jobs = pgTable("jobs", {
 }, table => [
   // Make sure that a single runner can't pick up more than one job at a time
   uniqueIndex("claimed_by_index").on(table.claimed_by).where(eq(table.status, sql`'in progress'`)),
-  pgPolicy('jobs_query_user', { for: "select", using: UserInTeam(table.team_id) }),
-  pgPolicy('jobs_query_key', { for: "select", using: KeyAuthorized(table.team_id, scopes.jobs.read) }),
-  pgPolicy('jobs_insert_user', { for: "insert", withCheck: UserInTeam(table.team_id) }),
-  pgPolicy('jobs_insert_key', { for: "insert", withCheck: KeyAuthorized(table.team_id, scopes.jobs.create) }),
-  pgPolicy('jobs_delete_user', { for: "delete", using: UserInTeam(table.team_id) }),
-  pgPolicy('jobs_delete_key', { for: "delete", using: KeyAuthorized(table.team_id, scopes.jobs.delete) })
 ]);
 
 export const PlateJobs = pgTable("plate_jobs", {

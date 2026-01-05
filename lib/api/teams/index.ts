@@ -137,7 +137,7 @@ export const GET = routeFactory(async (req, authType, tx) => {
   const team = await tx.query.Teams.findFirst();
   if (!team) return routeResponse(403, { message: "API Key is not valid" });
   return routeResponse(200, await parseJsonBody(team, Team));
-});
+}, { requiredScopes: [scopes.teams.read] });
 
 export const POST = routeFactory(async (req, authType, tx) => {
   if (!authType.userId) return routeResponse(401, { message: "User session not found" });

@@ -133,22 +133,22 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Plates.findMany({
     where: eq(Plates.category_id, id)
   }), zod.array(Plate)));
-});
+}, { requiredScopes: [scopes.plates.read] });
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
   const data = await parseJsonBody(await req.json(), CreateSchema);
   const [id] = await tx.insert(Plates).values({ ...data, category_id }).returning({ id: Plates.id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.plates.write] });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(Plates).set(body).where(eq(Plates.id, id)).returning({ id: Plates.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.plates.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   return tx.delete(Plates).where(eq(Plates.id, id)).returning({ id: Plates.id });
-});
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.plates.write] });

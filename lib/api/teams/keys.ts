@@ -117,7 +117,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.TeamKeys.findMany({
     where: eq(TeamKeys.team_id, id),
   }), zod.array(Key)));
-}, { emailVerifiedNeeded: true });
+});
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   if (!team_id) return routeResponse(422);

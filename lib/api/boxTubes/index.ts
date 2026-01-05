@@ -125,7 +125,7 @@ export const GET = routeFactory(async (req, authType, tx, teamId) => {
   return routeResponse(200, await parseJsonBody(await tx.query.BoxTubes.findMany({
     where: eq(BoxTubes.team_id, teamId)
   }), zod.array(BoxTube)));
-});
+}, { requiredScopes: [scopes.boxTubes.read] });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -135,15 +135,15 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   const fileBuffer = await files["file"].arrayBuffer();
   const [id] = await tx.insert(BoxTubes).values({ ...data, file: fileBuffer, team_id }).returning({ id: BoxTubes.id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true })
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] })
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(BoxTubes).set(body).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   return tx.delete(BoxTubes).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] });

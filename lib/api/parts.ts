@@ -134,7 +134,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Parts.findMany({
     where: eq(Parts.category_id, id)
   }), zod.array(Part)));
-});
+}, { requiredScopes: [scopes.parts.read] });
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
@@ -153,13 +153,13 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
     ContentType: files["file"].type
   }));
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(Parts).set(body).where(eq(Parts.id, id)).returning({ id: Parts.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -172,4 +172,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Key: `teams/${team_id}/pc/${category_id}/parts/${id}`
   }));
   return result;
-}, { emailVerifiedNeeded: true })
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] })

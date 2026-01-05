@@ -120,7 +120,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Machines.findMany({
     where: eq(Machines.team_id, id)
   }), zod.array(Machine)));
-});
+}, { requiredScopes: [scopes.machines.read] });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -140,13 +140,13 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   }));
 
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.machines.write] });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(Machines).set(body).where(eq(Machines.id, id)).returning({ id: Machines.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.machines.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -157,4 +157,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Key: `teams/${result[0].team_id}/machines/${id}`
   }));
   return result;
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.machines.write] });

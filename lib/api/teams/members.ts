@@ -51,7 +51,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     name: x.user.name || x.user.email.split("@")[0], 
     isOwner: x.user_id === ownerId 
   })), zod.array(Member)));
-});
+}, { requiredScopes: [scopes.teams.read] });
 
 const UpdateSchema = zod.object({ 
   email: zod.email(),

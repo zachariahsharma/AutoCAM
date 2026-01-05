@@ -5,6 +5,7 @@ import zod, { object } from "zod";
 import { createSelectSchema } from "drizzle-zod";
 import { client } from "../aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { scopeNames as scopes } from "../scopes";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
 
@@ -19,7 +20,7 @@ export const Request = routeFactory(async (req, authType, tx) => {
   const job = await tx.query.Jobs.findFirst({ where: eq(Jobs.id, id) });
   if (!job) return routeResponse(204);
   return routeResponse(200, await parseJsonBody(job, RequestSchema));
-});
+}, { requiredScopes: [scopes.jobs.process] });
 
 export const Complete = routeFactory(async (req, authType, tx, id) => {
   if (!authType.keyDigest) return routeResponse(401);
@@ -41,10 +42,10 @@ export const Complete = routeFactory(async (req, authType, tx, id) => {
   }
   await tx.update(Jobs).set({ status: "completed" });
   return routeResponse(204);
-});
+}, { requiredScopes: [scopes.jobs.process] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
 
   return await tx.delete(Jobs).where(eq(Jobs.id, id)).returning({ id: Jobs.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.delete] });

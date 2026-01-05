@@ -92,7 +92,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     with: { job: true }
   })).map(x => x.job);
   return routeResponse(200, await parseJsonBody(result, zod.array(Job)));
-});
+}, { requiredScopes: [scopes.jobs.read] });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   if (!authType.keyDigest) return routeResponse(401);
@@ -118,4 +118,4 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   // Create plate job
   await tx.insert(PlateJobs).values({ job_id: id.id, plate_id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.create] });

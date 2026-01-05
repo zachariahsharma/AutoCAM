@@ -81,7 +81,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     with: { job: true }
   })).map(x => ({ ...x, ...x.job }));
   return routeResponse(200, await parseJsonBody(result, zod.array(Job)));
-});
+}, { requiredScopes: [scopes.jobs.read] });
 
 export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   if (!box_tube_id) return routeResponse(422);
@@ -99,4 +99,4 @@ export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   }).returning({ id: Jobs.id });
   await tx.insert(BoxTubeJobs).values({ job_id: id.id, box_tube_id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.create] });

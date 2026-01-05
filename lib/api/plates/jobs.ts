@@ -1,6 +1,6 @@
-import { PlateJobs } from "@/lib/db/schema/cam";
+import { Jobs, PlateJobs, PlateJobType, Plates } from "@/lib/db/schema/cam";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
@@ -8,8 +8,13 @@ import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 
-const CreateSchema = createInsertSchema(PlateJobs).omit({ plate_id: true, cam: true, screenshot: true });
-const Job = createSelectSchema(PlateJobs).omit({ machine_id: true, plate_id: true, tool_id: true }).openapi("Plate Job")
+const CreateSchema = zod.object({
+  machine_id: zod.number(),
+  tool_id: zod.number(),
+  type: zod.enum(PlateJobType.enumValues)
+});
+const Job = createSelectSchema(Jobs).omit({ kind: true, team_id: true })
+  .extend(createSelectSchema(PlateJobs).omit({ plate_id: true, job_id: true })).openapi("Plate Job");
 
 registry.registerPath({
   method: "get",
@@ -18,7 +23,7 @@ registry.registerPath({
   summary: "Get Plate Jobs",
   security: [
     { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.plates.jobs.read] }
+    { [apiKey.name]: [scopes.jobs.read] }
   ],
   request: {
     params: zod.object({ id: zod.number().openapi({ description: "Plate ID" }) })
@@ -44,7 +49,7 @@ registry.registerPath({
   summary: "Create Plate Job",
   security: [
     { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.plates.jobs.write] }
+    { [apiKey.name]: [scopes.jobs.create] }
   ],
   request: {
     params: zod.object({ id: zod.number().openapi({ description: "Plate ID" }) }),
@@ -71,46 +76,36 @@ registry.registerPath({
   }
 });
 
-registry.registerPath({
-  method: "delete",
-  path: "/api/plates/jobs/{id}",
-  tags: ["Plate Jobs"],
-  summary: "Delete Plate Job",
-  security: [
-    { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.plates.jobs.write] }
-  ],
-  request: {
-    params: zod.object({ id: zod.number().openapi({ description: "Plate job ID" }) }),
-  },
-  responses: {
-    204: {
-      description: "Plate job deleted successfully",
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...NotFound
-  }
-})
-
 export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return routeResponse(200, await parseJsonBody(await tx.query.PlateJobs.findMany({
+  const result = (await tx.query.PlateJobs.findMany({
     where: eq(PlateJobs.plate_id, id),
-  }), zod.array(Job)));
+    with: { job: true }
+  })).map(x => ({ ...x, ...x.job }));
+  return routeResponse(200, await parseJsonBody(result, zod.array(Job)));
 });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   if (!plate_id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), CreateSchema);
 
-  const [id] = await tx.insert(PlateJobs).values({ ...body, plate_id }).returning({ id: PlateJobs.id });
+  const plate = await tx.query.Plates.findFirst({
+    where: eq(Plates.id, plate_id),
+    with: { category: true }
+  });
+  if (!plate) return routeResponse(404);
+  // Create generic job
+  const [id] = await tx.insert(Jobs).values({
+    machine_id: body.machine_id,
+    tool_id: body.tool_id,
+    team_id: plate.category.team_id,
+    kind: "plate"
+  }).returning({ id: Jobs.id });
+  // Create plate job
+  await tx.insert(PlateJobs).values({
+    job_id: id.id,
+    plate_id,
+    type: body.type
+  });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
-
-export const DELETE = routeFactory(async (req, authType, tx, id) => {
-  if (!id) return routeResponse(422);
-  return tx.delete(PlateJobs)
-    .where(eq(PlateJobs.id, id))
-    .returning({ id: PlateJobs.id });
 }, { emailVerifiedNeeded: true });

@@ -89,16 +89,6 @@ export const scopes = {
     write: {
       name: "plates:write",
       description: "Create, update, or delete team plates"
-    },
-    jobs: {
-      read: {
-        name: "plates:jobs:read",
-        description: "Read team plate jobs"
-      },
-      write: {
-        name: "plates:jobs:write",
-        description: "Create or delete team plate jobs"
-      }
     }
   },
   boxTubes: {
@@ -109,18 +99,26 @@ export const scopes = {
     write: {
       name: "box_tubes:write",
       description: "Create, update, or delete team box tubes"
-    },
-    jobs: {
-      read: {
-        name: "box_tubes:jobs:read",
-        description: "Read team box tube jobs"
-      },
-      write: {
-        name: "box_tubes:jobs:write",
-        description: "Create or delete team box tube jobs"
-      }
     }
   },
+  jobs: {
+    read: {
+      name: "jobs:read",
+      description: "Read all jobs for a team"
+    },
+    create: {
+      name: "jobs:create",
+      description: "Create a job for a team"
+    },
+    process: {
+      name: "jobs:process",
+      description: "Process a job (for runners)"
+    },
+    delete: {
+      name: "jobs:delete",
+      description: "Delete a job"
+    }
+  }
 };
 
 export interface ScopeLeaf {

@@ -1,4 +1,4 @@
-import { BoxTubeJobs } from "@/lib/db/schema/cam";
+import { BoxTubeJobs, BoxTubes, Jobs } from "@/lib/db/schema/cam";
 import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
@@ -8,8 +8,11 @@ import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../com
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 
-const CreateSchema = createInsertSchema(BoxTubeJobs).omit({ box_tube_id: true });
-const Job = createSelectSchema(BoxTubeJobs).omit({ box_tube_id: true, machine_id: true, tool_id: true }).openapi("Box Tube Job");
+const CreateSchema = zod.object({
+  machine_id: zod.number(),
+  tool_id: zod.number()
+})
+const Job = createSelectSchema(Jobs).omit({ kind: true, team_id: true }).openapi("Box Tube Job");
 
 registry.registerPath({
   method: "get",
@@ -18,7 +21,7 @@ registry.registerPath({
   summary: "Get Box Tube Jobs",
   security: [
     { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.boxTubes.jobs.read] }
+    { [apiKey.name]: [scopes.jobs.read] }
   ],
   request: {
     params: zod.object({ id: zod.number().openapi({ description: "Box tube ID" }) })
@@ -44,7 +47,7 @@ registry.registerPath({
   summary: "Create Box Tube Job",
   security: [
     { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.boxTubes.jobs.write] }
+    { [apiKey.name]: [scopes.jobs.create] }
   ],
   request: {
     params: zod.object({ id: zod.number().openapi({ description: "Box tube ID" }) }),
@@ -71,41 +74,28 @@ registry.registerPath({
   }
 });
 
-registry.registerPath({
-  method: "delete",
-  path: "/api/boxTubes/jobs/{id}",
-  tags: ["Box Tube Jobs"],
-  summary: "Delete Box Tube Job",
-  security: [
-    { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.boxTubes.jobs.write] }
-  ],
-  request: {
-    params: zod.object({ id: zod.number().openapi({ description: "Box tube job ID" }) })
-  },
-  responses: {
-    204: {
-      description: "Box tube job deleted successfully"
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...NotFound
-  }
-})
-
 export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  return routeResponse(200, await parseJsonBody(await tx.query.BoxTubeJobs.findMany({ where: eq(BoxTubeJobs.box_tube_id, id) }), zod.array(Job)));
+  const result = (await tx.query.BoxTubeJobs.findMany({
+    where: eq(BoxTubeJobs.box_tube_id, id),
+    with: { job: true }
+  })).map(x => ({ ...x, ...x.job }));
+  return routeResponse(200, await parseJsonBody(result, zod.array(Job)));
 });
 
 export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   if (!box_tube_id) return routeResponse(422);
   const body = await parseJsonBody(await req.json(), CreateSchema);
-  const [id] = await tx.insert(BoxTubeJobs).values({ ...body, box_tube_id }).returning({ id: BoxTubeJobs.id });
-  return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
 
-export const DELETE = routeFactory(async (req, authType, tx, id) => {
-  if (!id) return routeResponse(422);
-  return tx.delete(BoxTubeJobs).where(eq(BoxTubeJobs.id, id)).returning({ id: BoxTubeJobs.id })
+  const tube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, box_tube_id) });
+  if (!tube) return routeResponse(404);
+
+  const [id] = await tx.insert(Jobs).values({
+    team_id: tube.team_id,
+    machine_id: body.machine_id,
+    tool_id: body.tool_id,
+    kind: "box_tube"
+  }).returning({ id: Jobs.id });
+  await tx.insert(BoxTubeJobs).values({ job_id: id.id, box_tube_id });
+  return routeResponse(201, id);
 }, { emailVerifiedNeeded: true });

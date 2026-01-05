@@ -194,8 +194,8 @@ export const Jobs = pgTable("jobs", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   kind: JobKind().notNull(),
   claimed_by: text(),
-  tool_id: integer().references(() => Tools.id, { onDelete: "set null" }),
-  machine_id: integer().references(() => Machines.id, { onDelete: "set null" }),
+  tool_id: integer().references(() => Tools.id),
+  machine_id: integer().references(() => Machines.id),
   created_at: timestamp().defaultNow()
 }, table => [
   pgPolicy('jobs_insert', { for: "insert", as: "restrictive", withCheck: CheckJobTeams() }),

@@ -90,7 +90,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   const result = (await tx.query.PlateJobs.findMany({
     where: eq(PlateJobs.plate_id, id),
     with: { job: true }
-  })).map(x => ({ ...x, ...x.job }));
+  })).map(x => x.job);
   return routeResponse(200, await parseJsonBody(result, zod.array(Job)));
 });
 

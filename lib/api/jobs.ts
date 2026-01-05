@@ -1,8 +1,10 @@
 import { asc, eq } from "drizzle-orm";
-import { parseJsonBody, routeFactory, routeResponse } from ".";
+import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { JobKind, Jobs } from "../db/schema/cam";
-import zod from "zod";
+import zod, { object } from "zod";
 import { createSelectSchema } from "drizzle-zod";
+import { client } from "../aws";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
 
@@ -17,6 +19,28 @@ export const Request = routeFactory(async (req, authType, tx) => {
   const job = await tx.query.Jobs.findFirst({ where: eq(Jobs.id, id) });
   if (!job) return routeResponse(204);
   return routeResponse(200, await parseJsonBody(job, RequestSchema));
+});
+
+export const Complete = routeFactory(async (req, authType, tx, id) => {
+  if (!authType.keyDigest) return routeResponse(401);
+  const job = await tx.query.Jobs.findFirst({
+    where: eq(Jobs.claimed_by, authType.keyDigest)
+  });
+  if (!job) return routeResponse(404);
+  const { data, files } = await parseJsonFile(await req.formData(), zod.object().catchall(zod.any()));
+  const result = await tx.update(Jobs).set({ response: data }).where(eq(Jobs.id, job.id));
+  if (result.rowCount === 0) return routeResponse(404);
+  if ("file" in files) {
+    await client.send(new PutObjectCommand({
+      Bucket: process.env.AUTOCAM_BUCKET,
+      Key: `teams/${job.team_id}/jobs/${job.id}`,
+      ACL: "private",
+      Body: await files["file"].bytes(),
+      ContentType: files["file"].type
+    }));
+  }
+  await tx.update(Jobs).set({ status: "completed" });
+  return routeResponse(204);
 });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

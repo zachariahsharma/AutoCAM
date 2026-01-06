@@ -2,7 +2,7 @@ import zod from "zod";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
-import { Tools } from "../db/schema/cam";
+import { ToolMachines, ToolMaterials, Tools } from "../db/schema/cam";
 import { registry } from "../openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
@@ -11,7 +11,10 @@ import { eq } from "drizzle-orm";
 import { client } from "../aws";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const CreateSchema = createInsertSchema(Tools).omit({ team_id: true });
+const CreateSchema = createInsertSchema(Tools).extend({
+  machine_ids: zod.array(zod.number()),
+  material_ids: zod.array(zod.number())
+}).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(Tools).omit({ team_id: true });
 const Tool = createSelectSchema(Tools).omit({ team_id: true }).openapi("Tool");
 
@@ -129,6 +132,8 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
   const [id] = await tx.insert(Tools).values({ ...data, team_id }).returning({ id: Tools.id });
+  await tx.insert(ToolMachines).values(data.machine_ids.map(x => ({ machine_id: x, tool_id: id.id })));
+  await tx.insert(ToolMaterials).values(data.material_ids.map(x => ({ material_id: x, tool_id: id.id })));
   await client.send(new PutObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/tools/${id.id}`,

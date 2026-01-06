@@ -90,7 +90,7 @@ export const Jobs = pgTable("jobs", {
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   kind: JobKind().notNull(),
   created_at: timestamp().defaultNow(),
-  claimed_by: text().notNull().references(() => TeamKeys.digest),
+  claimed_by: text().references(() => TeamKeys.digest),
   payload: jsonb().notNull(),
   response: jsonb()
 }, table => [

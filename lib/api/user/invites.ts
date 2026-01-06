@@ -1,12 +1,12 @@
 import { createSelectSchema } from "drizzle-zod";
-import { getAuthType, parseJsonBody, routeFactory, routeResponse } from "..";
+import { parseJsonBody, routeFactory, routeResponse } from "..";
 import { TeamInvites, TeamMembers } from "@/lib/db/schema/entities";
 import zod from "zod";
 
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth/server";
-import db, { withAuth } from "@/lib/db";
+import { withAuth } from "@/lib/db";
 import { headers } from "next/headers";
 
 const Invite = createSelectSchema(TeamInvites).extend({ team: zod.string() });
@@ -21,7 +21,6 @@ export const GET = routeFactory(async (req, authType, tx) => {
 });
 
 export const Accept = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  const authType = await getAuthType();
   const inviteId = (await params).id;
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return routeResponse(401, { message: "User session not found" });
@@ -30,19 +29,24 @@ export const Accept = async (req: NextRequest, { params }: { params: Promise<{ i
   const acceptHeader = req.headers.get("accept") || "";
   const wantsJson = acceptHeader.includes("application/json");
   
-  return await withAuth(authType, async tx => {
+  return withAuth({ userId: session.user.id }, async tx => {
     const invite = await tx.query.TeamInvites.findFirst({
       where: eq(TeamInvites.id, inviteId)
     });
     if (!invite) return routeResponse(404);
     if (session.user.email !== invite.email) return routeResponse(403, { message: "User email does not match invite email" });
 
-    const [admin] = await tx.delete(TeamInvites).where(eq(TeamInvites.id, inviteId)).returning({ admin: TeamInvites.admin });
+    const deleted = await tx
+      .delete(TeamInvites)
+      .where(eq(TeamInvites.id, inviteId))
+      .returning({ id: TeamInvites.id });
+    if (deleted.length === 0) return routeResponse(403, { message: "Unable to accept invite" });
+
     await tx.insert(TeamMembers).values({
       team_id: invite.team_id,
-      user_id: authType.userId!,
-      admin: admin.admin
-    });
+      user_id: session.user.id,
+      admin: invite.admin
+    }).onConflictDoNothing({ target: [TeamMembers.team_id, TeamMembers.user_id] });
 
     // If called via fetch (API call), return JSON with team_id
     if (wantsJson) {

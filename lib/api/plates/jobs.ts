@@ -96,13 +96,13 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 }, { requiredScopes: [scopes.jobs.read] });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {
-  if (!authType.keyDigest) return routeResponse(401);
   if (!plate_id) return routeResponse(422);
   const plate = await tx.query.Plates.findFirst({
     where: eq(Plates.id, plate_id),
     with: { category: true }
   });
   if (!plate) return routeResponse(404);
+  console.log(plate);
   await checkUserTeam(tx, authType, plate?.category.team_id);
   const body = await parseJsonBody(await req.json(), CreateSchema);
 
@@ -114,7 +114,6 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   const [id] = await tx.insert(Jobs).values({
     team_id: plate.category.team_id,
     kind: `plate:${type}`,
-    claimed_by: authType.keyDigest,
     payload: { ...payload, assignments, plate_id }
   }).returning({ id: Jobs.id });
   // Create plate job

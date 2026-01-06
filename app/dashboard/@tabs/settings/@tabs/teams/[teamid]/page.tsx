@@ -81,7 +81,7 @@ export default function TeamSettingsPage() {
         const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
         const teamIndex = parseInt(idStr, 10);
         const team = teams[teamIndex];
-        if (team && team.owner === data.user.id) {
+        if (team && team.owner === data.user.email) {
           setIsOwner(true);
         } else {
           setIsOwner(false);
@@ -191,13 +191,15 @@ export default function TeamSettingsPage() {
     if (!currentUserEmail) return;
     setIsLeaving(true);
     try {
-      const response = await fetch(`/api/teams/${teamDbId}/members`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: currentUserEmail }),
-      });
+      const response = await fetch(
+        `/api/teams/${teamDbId}/members?email=${currentUserEmail}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
       if (response.ok) {
         notifyUpdate();
         router.push("/dashboard/settings/personal");
@@ -227,10 +229,14 @@ export default function TeamSettingsPage() {
         !newOwnerMember.admin
       ) {
         // Make new owner an admin
+        const formData = new FormData();
+        formData.append(
+          "data",
+          JSON.stringify({ email: selectedNewOwner, admin: true })
+        );
         const adminResponse = await fetch(`/api/teams/${teamDbId}/members`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: selectedNewOwner, admin: true }),
+          body: formData,
         });
         if (!adminResponse.ok) {
           console.error(
@@ -243,10 +249,11 @@ export default function TeamSettingsPage() {
       }
 
       // Transfer ownership
+      const formData = new FormData();
+      formData.append("data", JSON.stringify({ email: selectedNewOwner }));
       const transferResponse = await fetch(`/api/teams/${teamDbId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owner: selectedNewOwner }),
+        body: formData,
       });
       if (!transferResponse.ok) {
         console.error(

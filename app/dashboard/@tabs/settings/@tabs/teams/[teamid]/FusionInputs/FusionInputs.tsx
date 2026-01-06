@@ -368,7 +368,7 @@ function ToolItem({
   const dropdownMachinesRef = useRef<HTMLDivElement>(null);
   const dropdownMachinesBlurRef = useRef<HTMLSpanElement>(null);
   return (
-    <div className={styles.machineContainer}>
+    <div className={styles.toolsContainer}>
       <input
         type="text"
         value={tool.name}

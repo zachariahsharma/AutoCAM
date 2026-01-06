@@ -10,31 +10,18 @@ import Image from "next/image";
 import { useState } from "react";
 import { ErrorModal } from "../dashboard/@tabs/settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";
 
-/**
- * Parses an email address to extract a readable name.
- * Examples:
- *   john.doe@gmail.com → John Doe
- *   jane_smith123@email.com → Jane Smith
- *   bobsmith@example.com → Bobsmith
- */
-function parseNameFromEmail(email: string): string {
-  // Get the part before @
-  const localPart = email.split("@")[0] || email;
 
-  // Replace common separators (., _, -, +) and numbers with spaces
+function parseNameFromEmail(email: string): string {
+  const localPart = email.split("@")[0] || email;
   const cleaned = localPart
     .replace(/[._\-+]/g, " ")
     .replace(/\d+/g, " ")
     .trim();
-
-  // Split into words, capitalize each, and join
   const name = cleaned
     .split(/\s+/)
     .filter((word) => word.length > 0)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
-
-  // Fallback to the original local part if parsing results in empty string
   return name || localPart;
 }
 

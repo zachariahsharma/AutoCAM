@@ -125,7 +125,6 @@ function JoinCard({
   const handleJoin = async () => {
     setIsJoining(true);
     try {
-      // Call the accept endpoint via fetch to get the team_id
       const response = await fetch(`/api/user/invites/accept/${invite.id}`, {
         headers: {
           "Accept": "application/json",
@@ -135,20 +134,16 @@ function JoinCard({
       if (response.ok) {
         const { team_id } = await response.json();
         
-        // Remove the invite from the local list
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
         
-        // Reload the teams list
         const teamsResponse = await fetch("/api/teams");
         if (teamsResponse.ok) {
           const teamsData = await teamsResponse.json();
           teamsData.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
           setTeams(teamsData);
           
-          // Find the index of the newly joined team
           const teamIndex = teamsData.findIndex((t: { id: number }) => t.id === team_id);
           
-          // Notify other components and navigate to the new team's settings
           notifyUpdate();
           router.push(`/dashboard/settings/teams/${teamIndex >= 0 ? teamIndex : 0}`);
         }
@@ -163,8 +158,7 @@ function JoinCard({
   };
 
   const handleDecline = () => {
-    // Note: There's no API endpoint to decline invites, so we just remove from UI
-    // The invite will remain in the database until it's accepted or cancelled by the team admin
+    //! Fix this to call API to decline invite
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
     notifyUpdate();
   };

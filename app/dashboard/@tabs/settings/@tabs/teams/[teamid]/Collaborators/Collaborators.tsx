@@ -26,14 +26,16 @@ export default function CollaboratorsSettingsPage({
 }: CollaboratorsProps) {
   // Use external state if provided (new team flow), otherwise internal state
   const useLocalState = !teamDbId || teamDbId === 0;
-  const [internalCollaborators, setInternalCollaborators] = useState<Collaborator[]>([]);
-  
-  const collaborators = useLocalState 
-    ? (externalCollaborators ?? internalCollaborators)
+  const [internalCollaborators, setInternalCollaborators] = useState<
+    Collaborator[]
+  >([]);
+
+  const collaborators = useLocalState
+    ? externalCollaborators ?? internalCollaborators
     : internalCollaborators;
-  
+
   const setCollaborators = useLocalState
-    ? (setExternalCollaborators ?? setInternalCollaborators)
+    ? setExternalCollaborators ?? setInternalCollaborators
     : setInternalCollaborators;
 
   const [isLoading, setIsLoading] = useState(!useLocalState);
@@ -97,8 +99,12 @@ export default function CollaboratorsSettingsPage({
         return;
       }
 
-      const members: { email: string; name: string; admin: boolean; isOwner: boolean }[] =
-        await membersRes.json();
+      const members: {
+        email: string;
+        name: string;
+        admin: boolean;
+        isOwner: boolean;
+      }[] = await membersRes.json();
       const invites: { email: string; admin: boolean }[] =
         await invitesRes.json();
 
@@ -107,7 +113,10 @@ export default function CollaboratorsSettingsPage({
           id: idx + 1,
           email: m.email,
           name: m.name,
-          role: (m.isOwner ? "Owner" : m.admin ? "Admin" : "Member") as "Owner" | "Admin" | "Member",
+          role: (m.isOwner ? "Owner" : m.admin ? "Admin" : "Member") as
+            | "Owner"
+            | "Admin"
+            | "Member",
         })),
         ...invites.map((inv, idx) => ({
           id: members.length + idx + 1,
@@ -132,11 +141,11 @@ export default function CollaboratorsSettingsPage({
   }, [teamDbId, fetchCollaborators, useLocalState]);
 
   async function handleAddCollaborator(e: FormEvent<HTMLFormElement>) {
-          e.preventDefault();
+    e.preventDefault();
 
-          const form = e.currentTarget;
-          const formData = new FormData(form);
-          const email = (formData.get("email") as string) || "";
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const email = (formData.get("email") as string) || "";
 
     if (!email) return;
 
@@ -183,11 +192,11 @@ export default function CollaboratorsSettingsPage({
         ...prev,
         {
           id: prev.length + 1,
-                email,
+          email,
           name: email.split("@")[0] || "Unknown",
-                role: "pending",
-              },
-            ]);
+          role: "pending",
+        },
+      ]);
 
       form.reset();
     } catch (err) {
@@ -208,7 +217,11 @@ export default function CollaboratorsSettingsPage({
 
     // Check if this would remove the last user with admin privileges
     // (Only block if demoting an Admin AND there are no other Admins or Owners left)
-    if (collaborator.role === "Admin" && newRole === "Member" && adminPrivilegedCount <= 1) {
+    if (
+      collaborator.role === "Admin" &&
+      newRole === "Member" &&
+      adminPrivilegedCount <= 1
+    ) {
       setAlertMessage("There must be at least one admin or owner in the team");
       return;
     }
@@ -232,13 +245,18 @@ export default function CollaboratorsSettingsPage({
     if (collaborator.role === "pending") return;
 
     try {
-      const response = await fetch(`/api/teams/${teamDbId}/members`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const formData = new FormData();
+      formData.append(
+        "data",
+        JSON.stringify({
           email: collaborator.email,
           admin: newRole === "Admin",
-        }),
+        })
+      );
+
+      const response = await fetch(`/api/teams/${teamDbId}/members`, {
+        method: "PATCH",
+        body: formData,
       });
 
       if (!response.ok) {
@@ -340,50 +358,52 @@ export default function CollaboratorsSettingsPage({
         </h1>
         {!readOnly && (
           <form onSubmit={handleAddCollaborator}>
-        <div className={styles.addCollaboratorSection}>
-          <div className={styles.addCollaboratorContainer}>
-            <Image
-              alt="search"
-              src="/settings/teams/search.svg"
-              width={2000}
-              height={2000}
-              className={styles.searchIcon}
-            />
+            <div className={styles.addCollaboratorSection}>
+              <div className={styles.addCollaboratorContainer}>
+                <Image
+                  alt="search"
+                  src="/settings/teams/search.svg"
+                  width={2000}
+                  height={2000}
+                  className={styles.searchIcon}
+                />
                 <input type="email" name="email" placeholder="Enter email" />
-          </div>
+              </div>
               <PrimaryButton type="submit" disabled={isSending}>
                 <span className="textGradient">
                   {isSending ? "Sending..." : "Add Collaborator"}
                 </span>
-          </PrimaryButton>
-        </div>
+              </PrimaryButton>
+            </div>
             {error && <p className={styles.error}>{error}</p>}
-      </form>
+          </form>
         )}
         {!readOnly && (
           <div className={styles.alertWrapper}>
             <Alert message={alertMessage || ""} open={!!alertMessage} />
           </div>
         )}
-      <div className={styles.collaboratorsList}>
+        <div className={styles.collaboratorsList}>
           {collaborators.map((collaborator) => (
-          <CollaboratorCard
-            collaborator={collaborator}
+            <CollaboratorCard
+              collaborator={collaborator}
               key={collaborator.id}
               onRoleChange={handleRoleChange}
               onRemove={handleRemove}
               readOnly={readOnly}
-          />
-        ))}
-        {collaborators.length === 0 && (
-          <div className={styles.emptyStateContainer}>
-            <span className={styles.emptyState}>
-                {readOnly ? "No collaborators." : "Enter an email to add a collaborator."}
-            </span>
-          </div>
-        )}
+            />
+          ))}
+          {collaborators.length === 0 && (
+            <div className={styles.emptyStateContainer}>
+              <span className={styles.emptyState}>
+                {readOnly
+                  ? "No collaborators."
+                  : "Enter an email to add a collaborator."}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
 
       {/* Confirmation Modal */}
       {confirmModal.open && (
@@ -425,7 +445,11 @@ function CollaboratorCard({
   readOnly = false,
 }: {
   collaborator: Collaborator;
-  onRoleChange: (collaborator: Collaborator, newRole: "Admin" | "Member", confirmed?: boolean) => void;
+  onRoleChange: (
+    collaborator: Collaborator,
+    newRole: "Admin" | "Member",
+    confirmed?: boolean
+  ) => void;
   onRemove: (collaborator: Collaborator) => void;
   readOnly?: boolean;
 }) {
@@ -444,7 +468,7 @@ function CollaboratorCard({
 
     // Only add listener when dropdown is open to avoid unnecessary listeners
     if (dropdownOpen) {
-    document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
@@ -461,8 +485,16 @@ function CollaboratorCard({
     <div className={styles.collaboratorCard}>
       <div className={styles.name}>{collaborator.name}</div>
       <div className={styles.role}>
-        {collaborator.role === "pending" || collaborator.role === "Owner" || readOnly ? (
-          <span>{collaborator.role === "Owner" ? "Owner" : collaborator.role === "pending" ? "pending" : collaborator.role}</span>
+        {collaborator.role === "pending" ||
+        collaborator.role === "Owner" ||
+        readOnly ? (
+          <span>
+            {collaborator.role === "Owner"
+              ? "Owner"
+              : collaborator.role === "pending"
+              ? "pending"
+              : collaborator.role}
+          </span>
         ) : (
           <button onClick={() => setDropdownOpen(!dropdownOpen)}>
             {collaborator.role}
@@ -493,14 +525,14 @@ function CollaboratorCard({
         )}
       </div>
       {collaborator.role !== "Owner" && !readOnly && (
-      <Image
-        alt="remove"
-        src="/settings/teams/remove.svg"
-        width={2000}
-        height={2000}
-        className={styles.removeIcon}
+        <Image
+          alt="remove"
+          src="/settings/teams/remove.svg"
+          width={2000}
+          height={2000}
+          className={styles.removeIcon}
           onClick={() => onRemove(collaborator)}
-      />
+        />
       )}
     </div>
   );

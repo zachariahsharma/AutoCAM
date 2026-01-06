@@ -1,6 +1,6 @@
 "use client";
 import styles from "./materialthickness.module.css";
-import { Material, PartCategory, Part } from "@/app/types";
+import { Material, PartCategory, Part, Plate } from "@/app/types";
 import AvailableParts from "./AvailableParts/AvailableParts";
 import { Header } from "./header/header";
 import PlatesToCreate from "./PlatesToCreate/PlatesToCreate";
@@ -22,9 +22,9 @@ export default function MaterialThickness({
   const [scope, animate] = useAnimate();
   const [partcategory, setPartcategory] = useState<PartCategory | null>(null);
   const [teamMaterials, setTeamMaterials] = useState<Material[] | null>(null);
-  const [teamTools, setTeamTools] = useState<{ id: number; name: string }[] | null>(
-    null
-  );
+  const [teamTools, setTeamTools] = useState<
+    { id: number; name: string }[] | null
+  >(null);
   const [isAdminOrOwner, setIsAdminOrOwner] = useState(false);
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [addMaterialError, setAddMaterialError] = useState<string | null>(null);
@@ -121,11 +121,13 @@ export default function MaterialThickness({
         const { data } = await authClient.getSession();
         const currentUserEmail = data?.user?.email ?? null;
 
-        const [materialsRes, toolsRes, membersRes] = await Promise.all([
-          fetch(`/api/teams/${teamid}/materials`),
-          fetch(`/api/teams/${teamid}/tools`),
-          currentUserEmail ? fetch(`/api/teams/${teamid}/members`) : null,
-        ]);
+        const [materialsRes, toolsRes, platesRes, membersRes] =
+          await Promise.all([
+            fetch(`/api/teams/${teamid}/materials`),
+            fetch(`/api/teams/${teamid}/tools`),
+            fetch(`/api/pc/${pcid}/plates`),
+            currentUserEmail ? fetch(`/api/teams/${teamid}/members`) : null,
+          ]);
 
         if (!mounted) return;
 
@@ -135,8 +137,16 @@ export default function MaterialThickness({
           setTeamMaterials(null);
         }
 
+        if (platesRes.ok) {
+          setPlates((await platesRes.json()) as Plate[]);
+        } else {
+          setPlates([]);
+        }
+
         if (toolsRes.ok) {
-          setTeamTools((await toolsRes.json()) as { id: number; name: string }[]);
+          setTeamTools(
+            (await toolsRes.json()) as { id: number; name: string }[]
+          );
         } else {
           setTeamTools(null);
         }
@@ -189,9 +199,9 @@ export default function MaterialThickness({
         (t) => t.id === Number.parseInt(teamid, 10)
       );
       router.push(
-        `/dashboard/settings/teams/${teamIndex >= 0 ? teamIndex : 0}?tab=${encodeURIComponent(
-          tab
-        )}`
+        `/dashboard/settings/teams/${
+          teamIndex >= 0 ? teamIndex : 0
+        }?tab=${encodeURIComponent(tab)}`
       );
     } catch (error) {
       console.error("Error navigating to team settings:", error);
@@ -254,7 +264,9 @@ export default function MaterialThickness({
       {sorting ? (
         <div className={styles.contentSorting}>
           <Unassigned />
-          <PartsToPlates categoryId={partcategory !== null ? partcategory.id : 0} />
+          <PartsToPlates
+            categoryId={partcategory !== null ? partcategory.id : 0}
+          />
         </div>
       ) : null}
       {showWarnings ? (

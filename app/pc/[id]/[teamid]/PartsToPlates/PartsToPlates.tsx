@@ -1,7 +1,7 @@
 import styles from "./partstoplates.module.css";
 import { useMaterialEvents } from "../materialEvents";
 import Image from "next/image";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function PartsToPlates({ categoryId }: { categoryId: number }) {
@@ -32,6 +32,47 @@ function PartsToPlatesCard({
     unassignedParts,
     setUnassignedParts,
   } = useMaterialEvents();
+  const [jobs, setJobs] = useState<{ id: number; status: string }[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function assignedParts() {
+      if (!plates || !setPartsToPlates) return;
+      const plateIndex = Number.parseInt(name);
+      const currentPlateId = plates[plateIndex]?.id;
+      if (currentPlateId == null) return;
+
+      const res = await fetch(`/api/pc/${categoryId}/assignments`);
+      if (!res.ok) {
+        console.error("Failed to fetch assigned parts:", await res.text());
+        return;
+      }
+      const assignments: Array<{
+        part_id: number;
+        plate_id: number;
+        quantity: number;
+      }> = await res.json();
+      const newAssignments = assignments
+        .map((a) => {
+          if (a.plate_id !== currentPlateId) return null;
+          return {
+            partId: a.part_id,
+            quantity: a.quantity,
+          };
+        })
+        .filter((a): a is { partId: number; quantity: number } => a !== null);
+      console.log("Assignments for plate", currentPlateId, ":", assignments);
+      if (!mounted) return;
+      setPartsToPlates((prev) => ({
+        ...prev,
+        [currentPlateId]: newAssignments,
+      }));
+    }
+    assignedParts();
+    return () => {
+      mounted = false;
+    };
+  }, []);
   function onReceive(data: {
     partId: number;
     quantity: number;
@@ -39,7 +80,6 @@ function PartsToPlatesCard({
   }) {
     if (!partsToPlates || !setPartsToPlates) return;
     console.log("Received data:", data);
-
     const plateIndex = Number.parseInt(name);
     const currentPlateId = plates[plateIndex]?.id;
     if (currentPlateId == null) return;
@@ -82,133 +122,209 @@ function PartsToPlatesCard({
     });
   }
   return (
-    <div
-      className={styles.cardPlate}
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        const raw = e.dataTransfer.getData("application/json");
-        if (!raw) return;
+    <div className={styles.cardWrapper}>
+      <div
+        className={styles.cardPlate}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          const raw = e.dataTransfer.getData("application/json");
+          if (!raw) return;
 
-        const data = JSON.parse(raw);
-        onReceive(data);
-      }}
-    >
-      <div id={styles.plateName}>Plate {Number.parseInt(name) + 1}</div>
-      {partsToPlates[plates[Number.parseInt(name)].id]
-        ? partsToPlates[plates[Number.parseInt(name)].id]
-            .filter((p) => p.quantity > 0)
-            .map((part, index) => (
-              <PartsCard
-                key={index}
-                partId={part.partId}
-                quantity={part.quantity}
-                plateId={plates[Number.parseInt(name)].id}
-              />
-            ))
-        : null}
-      <button
-        className={styles.arrangeButton}
-        onClick={async () => {
-          if (categoryId === 0) return;
-          try {
-            const plateIndex = Number.parseInt(name);
-            const localPlate = plates[plateIndex];
-            const plateAssignments = partsToPlates[localPlate.id] || [];
+          const data = JSON.parse(raw);
+          onReceive(data);
+        }}
+      >
+        <div id={styles.plateName}>Plate {Number.parseInt(name) + 1}</div>
+        {partsToPlates[plates[Number.parseInt(name)].id]
+          ? partsToPlates[plates[Number.parseInt(name)].id]
+              .filter((p) => p.quantity > 0)
+              .map((part, index) => (
+                <PartsCard
+                  key={index}
+                  partId={part.partId}
+                  quantity={part.quantity}
+                  plateId={plates[Number.parseInt(name)].id}
+                />
+              ))
+          : null}
+        <button
+          className={styles.arrangeButton}
+          onClick={async () => {
+            if (categoryId === 0) return;
+            try {
+              const plateIndex = Number.parseInt(name);
+              const localPlate = plates[plateIndex];
+              const plateAssignments = partsToPlates[localPlate.id] || [];
 
-            if (plateAssignments.filter((p) => p.quantity > 0).length === 0) {
-              return;
-            }
-            console.log("body:", {
-              width: localPlate.width,
-              length: localPlate.length,
-              true_depth: localPlate.true_depth,
-            });
-            const createPlateRes = await fetch(`/api/pc/${categoryId}/plates`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
+              if (plateAssignments.filter((p) => p.quantity > 0).length === 0) {
+                return;
+              }
+              console.log("body:", {
                 width: localPlate.width,
                 length: localPlate.length,
                 true_depth: localPlate.true_depth,
-                name: `Plate ${Number.parseInt(name) + 1}`,
-              }),
-            });
-
-            if (!createPlateRes.ok) {
-              console.error(
-                "Failed to create plate:",
-                await createPlateRes.text()
-              );
-              return;
-            }
-
-            const { id: realPlateId } = await createPlateRes.json();
-            console.log("Created plate with ID:", realPlateId);
-
-            for (const assignment of plateAssignments) {
-              if (assignment.quantity <= 0) continue;
-
-              const assignRes = await fetch(
-                `/api/pc/${categoryId}/assignments`,
+              });
+              const createPlateRes = await fetch(
+                `/api/pc/${categoryId}/plates`,
                 {
-                  method: "PUT",
+                  method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    plate_id: realPlateId,
-                    part_id: assignment.partId,
-                    quantity: assignment.quantity,
+                    width: localPlate.width,
+                    length: localPlate.length,
+                    true_depth: localPlate.true_depth,
+                    name: `Plate ${Number.parseInt(name) + 1}`,
                   }),
                 }
               );
 
-              if (!assignRes.ok) {
+              if (!createPlateRes.ok) {
                 console.error(
-                  "Failed to assign part:",
-                  assignment.partId,
-                  await assignRes.text()
+                  "Failed to create plate:",
+                  await createPlateRes.text()
                 );
-              } else {
-                console.log(
-                  "Assigned part",
-                  assignment.partId,
-                  "qty",
-                  assignment.quantity,
-                  "to plate",
-                  realPlateId
-                );
+                return;
               }
+
+              const { id: realPlateId } = await createPlateRes.json();
+              console.log("Created plate with ID:", realPlateId);
+
+              for (const assignment of plateAssignments) {
+                if (assignment.quantity <= 0) continue;
+
+                const assignRes = await fetch(
+                  `/api/pc/${categoryId}/assignments`,
+                  {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      plate_id: realPlateId,
+                      part_id: assignment.partId,
+                      quantity: assignment.quantity,
+                    }),
+                  }
+                );
+
+                if (!assignRes.ok) {
+                  console.error(
+                    "Failed to assign part:",
+                    assignment.partId,
+                    await assignRes.text()
+                  );
+                } else {
+                  console.log(
+                    "Assigned part",
+                    assignment.partId,
+                    "qty",
+                    assignment.quantity,
+                    "to plate",
+                    realPlateId
+                  );
+                }
+                const oldPart = await fetch(`/api/parts/${assignment.partId}`);
+                const oldPartQuantity = (await oldPart.json()).quantity;
+
+                const changeQuantityRes = await fetch(
+                  `/api/parts/${assignment.partId}`,
+                  {
+                    method: "PATCH",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      quantity: oldPartQuantity - assignment.quantity,
+                    }),
+                  }
+                );
+                if (!changeQuantityRes.ok) {
+                  console.error(
+                    "Failed to update part quantity:",
+                    await changeQuantityRes.text()
+                  );
+                }
+              }
+
+              const oldPlateId = localPlate.id;
+              const newPlates = plates.map((p, idx) =>
+                idx === plateIndex ? { ...p, id: realPlateId } : p
+              );
+              setPlates(newPlates);
+
+              const newPartsToPlates = { ...partsToPlates };
+              newPartsToPlates[realPlateId] = newPartsToPlates[oldPlateId];
+              delete newPartsToPlates[oldPlateId];
+              setPartsToPlates(newPartsToPlates);
+
+              console.log("Arrange complete for plate", realPlateId);
+              const response = await fetch(
+                `http://localhost:3000/api/plates/${realPlateId}/jobs`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    type: "arrange",
+                  }),
+                }
+              );
+              if (!response.ok) {
+                console.error(
+                  "Failed to create arrange job:",
+                  await response.text()
+                );
+                return;
+              }
+              const { id: jobId } = await response.json();
+              const jobStatus = await fetch(
+                `http://localhost:3000/api/plates/${realPlateId}/jobs`
+              );
+              const jobsData: Array<{ id: number; status: string }> =
+                await jobStatus.json();
+              const arrangeJob = jobsData.find((job) => job.id === jobId);
+              if (arrangeJob) {
+                console.log("status data:", arrangeJob.status);
+                setJobs((prev) => [
+                  ...prev,
+                  { id: jobId, status: arrangeJob.status },
+                ]);
+              }
+            } catch (err) {
+              console.error("Error during arrange:", err);
             }
-
-            const oldPlateId = localPlate.id;
-            const newPlates = plates.map((p, idx) =>
-              idx === plateIndex ? { ...p, id: realPlateId } : p
-            );
-            setPlates(newPlates);
-
-            const newPartsToPlates = { ...partsToPlates };
-            newPartsToPlates[realPlateId] = newPartsToPlates[oldPlateId];
-            delete newPartsToPlates[oldPlateId];
-            setPartsToPlates(newPartsToPlates);
-
-            console.log("Arrange complete for plate", realPlateId);
-          } catch (err) {
-            console.error("Error during arrange:", err);
-          }
-        }}
-      >
-        <span>Arrange</span>
-        <Image
-          src="/mat_thickness/Arrange.svg"
-          alt="Arrange"
-          width={2000}
-          height={2000}
-          className={styles.arrangeIcon}
-        />
-      </button>
+          }}
+        >
+          <span>Arrange</span>
+          <Image
+            src="/mat_thickness/Arrange.svg"
+            alt="Arrange"
+            width={2000}
+            height={2000}
+            className={styles.arrangeIcon}
+          />
+        </button>
+      </div>
+      <div className={styles.jobsContainer}>
+        {jobs.map((job) => (
+          <div key={job.id} className={styles.jobCard}>
+            <span>Job ID: {job.id}</span>
+            <div>
+              <span>Queue</span>
+              <span />
+              <span>Arranging</span>
+              <span />
+              <span>Queue</span>
+              <span />
+              <span>CAM</span>
+            </div>
+            <span>Status: {job.status}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

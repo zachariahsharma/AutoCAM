@@ -11,8 +11,7 @@ import { registry } from "@/lib/openapi/registry";
 const Member = zod.object({ 
   email: zod.email(), 
   name: zod.string(), 
-  admin: zod.boolean(), 
-  isOwner: zod.boolean() 
+  admin: zod.boolean()
 });
 
 registerTeamEndpoint([scopes.teams.read], {
@@ -37,20 +36,13 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, id);
   
-  // Get team to find owner
-  const team = await tx.query.Teams.findFirst({
-    where: eq(Teams.id, id)
-  });
-  const ownerId = team?.owner;
-  
   return routeResponse(200, await parseJsonBody((await tx.query.TeamMembers.findMany({
     where: eq(TeamMembers.team_id, id),
     with: { user: true },
   })).map(x => ({ 
     ...x, 
     email: x.user.email, 
-    name: x.user.name || x.user.email.split("@")[0], 
-    isOwner: x.user_id === ownerId 
+    name: x.user.name || x.user.email.split("@")[0]
   })), zod.array(Member)));
 }, { requiredScopes: [scopes.teams.read] });
 

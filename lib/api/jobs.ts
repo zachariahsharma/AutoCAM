@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, isNull } from "drizzle-orm";
 import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { JobKind, Jobs } from "../db/schema/cam";
 import zod, { object } from "zod";
@@ -8,12 +8,19 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { scopeNames as scopes } from "../scopes";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
+export const Job = createSelectSchema(Jobs).omit({ team_id: true }).transform(x => {
+  const JobStatus = zod.enum(["pending", "in progress", "completed"])
+  let status: zod.infer<typeof JobStatus> = "pending";
+  if (x.claimed_by) status = "in progress";
+  if (x.response !== null) status = "completed";
+  return { ...x, status };
+});
 
 export const Request = routeFactory(async (req, authType, tx) => {
   if (!authType.keyDigest) return routeResponse(401);
-  const result = await tx.update(Jobs).set({ status: "in progress", claimed_by: authType.keyDigest })
+  const result = await tx.update(Jobs).set({ claimed_by: authType.keyDigest })
     .where(eq(Jobs.id, tx.select({ id: Jobs.id })
-      .from(Jobs).where(eq(Jobs.status, "pending"))
+      .from(Jobs).where(isNull(Jobs.claimed_by))
       .orderBy(asc(Jobs.created_at))
       .for("update", { skipLocked: true }).limit(1))).returning({ id: Jobs.id }
     );
@@ -42,7 +49,6 @@ export const Complete = routeFactory(async (req, authType, tx, id) => {
       ContentType: files["file"].type
     }));
   }
-  await tx.update(Jobs).set({ status: "completed" });
   return routeResponse(204);
 }, { requiredScopes: [scopes.jobs.process] });
 

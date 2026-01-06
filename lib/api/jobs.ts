@@ -9,7 +9,7 @@ import { scopeNames as scopes } from "../scopes";
 import { teamIdFromDigest } from "../auth/server";
 import { Transaction } from "../db";
 
-const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
+const RequestSchema = createSelectSchema(Jobs).pick({ id: true, kind: true, payload: true });
 export const Job = createSelectSchema(Jobs).extend({
   queue_position: zod.number()
 }).omit({ team_id: true }).transform(x => {

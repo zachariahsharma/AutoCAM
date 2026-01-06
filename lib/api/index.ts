@@ -1,5 +1,5 @@
 import { auth, AuthType, getKeyDigest } from "@/lib/auth/server";
-import { and, DrizzleQueryError, eq, inArray, sql } from "drizzle-orm";
+import { and, arrayContains, DrizzleQueryError, eq, inArray, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
@@ -141,7 +141,7 @@ export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: nu
   if (!authType.userId) return;
   const member = await tx.query.TeamMembers.findFirst({
     where: and(
-      eq(user.id, authType.userId),
+      eq(TeamMembers.user_id, authType.userId),
       eq(TeamMembers.team_id, tid)
     )
   });
@@ -152,7 +152,6 @@ export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: nu
 export interface RouteFactoryConfig {
   emailVerifiedNeeded?: boolean;
   requiredScopes?: string[];
-  teamAdmin?: boolean;
 }
 
 export type RouteFactoryCallback = (req: NextRequest, authType: AuthType, tx: Transaction, id: number | null) => Promise<any>;
@@ -165,17 +164,17 @@ export function routeFactory(callback: RouteFactoryCallback, config?: RouteFacto
     catch (err) { return err; }
     
     return withAuth(authType, async tx => {
-      if (authType.keyDigest) {
-        if (!config.requiredScopes) throw routeResponse(403, { message: "API Keys are not authorized to use this endpoint" });
-        const result = await tx.query.TeamKeys.findFirst({
-          where: and(
-            eq(TeamKeys.digest, authType.keyDigest),
-            sql`${TeamKeys.scopes} @> ${config.requiredScopes}`
-          )
-        });
-        if (!result) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" })
-      }
       try {
+        if (authType.keyDigest) {
+          if (!config.requiredScopes) throw routeResponse(403, { message: "API Keys are not authorized to use this endpoint" });
+          const result = await tx.query.TeamKeys.findFirst({
+            where: and(
+              eq(TeamKeys.digest, authType.keyDigest),
+              arrayContains(TeamKeys.scopes, config.requiredScopes)
+            )
+          });
+          if (!result) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" })
+        }
         let id = null;
         const p = await params;
         if (p && "id" in p)

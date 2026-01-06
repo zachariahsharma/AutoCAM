@@ -20,13 +20,14 @@ export const Job = createSelectSchema(Jobs).extend({
   return { ...x, status };
 }).openapi("Job");
 
-export async function getQueuePosition(tx: Transaction, jobId: number): Promise<number> {
-  return (await tx.select({
-    pos: sql<number>`ROW_NUMBER() OVER (
+export function queuePositionSubquery(tx: Transaction) {
+  return tx.select({
+    ...getTableColumns(Jobs),
+    queue_position: sql<number>`ROW_NUMBER() OVER (
       PARTITION BY ${Jobs.team_id}
       ORDER BY ${Jobs.created_at} ASC
-    )`
-  }).from(Jobs).where(eq(Jobs.id, jobId)))[0].pos;
+    )`.mapWith(Number).as("queue_position")
+  }).from(Jobs).as('job');
 }
 
 export const Request = routeFactory(async (req, authType, tx) => {

@@ -4,7 +4,6 @@ import * as camSchemas from './schema/cam';
 import * as entitiesSchemas from './schema/entities';
 
 const db = drizzle(process.env.DATABASE_URL!, {
-  logger: true,
   schema: { ...authSchemas, ...camSchemas, ...entitiesSchemas },
 });
 

@@ -2,7 +2,7 @@ import "./invites";
 import "./keys";
 import "./members";
 
-import { TeamMembers, Teams } from "@/lib/db/schema/entities";
+import { TeamKeys, TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
@@ -132,11 +132,15 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx) => {
-   if (authType.userId)
+  if (authType.userId)
     return routeResponse(200, await parseJsonBody(await tx.query.Teams.findMany(), zod.array(Team)));
-  const team = await tx.query.Teams.findFirst();
-  if (!team) return routeResponse(403, { message: "API Key is not valid" });
-  return routeResponse(200, await parseJsonBody(team, Team));
+  if (!authType.keyDigest) return routeResponse(401);
+  const key = await tx.query.TeamKeys.findFirst({
+    where: eq(TeamKeys.digest, authType.keyDigest),
+    with: { team: true }
+  });
+  if (!key) return routeResponse(403, { message: "API Key is not valid" });
+  return routeResponse(200, await parseJsonBody(key.team, Team));
 }, { requiredScopes: [scopes.teams.read] });
 
 export const POST = routeFactory(async (req, authType, tx) => {

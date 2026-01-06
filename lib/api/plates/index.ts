@@ -137,6 +137,16 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   }), zod.array(Plate)));
 }, { requiredScopes: [scopes.plates.read] });
 
+export const SingleGET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const plate = await tx.query.Plates.findFirst({
+    where: eq(Plates.id, id),
+    with: { category: true }
+  });
+  await checkUserTeam(tx, authType, plate?.category.team_id);
+  return routeResponse(200, await parseJsonBody(plate, Plate));
+}, { requiredScopes: [scopes.plates.read] });
+
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) });

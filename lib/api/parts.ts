@@ -8,11 +8,13 @@ import { CommonAuthorization, Conflict, ValidationError } from "./common";
 import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const CreateSchema = createInsertSchema(Parts).omit({ category_id: true, original_quantity: true });
 const UpdateSchema = createUpdateSchema(Parts).omit({ category_id: true, original_quantity: true });
-const Part = createSelectSchema(Parts).omit({ category_id: true }).openapi("Part");
+const Part = createSelectSchema(Parts).extend({ file: zod.httpUrl() }).omit({ category_id: true }).openapi("Part");
+const MultipleParts = zod.array(Part.omit({ file: true }));
 
 registry.registerPath({
   method: "get",
@@ -31,7 +33,7 @@ registry.registerPath({
       description: "This endpoint returns the parts from the given part category",
       content: {
         "application/json": {
-          schema: zod.array(Part)
+          schema: MultipleParts
         }
       }
     },
@@ -136,6 +138,23 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Parts.findMany({
     where: eq(Parts.category_id, id)
   }), zod.array(Part)));
+}, { requiredScopes: [scopes.parts.read] });
+
+export const SingleGET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const part = await tx.query.Parts.findFirst({
+    where: eq(Parts.id, id),
+    with: { category: true }
+  });
+  if (!part) return routeResponse(404);
+  await checkUserTeam(tx, authType, part.category.team_id);
+  return routeResponse(200, await parseJsonBody({
+    ...part,
+    file: await getSignedUrl(client, new GetObjectCommand({
+      Bucket: process.env.AUTOCAM_BUCKET,
+      Key: `teams/${part.category.team_id}/pc/${part.category_id}/parts/${id}`
+    }), { expiresIn: 120 })
+  }, Part));
 }, { requiredScopes: [scopes.parts.read] });
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {

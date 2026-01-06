@@ -3,9 +3,9 @@ import zod from "zod";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { Parts, PartsToPlates, Plates } from "@/lib/db/schema/cam";
+import { PartCategories, Parts, PartsToPlates, Plates } from "@/lib/db/schema/cam";
 import { CommonAuthorization, ValidationError } from "../common";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { and, eq, inArray } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(PartsToPlates);
@@ -69,6 +69,8 @@ registry.registerPath({
 export const GET = routeFactory(async (req, authType, tx, id) => {
   // FIXME: Might need to add a category_id column to the parts to plates table
   if (!id) return routeResponse(422);
+  const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
+  await checkUserTeam(tx, authType, pc?.team_id);
   const parts = (await tx.query.Parts.findMany({
     where: eq(Parts.category_id, id),
     columns: { id: true }
@@ -83,10 +85,15 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
       inArray(PartsToPlates.plate_id, plates)
     )
   }));
-});
+}, { requiredScopes: [scopes.pc.assignments.read] });
 
 export const PUT = routeFactory(async (req, authType, tx) => {
   const body = await parseJsonBody(await req.json(), CreateSchema);
+  const plate = await tx.query.Plates.findFirst({
+    where: eq(Plates.id, body.plate_id),
+    with: { category: true }
+  });
+  await checkUserTeam(tx, authType, plate?.category.team_id)
   if (body.quantity > 0) {
     await tx.insert(PartsToPlates).values(body)
       .onConflictDoUpdate({ target: [PartsToPlates.plate_id, PartsToPlates.part_id], set: body });
@@ -97,4 +104,4 @@ export const PUT = routeFactory(async (req, authType, tx) => {
     ));
   }
   return routeResponse(204);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.assignments.write] });

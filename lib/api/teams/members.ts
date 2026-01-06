@@ -1,5 +1,5 @@
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { user } from "@/lib/db/schema/auth";
 import { and, eq, sql } from "drizzle-orm";
@@ -35,6 +35,7 @@ registerTeamEndpoint([scopes.teams.read], {
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, id);
   
   // Get team to find owner
   const team = await tx.query.Teams.findFirst({
@@ -51,7 +52,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     name: x.user.name || x.user.email.split("@")[0], 
     isOwner: x.user_id === ownerId 
   })), zod.array(Member)));
-});
+}, { requiredScopes: [scopes.teams.read] });
 
 const UpdateSchema = zod.object({ 
   email: zod.email(),
@@ -84,6 +85,7 @@ registry.registerPath({
 
 export const PATCH = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, team_id, true);
 
   const { email, admin } = await parseJsonBody(await req.json(), UpdateSchema);
 
@@ -131,6 +133,7 @@ registry.registerPath({
 
 export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, team_id, true);
 
   const { email } = await parseJsonBody({
     email: req.nextUrl.searchParams.get("email")

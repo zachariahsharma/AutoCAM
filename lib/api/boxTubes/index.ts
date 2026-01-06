@@ -7,7 +7,7 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, Conflict, NotFound, registerTeamEndpoint, ValidationError } from "../common";
-import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
+import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
 import { teamIdFromDigest } from "../../auth/server";
 import { eq } from "drizzle-orm";
 
@@ -121,29 +121,33 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, teamId) => {
   teamId ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, teamId);
 
   return routeResponse(200, await parseJsonBody(await tx.query.BoxTubes.findMany({
     where: eq(BoxTubes.team_id, teamId)
   }), zod.array(BoxTube)));
-});
+}, { requiredScopes: [scopes.boxTubes.read] });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, team_id);
 
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
   const fileBuffer = await files["file"].arrayBuffer();
   const [id] = await tx.insert(BoxTubes).values({ ...data, file: fileBuffer, team_id }).returning({ id: BoxTubes.id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true })
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] })
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  await checkUserTeam(tx, authType, id);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(BoxTubes).set(body).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  await checkUserTeam(tx, authType, id);
   return tx.delete(BoxTubes).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] });

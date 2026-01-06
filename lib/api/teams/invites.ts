@@ -4,7 +4,7 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { teamIdFromDigest } from "@/lib/auth/server";
 import { eq, sql } from "drizzle-orm";
 import mailer from "@/lib/mailer";
@@ -47,14 +47,16 @@ registerTeamEndpoint([scopes.teams.invites.send], {
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, id);
 
   return routeResponse(200, await parseJsonBody(await tx.query.TeamInvites.findMany({
     where: eq(TeamInvites.team_id, id)
   }), zod.array(Invite)));
-});
+}, { requiredScopes: [scopes.teams.invites.read] });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, team_id, true);
 
   const data = await parseJsonBody(await req.json(), CreateSchema);
 
@@ -82,9 +84,9 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     text: `Join the ${team.name} Team with this link: ${new URL(`/api/user/invites/accept/${invite.id}`, `http://${process.env.BASE_URL}`)}`
   });
   return routeResponse(204);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.teams.invites.send] });
 
-const DeleteSchema = zod.object({ email: zod.string().email() });
+const DeleteSchema = zod.object({ email: zod.email() });
 
 registerTeamEndpoint([scopes.teams.invites.cancel], {
   method: "delete",
@@ -102,6 +104,7 @@ registerTeamEndpoint([scopes.teams.invites.cancel], {
 
 export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, team_id, true);
 
   const { email } = await parseJsonBody(await req.json(), DeleteSchema);
 
@@ -112,4 +115,4 @@ export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
     );
 
   return routeResponse(204);
-});
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.teams.invites.cancel] });

@@ -1,5 +1,5 @@
 import { Jobs, PartsToPlates, PlateJobs, Plates } from "@/lib/db/schema/cam";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq, inArray } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
@@ -87,23 +87,29 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const plate = await tx.query.Plates.findFirst({
+    where: eq(Plates.id, id),
+    with: { category: true }
+  });
+  await checkUserTeam(tx, authType, plate?.category.team_id);
   const result = (await tx.query.PlateJobs.findMany({
     where: eq(PlateJobs.plate_id, id),
     with: { job: true }
   })).map(x => x.job);
   return routeResponse(200, await parseJsonBody(result, zod.array(Job)));
-});
+}, { requiredScopes: [scopes.jobs.read] });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   if (!authType.keyDigest) return routeResponse(401);
   if (!plate_id) return routeResponse(422);
-  const body = await parseJsonBody(await req.json(), CreateSchema);
-
   const plate = await tx.query.Plates.findFirst({
     where: eq(Plates.id, plate_id),
     with: { category: true }
   });
   if (!plate) return routeResponse(404);
+  await checkUserTeam(tx, authType, plate?.category.team_id);
+  const body = await parseJsonBody(await req.json(), CreateSchema);
+
   const { type, ...payload } = body;
   const assignments = await tx.query.PartsToPlates.findMany({
     where: eq(PartsToPlates.plate_id, plate_id),
@@ -118,4 +124,4 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   // Create plate job
   await tx.insert(PlateJobs).values({ job_id: id.id, plate_id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.create] });

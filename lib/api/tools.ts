@@ -5,7 +5,7 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from "driz
 import { Tools } from "../db/schema/cam";
 import { registry } from "../openapi/registry";
 import { apiKey, userSession } from "./auth";
-import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
+import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
@@ -117,13 +117,15 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, id);
   return routeResponse(200, await parseJsonBody(await tx.query.Tools.findMany({
     where: eq(Tools.team_id, id)
   }), zod.array(Tool)));
-});
+}, { requiredScopes: [scopes.tools.read] });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, team_id, true);
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
   const [id] = await tx.insert(Tools).values({ ...data, team_id }).returning({ id: Tools.id });
@@ -135,16 +137,20 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     ContentType: files["file"].type
   }));
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.tools.write] });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const tool = await tx.query.Tools.findFirst({ where: eq(Tools.id, id) });
+  await checkUserTeam(tx, authType, tool?.team_id, true);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.tools.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const tool = await tx.query.Tools.findFirst({ where: eq(Tools.id, id) });
+  await checkUserTeam(tx, authType, tool?.team_id, true);
   const result = await tx.delete(Tools).where(eq(Tools.id, id)).returning({ team_id: Tools.team_id });
   if (result.length === 0) return result;
   const [{ team_id }] = result;
@@ -153,4 +159,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Key: `teams/${team_id}/tools/${id}`
   }));
   return result;
-}, { emailVerifiedNeeded: true });
+}, { emailVerifiedNeeded: true, requiredScopes: [scopes.tools.write] });

@@ -5,7 +5,7 @@ import zod from "zod";
 import { userSession } from "../auth";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 import { ScopeEnum } from "@/lib/scopes";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -114,13 +114,15 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  await checkUserTeam(tx, authType, id);
   return routeResponse(200, await parseJsonBody(await tx.query.TeamKeys.findMany({
     where: eq(TeamKeys.team_id, id),
   }), zod.array(Key)));
-}, { emailVerifiedNeeded: true });
+});
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   if (!team_id) return routeResponse(422);
+  await checkUserTeam(tx, authType, team_id, true);
   const token = crypto.randomBytes(32).toString("hex");
   const body = await parseJsonBody(await req.json(), CreateSchema);
 
@@ -133,6 +135,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  await checkUserTeam(tx, authType, id, true);
   return tx.delete(TeamKeys)
     .where(eq(TeamKeys.id, id))
     .returning({ id: TeamKeys.id });
@@ -140,6 +143,7 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  await checkUserTeam(tx, authType, id, true);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(TeamKeys)
     .set(body)

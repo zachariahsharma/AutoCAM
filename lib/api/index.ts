@@ -1,5 +1,5 @@
 import { auth, AuthType, getKeyDigest } from "@/lib/auth/server";
-import { DrizzleQueryError } from "drizzle-orm";
+import { and, arrayContains, DrizzleQueryError, eq, inArray, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
@@ -19,6 +19,8 @@ import "./user";
 import "./auth";
 import "./tools";
 import "./jobs";
+import { TeamKeys, TeamMembers } from "../db/schema/entities";
+import { user } from "../db/schema/auth";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
@@ -119,7 +121,6 @@ export function handleDatabaseError(err: unknown): NextResponse {
   if (err instanceof DrizzleQueryError)
     cause = err.cause as DatabaseError;
   if (cause instanceof DatabaseError) {
-    if (cause.code === "42501") return routeResponse(403, { message: "Permission denied" }); // Permission denied
     if (cause.code === "23505") return routeResponse(409); // Unique violation
   }
   throw err;
@@ -135,20 +136,45 @@ export function checkAnyChanges(records: any[]) {
   return routeResponse(records.length === 0 ? 404 : 204);
 }
 
+export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: number | undefined, admin: boolean = false) {
+  if (!tid) throw routeResponse(404);
+  if (!authType.userId) return;
+  const member = await tx.query.TeamMembers.findFirst({
+    where: and(
+      eq(TeamMembers.user_id, authType.userId),
+      eq(TeamMembers.team_id, tid)
+    )
+  });
+  if (!member) throw routeResponse(401, { message: "The user is not part of the team" });
+  if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
+}
+
 export interface RouteFactoryConfig {
   emailVerifiedNeeded?: boolean;
+  requiredScopes?: string[];
 }
 
 export type RouteFactoryCallback = (req: NextRequest, authType: AuthType, tx: Transaction, id: number | null) => Promise<any>;
 
 export function routeFactory(callback: RouteFactoryCallback, config?: RouteFactoryConfig) {
+  config ??= {};
   return async (req: NextRequest, { params }: { params: Promise<{ id: string } | {} | undefined> }) => {
     const authType = await getAuthType();
-    try { await validateAuthType(authType, config?.emailVerifiedNeeded ?? false); }
+    try { await validateAuthType(authType, config.emailVerifiedNeeded ?? false); }
     catch (err) { return err; }
-
+    
     return withAuth(authType, async tx => {
       try {
+        if (authType.keyDigest) {
+          if (!config.requiredScopes) throw routeResponse(403, { message: "API Keys are not authorized to use this endpoint" });
+          const result = await tx.query.TeamKeys.findFirst({
+            where: and(
+              eq(TeamKeys.digest, authType.keyDigest),
+              arrayContains(TeamKeys.scopes, config.requiredScopes)
+            )
+          });
+          if (!result) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" })
+        }
         let id = null;
         const p = await params;
         if (p && "id" in p)

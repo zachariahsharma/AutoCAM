@@ -17,13 +17,7 @@ const CreateSchema = zod.discriminatedUnion("type", [
   })
 ]);
 
-const Job = zod.discriminatedUnion("type", [
-  zod.object({ type: zod.literal("arrange") }),
-  zod.object({
-    type: zod.literal("cam"),
-    machine_id: zod.number()
-  })
-])
+const Job = createSelectSchema(Jobs);
 
 registry.registerPath({
   method: "get",

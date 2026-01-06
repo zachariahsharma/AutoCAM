@@ -132,8 +132,13 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx) => {
-  if (authType.userId)
-    return routeResponse(200, await parseJsonBody(await tx.query.Teams.findMany(), zod.array(Team)));
+  if (authType.userId) {
+    const teams = (await tx.query.TeamMembers.findMany({
+      where: eq(TeamMembers.user_id, authType.userId),
+      with: { team: true }
+    })).map(x => x.team);
+    return routeResponse(200, await parseJsonBody(teams, zod.array(Team)));
+  }
   if (!authType.keyDigest) return routeResponse(401);
   const key = await tx.query.TeamKeys.findFirst({
     where: eq(TeamKeys.digest, authType.keyDigest),

@@ -9,7 +9,7 @@ import { scopeNames as scopes } from "@/lib/scopes";
 import { registry } from "@/lib/openapi/registry";
 
 const Member = zod.object({ 
-  email: zod.string().email(), 
+  email: zod.email(), 
   name: zod.string(), 
   admin: zod.boolean(), 
   isOwner: zod.boolean() 

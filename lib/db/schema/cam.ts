@@ -2,16 +2,6 @@ import { eq, relations, sql, SQL } from "drizzle-orm";
 import { customType, doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { TeamKeys, Teams } from "./entities";
 
-const bytea = customType<{ data: ArrayBuffer; driverData: Buffer }>({
-  dataType() { return "bytea"; },
-  toDriver(value) { return Buffer.from(value); },
-  fromDriver(value) {
-    if (value.buffer instanceof ArrayBuffer)
-      return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
-    return new Uint8Array(value).buffer;
-  }
-});
-
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   material: text().notNull(),
@@ -27,7 +17,7 @@ export const Parts = pgTable("parts", {
   epic: text().notNull(),
   ticket: text().notNull(),
   quantity: integer().notNull(),
-  original_quantity: integer().notNull().default(1),
+  original_quantity: integer().notNull().$defaultFn((): SQL => sql`${Parts.quantity}`),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 });
 
@@ -45,7 +35,6 @@ export const BoxTubes = pgTable("box_tubes", {
   name: text().notNull(),
   ticket: text().notNull(),
   epic: text().notNull(),
-  file: bytea().notNull(),
   quantity: integer().default(1).notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 });

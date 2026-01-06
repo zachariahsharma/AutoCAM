@@ -165,7 +165,7 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!data) return routeResponse(422);
   const [id] = await tx
     .insert(Parts)
-    .values({ ...data, original_quantity: data.quantity, category_id })
+    .values({ ...data, category_id })
     .returning({ id: Parts.id });
   const { team_id } = (await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) }))!;
   await client.send(new PutObjectCommand({

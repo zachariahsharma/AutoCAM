@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from "@/lib/api/machines";
+export { SingleGET as GET, PATCH, DELETE } from "@/lib/api/machines";

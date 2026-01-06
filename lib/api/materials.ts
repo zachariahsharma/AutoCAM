@@ -121,6 +121,14 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   }), zod.array(Material)));
 }, { requiredScopes: [scopes.materials.read] });
 
+export const SingleGET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const material = await tx.query.Materials.findFirst({ where: eq(Materials.id, id) });
+  if (!material) return routeResponse(404);
+  await checkUserTeam(tx, authType, material.team_id);
+  return routeResponse(200, await parseJsonBody(material, Material));
+}, { requiredScopes: [scopes.materials.read] })
+
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id, true);

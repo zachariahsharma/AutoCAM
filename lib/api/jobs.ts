@@ -8,6 +8,13 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { scopeNames as scopes } from "../scopes";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
+export const Job = createSelectSchema(Jobs).omit({ team_id: true }).transform(x => {
+  const JobStatus = zod.enum(["pending", "in progress", "completed"])
+  let status: zod.infer<typeof JobStatus> = "pending";
+  if (x.claimed_by) status = "in progress";
+  if (x.response !== null) status = "completed";
+  return { ...x, status };
+});
 
 export const Request = routeFactory(async (req, authType, tx) => {
   if (!authType.keyDigest) return routeResponse(401);

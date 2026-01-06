@@ -7,6 +7,7 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
+import { Job } from "../jobs";
 
 const CreateSchema = zod.discriminatedUnion("type", [
   zod.object({ type: zod.literal("arrange") }),
@@ -17,9 +18,7 @@ const CreateSchema = zod.discriminatedUnion("type", [
   })
 ]);
 
-const Job = createSelectSchema(Jobs).extend({
-  kind: createSelectSchema(Jobs).shape.kind.transform(val => val.replace(/^(plate:)/, ""))
-}).omit({ team_id: true });
+const JobSchema = Job.transform(x => ({ ...x, kind: x.kind.replace(/^(plate:)/, "") }));
 
 registry.registerPath({
   method: "get",
@@ -38,7 +37,7 @@ registry.registerPath({
       description: "This endpoint returns the plate jobs for a given plate",
       content: {
         "application/json": {
-          schema: zod.array(Job)
+          schema: zod.array(JobSchema)
         }
       }
     },
@@ -92,7 +91,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     where: eq(PlateJobs.plate_id, id),
     with: { job: true }
   })).map(x => x.job);
-  return routeResponse(200, await parseJsonBody(result, zod.array(Job)));
+  return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
 }, { requiredScopes: [scopes.jobs.read] });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {

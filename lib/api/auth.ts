@@ -1,7 +1,5 @@
-import { ResponseConfig } from "@asteasolutions/zod-to-openapi";
 import { registry } from "../openapi/registry";
 import { ScopeLeaf, scopes, ScopeTree } from "../scopes";
-import zod from "zod";
 
 function scopesToDict<T extends ScopeTree>(tree: T): Record<string, string> {
   let result: Record<string, string> = {};

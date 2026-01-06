@@ -8,8 +8,8 @@ import { headers } from "next/headers";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "../db/schema/entities";
-import { routeResponse } from "../api";
 import { openAPI } from "better-auth/plugins";
+import { routeResponse } from "../api/common";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {

@@ -1,5 +1,4 @@
 import { and, asc, eq, getTableColumns, isNull, SQL, sql } from "drizzle-orm";
-import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { Jobs } from "../db/schema/cam";
 import zod from "zod";
 import { createSelectSchema } from "drizzle-zod";
@@ -8,6 +7,7 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { scopeNames as scopes } from "../scopes";
 import { teamIdFromDigest } from "../auth/server";
 import { Transaction } from "../db";
+import { routeFactory, routeResponse, parseJsonBody, parseJsonFile, checkUserTeam } from "./common";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ id: true, kind: true, payload: true });
 export const Job = createSelectSchema(Jobs).extend({

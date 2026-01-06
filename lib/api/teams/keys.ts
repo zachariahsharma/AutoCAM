@@ -3,9 +3,8 @@ import { registry } from "@/lib/openapi/registry";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { userSession } from "../auth";
-import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
 import { ScopeEnum } from "@/lib/scopes";
-import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 

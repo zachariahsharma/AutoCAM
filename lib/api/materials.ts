@@ -4,8 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
-import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from ".";
+import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 

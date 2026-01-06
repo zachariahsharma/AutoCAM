@@ -32,14 +32,27 @@ export const Accept = routeFactory<string>(async (req, authType, tx, id) => {
     if (!invite) return routeResponse(404);
     if (session.user.email !== invite.email) return routeResponse(403, { message: "User email does not match invite email" });
 
-    const [admin] = await tx.delete(TeamInvites).where(eq(TeamInvites.id, id)).returning({ admin: TeamInvites.admin });
+    await tx.delete(TeamInvites).where(eq(TeamInvites.id, id));
     await tx.insert(TeamMembers).values({
       team_id: invite.team_id,
       user_id: authType.userId!,
-      admin: admin.admin
+      admin: invite.admin
     });
 
     // If accessed directly (email link), redirect to dashboard
     return NextResponse.redirect(new URL("/dashboard", req.url));
   });
+}, { idSchema: zod.uuid() });
+
+export const DELETE = routeFactory<string>(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const invite = await tx.query.TeamInvites.findFirst({
+    where: eq(TeamInvites.id, id)
+  });
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return routeResponse(401, { message: "User session not found" });
+
+  if (invite?.email !== session.user.email)
+    return routeResponse(401);
+  await tx.delete(TeamInvites).where(eq(TeamInvites.id, id));
 }, { idSchema: zod.uuid() });

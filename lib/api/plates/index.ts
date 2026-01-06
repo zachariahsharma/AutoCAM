@@ -174,5 +174,5 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     with: { category: true }
   });
   await checkUserTeam(tx, authType, plate?.category.team_id);
-  return tx.delete(Plates).where(eq(Plates.id, id)).returning({ id: Plates.id });
+  tx.delete(Plates).where(eq(Plates.id, id));
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.plates.write] });

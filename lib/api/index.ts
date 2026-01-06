@@ -121,10 +121,6 @@ export function routeResponse(status = 200, data?: object) {
   return NextResponse.json(data, { status });
 }
 
-export function checkAnyChanges(records: any[]) {
-  return routeResponse(records.length === 0 ? 404 : 204);
-}
-
 export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: number | undefined, admin: boolean = false) {
   if (!tid) throw routeResponse(404);
   if (!authType.userId) return;
@@ -172,8 +168,7 @@ export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, conf
           id = await parseJsonBody(p.id, schema);
         }
         const result = await callback(req, authType, tx, id);
-        if (Array.isArray(result))
-          return checkAnyChanges(result);
+        if (result === undefined) return routeResponse(204);
         return result;
       } catch (err) {
         if (err instanceof NextResponse) return err;

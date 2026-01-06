@@ -152,7 +152,6 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const material = await tx.query.Materials.findFirst({ where: eq(Materials.id, id) });
   await checkUserTeam(tx, authType, material?.team_id, true);
-  const result = await tx.delete(Materials).where(eq(Materials.id, id));
-  return routeResponse(result.rowCount === 0 ? 404 : 204);
+  await tx.delete(Materials).where(eq(Materials.id, id));
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.materials.write] });
 

@@ -195,14 +195,12 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     where: eq(Parts.id, id),
     with: { category: true }
   });
-  await checkUserTeam(tx, authType, part?.category.team_id);
-  const result = await tx.delete(Parts).where(eq(Parts.id, id)).returning({ category_id: Parts.category_id });
-  if (result.length === 0) return result;
-  const [{ category_id }] = result;
-  const { team_id } = (await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) }))!;
+  if (!part) return routeResponse(404);
+  await checkUserTeam(tx, authType, part.category.team_id);
+  await tx.delete(Parts).where(eq(Parts.id, id));
+  const { team_id } = (await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, part.category_id) }))!;
   await client.send(new DeleteObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,
-    Key: `teams/${team_id}/pc/${category_id}/parts/${id}`
+    Key: `teams/${team_id}/pc/${part.category_id}/parts/${id}`
   }));
-  return result;
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] })

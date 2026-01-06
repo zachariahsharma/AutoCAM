@@ -180,17 +180,12 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     })
   });
   const { data, files } = await parseJsonFile(await req.formData(), schema);
-  let teamExists: boolean;
-  if (data) {
-    const result = await tx.update(Teams).set(data).where(eq(Teams.id, id)).returning({ id: Teams.id });
-    teamExists = result.length > 0;
-  } else {
-    teamExists = (await tx.query.Teams.findFirst({ where: eq(Teams.id, id) })) !== undefined;
-  }
-  if (!teamExists) return routeResponse(404);
+  if (!data) return routeResponse(422);
+  let logo: string | undefined;
+  if ("logo" in files)
+    logo = `https://${process.env.AUTOCAM_BUCKET}.s3.amazonaws.com/teams/${id}/logo`
+  await tx.update(Teams).set({ ...data, logo }).where(eq(Teams.id, id));
   if ("logo" in files) {
-    // TODO: Optimize into prev update query
-    await tx.update(Teams).set({ logo: `https://${process.env.AUTOCAM_BUCKET}.s3.amazonaws.com/teams/${id}/logo` });
     await client.send(new PutObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
       Key: `teams/${id}/logo`,

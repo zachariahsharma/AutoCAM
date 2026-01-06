@@ -5,7 +5,7 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
-import { parseJsonBody, routeFactory, routeResponse } from ".";
+import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 
@@ -115,6 +115,7 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, id);
   return routeResponse(200, await parseJsonBody(await tx.query.Materials.findMany({
     where: eq(Materials.team_id, id)
   }), zod.array(Material)));
@@ -122,7 +123,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
-
+  await checkUserTeam(tx, authType, team_id, true);
   const body = await parseJsonBody(await req.json(), CreateSchema);
 
   const [id] = await tx.insert(Materials).values({ ...body, team_id }).returning({ id: Materials.id });
@@ -131,6 +132,8 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const material = await tx.query.Materials.findFirst({ where: eq(Materials.id, id) });
+  await checkUserTeam(tx, authType, material?.team_id, true);
   const body = await parseJsonBody(await req.json(), createUpdateSchema(Materials));
 
   const result = await tx.update(Materials).set(body).where(eq(Materials.id, id));
@@ -139,6 +142,8 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const material = await tx.query.Materials.findFirst({ where: eq(Materials.id, id) });
+  await checkUserTeam(tx, authType, material?.team_id, true);
   const result = await tx.delete(Materials).where(eq(Materials.id, id));
   return routeResponse(result.rowCount === 0 ? 404 : 204);
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.materials.write] });

@@ -19,7 +19,8 @@ import "./user";
 import "./auth";
 import "./tools";
 import "./jobs";
-import { TeamKeys } from "../db/schema/entities";
+import { TeamKeys, TeamMembers } from "../db/schema/entities";
+import { user } from "../db/schema/auth";
 
 /**
  * Get authenticated user ID only (for operations that require email verification)
@@ -135,9 +136,23 @@ export function checkAnyChanges(records: any[]) {
   return routeResponse(records.length === 0 ? 404 : 204);
 }
 
+export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: number | undefined, admin: boolean = false) {
+  if (!tid) throw routeResponse(404);
+  if (!authType.userId) return;
+  const member = await tx.query.TeamMembers.findFirst({
+    where: and(
+      eq(user.id, authType.userId),
+      eq(TeamMembers.team_id, tid)
+    )
+  });
+  if (!member) throw routeResponse(401, { message: "The user is not part of the team" });
+  if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
+}
+
 export interface RouteFactoryConfig {
   emailVerifiedNeeded?: boolean;
   requiredScopes?: string[];
+  teamAdmin?: boolean;
 }
 
 export type RouteFactoryCallback = (req: NextRequest, authType: AuthType, tx: Transaction, id: number | null) => Promise<any>;

@@ -6,7 +6,7 @@ import { PartCategories } from "../../db/schema/cam";
 import { scopeNames as scopes } from "../../scopes";
 import zod from "zod";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "../common";
-import { parseJsonBody, routeFactory, routeResponse, s3DeleteWithPrefix } from "..";
+import { checkUserTeam, parseJsonBody, routeFactory, routeResponse, s3DeleteWithPrefix } from "..";
 import { teamIdFromDigest } from "../../auth/server";
 import { and, eq } from "drizzle-orm";
 import { client } from '@/lib/aws';
@@ -122,6 +122,7 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, id);
   const params = req.nextUrl.searchParams;
 
   const data = await parseJsonBody({
@@ -139,6 +140,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, team_id);
 
   const data = await parseJsonBody(await req.json(), CreateSchema);
   const [id] = await tx.insert(PartCategories).values({ ...data, team_id }).returning({ id: PartCategories.id })
@@ -147,12 +149,16 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
+  await checkUserTeam(tx, authType, pc?.team_id);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(PartCategories).set(body).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id })
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
+  await checkUserTeam(tx, authType, pc?.team_id);
   const result = await tx.delete(PartCategories).where(eq(PartCategories.id, id)).returning({ team_id: PartCategories.team_id });
   if (result.length === 0) return result;
   const [{ team_id }] = result;

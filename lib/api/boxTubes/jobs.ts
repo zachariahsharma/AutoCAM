@@ -1,5 +1,5 @@
 import { BoxTubeJobs, BoxTubes, Jobs } from "@/lib/db/schema/cam";
-import { parseJsonBody, routeFactory, routeResponse } from "..";
+import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
@@ -76,6 +76,8 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const tube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, id) });
+  await checkUserTeam(tx, authType, tube?.team_id);
   const result = (await tx.query.BoxTubeJobs.findMany({
     where: eq(BoxTubeJobs.box_tube_id, id),
     with: { job: true }
@@ -86,10 +88,11 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   if (!box_tube_id) return routeResponse(422);
   if (!authType.keyDigest) return routeResponse(401);
-  const payload = await parseJsonBody(await req.json(), CreateSchema);
-
   const tube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, box_tube_id) });
   if (!tube) return routeResponse(404);
+  await checkUserTeam(tx, authType, tube.team_id);
+
+  const payload = await parseJsonBody(await req.json(), CreateSchema);
 
   const [id] = await tx.insert(Jobs).values({
     team_id: tube.team_id,

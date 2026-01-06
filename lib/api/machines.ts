@@ -5,7 +5,7 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
 import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
-import { parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
+import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
@@ -117,6 +117,7 @@ registry.registerPath({
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, id);
   return routeResponse(200, await parseJsonBody(await tx.query.Machines.findMany({
     where: eq(Machines.team_id, id)
   }), zod.array(Machine)));
@@ -124,6 +125,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
+  await checkUserTeam(tx, authType, team_id, true);
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
   const [id] = await tx.insert(Machines).values({
@@ -144,12 +146,16 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const machine = await tx.query.Machines.findFirst({ where: eq(Machines.id, id) });
+  await checkUserTeam(tx, authType, machine?.team_id, true);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(Machines).set(body).where(eq(Machines.id, id)).returning({ id: Machines.id });
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.machines.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const machine = await tx.query.Machines.findFirst({ where: eq(Machines.id, id) });
+  await checkUserTeam(tx, authType, machine?.team_id, true);
   const result = await tx.delete(Machines).where(eq(Machines.id, id)).returning({ team_id: Machines.team_id });
   if (result.length === 0) return result;
   await client.send(new DeleteObjectCommand({

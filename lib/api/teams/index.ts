@@ -9,7 +9,7 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
-import { parseJsonBody, parseJsonFile, routeFactory, routeResponse, s3DeleteWithPrefix } from "..";
+import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse, s3DeleteWithPrefix } from "..";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
@@ -156,6 +156,7 @@ export const POST = routeFactory(async (req, authType, tx) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  await checkUserTeam(tx, authType, id, true);
   const schema = UpdateSchema.extend({
     owner: zod.email().optional().transform(async owner => {
       if (!owner) return;
@@ -196,6 +197,12 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const team = await tx.query.Teams.findFirst({
+    where: eq(Teams.id, id),
+    columns: { owner: true }
+  });
+  if (!team) return routeResponse(404);
+  if (team.owner !== authType.userId) throw routeResponse(401, { message: "The user is not the owner of the team" });
   const result = tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
   await s3DeleteWithPrefix(`teams/${id}/`);
   return result;

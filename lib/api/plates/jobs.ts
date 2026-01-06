@@ -17,7 +17,9 @@ const CreateSchema = zod.discriminatedUnion("type", [
   })
 ]);
 
-const Job = createSelectSchema(Jobs);
+const Job = createSelectSchema(Jobs).extend({
+  kind: createSelectSchema(Jobs).shape.kind.transform(val => val.replace(/^(plate:)/, ""))
+}).omit({ team_id: true });
 
 registry.registerPath({
   method: "get",

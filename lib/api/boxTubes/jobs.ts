@@ -12,7 +12,7 @@ const CreateSchema = zod.object({
   machine_id: zod.number(),
   tool_id: zod.number()
 })
-const Job = createSelectSchema(Jobs).omit({ kind: true, team_id: true }).openapi("Box Tube Job");
+const Job = createSelectSchema(Jobs).omit({ kind: true, team_id: true });
 
 registry.registerPath({
   method: "get",

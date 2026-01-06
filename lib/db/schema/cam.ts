@@ -17,7 +17,7 @@ export const Parts = pgTable("parts", {
   epic: text().notNull(),
   ticket: text().notNull(),
   quantity: integer().notNull(),
-  original_quantity: integer().notNull().$defaultFn((): SQL => sql`${Parts.quantity}`),
+  original_quantity: integer().notNull(),
   category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" })
 });
 

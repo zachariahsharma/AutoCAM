@@ -137,7 +137,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, pc?.team_id);
   return routeResponse(200, await parseJsonBody(await tx.query.Parts.findMany({
     where: eq(Parts.category_id, id)
-  }), zod.array(Part)));
+  }), MultipleParts));
 }, { requiredScopes: [scopes.parts.read] });
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {

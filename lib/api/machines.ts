@@ -9,11 +9,13 @@ import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeRespons
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const CreateSchema = createInsertSchema(Machines).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(Machines).omit({ team_id: true });
-const Machine = createSelectSchema(Machines).omit({ team_id: true }).openapi("Machine")
+const Machine = createSelectSchema(Machines).extend({ file: zod.httpUrl() }).omit({ team_id: true }).openapi("Machine")
+const MultipleMachines = zod.array(Machine.omit({ file: true }));
 
 registerTeamEndpoint([scopes.machines.read], {
   method: "get",
@@ -25,7 +27,7 @@ registerTeamEndpoint([scopes.machines.read], {
       description: "This endpoint returns the machines from the given team",
       content: {
         "application/json": {
-          schema: zod.array(Machine)
+          schema: MultipleMachines
         }
       }
     },
@@ -120,8 +122,24 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, id);
   return routeResponse(200, await parseJsonBody(await tx.query.Machines.findMany({
     where: eq(Machines.team_id, id)
-  }), zod.array(Machine)));
+  }), MultipleMachines));
 }, { requiredScopes: [scopes.machines.read] });
+
+export const SingleGET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const machine = await tx.query.Machines.findFirst({
+    where: eq(Machines.id, id)
+  });
+  if (!machine) return routeResponse(404);
+  await checkUserTeam(tx, authType, machine.team_id);
+  return routeResponse(200, await parseJsonBody({
+    ...machine,
+    file: getSignedUrl(client, new GetObjectCommand({
+      Bucket: process.env.AUTOCAM_BUCKET,
+      Key: `teams/${machine.team_id}/machines/${id}`
+    }), { expiresIn: 120 })
+  }, Machine));
+}, { requiredScopes: [scopes.machines.read] })
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);

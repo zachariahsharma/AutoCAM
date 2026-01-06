@@ -7,12 +7,10 @@ import zod from "zod";
 import { CommonAuthorization, registerTeamEndpoint, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { registry } from "@/lib/openapi/registry";
+import { createSelectSchema } from "drizzle-zod";
 
-const Member = zod.object({ 
-  email: zod.email(), 
-  name: zod.string(), 
-  admin: zod.boolean()
-});
+const Member = createSelectSchema(TeamMembers).omit({ user_id: true, team_id: true })
+  .extend(createSelectSchema(user).pick({ email: true, name: true }).shape);
 
 registerTeamEndpoint([scopes.teams.read], {
   method: "get",
@@ -39,11 +37,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody((await tx.query.TeamMembers.findMany({
     where: eq(TeamMembers.team_id, id),
     with: { user: true },
-  })).map(x => ({ 
-    ...x, 
-    email: x.user.email, 
-    name: x.user.name || x.user.email.split("@")[0]
-  })), zod.array(Member)));
+  })).map(x => ({ ...x, ...x.user })), zod.array(Member)));
 }, { requiredScopes: [scopes.teams.read] });
 
 const UpdateSchema = zod.object({ 

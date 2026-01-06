@@ -1,1 +1,1 @@
-export { GET, POST } from "@/lib/api/teams/invites";
+export { GET, POST, DELETE } from "@/lib/api/teams/invites";

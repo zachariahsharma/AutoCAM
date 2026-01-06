@@ -7,7 +7,7 @@ import { registry } from "@/lib/openapi/registry";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
-import { Job } from "../jobs";
+import { Job, queuePositionSubquery } from "../jobs";
 
 const CreateSchema = zod.object({
   machine_id: zod.number(),
@@ -80,10 +80,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const tube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, id) });
   await checkUserTeam(tx, authType, tube?.team_id);
-  const result = (await tx.query.BoxTubeJobs.findMany({
-    where: eq(BoxTubeJobs.box_tube_id, id),
-    with: { job: true }
-  })).map(x => ({ ...x, ...x.job }));
+  const subquery = queuePositionSubquery(tx);
+  const result = (await tx.select().from(BoxTubeJobs)
+    .innerJoin(subquery, eq(BoxTubeJobs.job_id, subquery.id))
+    .where(eq(BoxTubeJobs.box_tube_id, id))).map(x => x.job);
   return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
 }, { requiredScopes: [scopes.jobs.read] });
 

@@ -7,12 +7,14 @@ import { registry } from "@/lib/openapi/registry";
 import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
+import { Job } from "../jobs";
 
 const CreateSchema = zod.object({
   machine_id: zod.number(),
   tool_id: zod.number()
-})
-const Job = createSelectSchema(Jobs).omit({ kind: true, team_id: true });
+});
+
+const JobSchema = Job.transform(({ kind, ...rest }) => rest);
 
 registry.registerPath({
   method: "get",
@@ -31,7 +33,7 @@ registry.registerPath({
       description: "This endpoint returns the box tube jobs for a given box tube",
       content: {
         "application/json": {
-          schema: zod.array(Job)
+          schema: zod.array(JobSchema)
         }
       }
     },
@@ -82,7 +84,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     where: eq(BoxTubeJobs.box_tube_id, id),
     with: { job: true }
   })).map(x => ({ ...x, ...x.job }));
-  return routeResponse(200, await parseJsonBody(result, zod.array(Job)));
+  return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
 }, { requiredScopes: [scopes.jobs.read] });
 
 export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {

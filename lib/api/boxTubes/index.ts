@@ -165,20 +165,21 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  await checkUserTeam(tx, authType, id);
+  const boxTube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, id) });
+  if (!boxTube) return routeResponse(404);
+  await checkUserTeam(tx, authType, boxTube.team_id);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(BoxTubes).set(body).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  await checkUserTeam(tx, authType, id);
-  const result = await tx.delete(BoxTubes).where(eq(BoxTubes.id, id)).returning({ team_id: BoxTubes.team_id });
-  if (result.length === 0) return result;
-  const [{ team_id }] = result;
+  const boxTube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, id) });
+  if (!boxTube) return routeResponse(404);
+  await checkUserTeam(tx, authType, boxTube.team_id);
+  await tx.delete(BoxTubes).where(eq(BoxTubes.id, id));
   await client.send(new DeleteObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,
-    Key: `teams/${team_id}/boxTubes/${id}`
+    Key: `teams/${boxTube.team_id}/boxTubes/${id}`
   }));
-  return result;
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] });

@@ -69,7 +69,7 @@ export const TeamsRelationse = relations(Teams, ({ many, one }) => ({
   materials: many(Materials),
   machines: many(Machines),
   tools: many(Tools),
-  creator: one(user, {
+  owner: one(user, {
     fields: [Teams.owner],
     references: [user.id],
   })

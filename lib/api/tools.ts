@@ -199,13 +199,11 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const tool = await tx.query.Tools.findFirst({ where: eq(Tools.id, id) });
-  await checkUserTeam(tx, authType, tool?.team_id, true);
-  const result = await tx.delete(Tools).where(eq(Tools.id, id)).returning({ team_id: Tools.team_id });
-  if (result.length === 0) return result;
-  const [{ team_id }] = result;
+  if (!tool) return routeResponse(404);
+  await checkUserTeam(tx, authType, tool.team_id, true);
+  await tx.delete(Tools).where(eq(Tools.id, id));
   await client.send(new DeleteObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,
-    Key: `teams/${team_id}/tools/${id}`
+    Key: `teams/${tool.team_id}/tools/${id}`
   }));
-  return result;
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.tools.write] });

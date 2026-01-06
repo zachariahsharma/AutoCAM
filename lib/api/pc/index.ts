@@ -158,10 +158,8 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
-  await checkUserTeam(tx, authType, pc?.team_id);
-  const result = await tx.delete(PartCategories).where(eq(PartCategories.id, id)).returning({ team_id: PartCategories.team_id });
-  if (result.length === 0) return result;
-  const [{ team_id }] = result;
-  await s3DeleteWithPrefix(`teams/${team_id}/pc/${id}/`);
-  return result;
+  if (!pc) return routeResponse(404);
+  await checkUserTeam(tx, authType, pc.team_id);
+  await tx.delete(PartCategories).where(eq(PartCategories.id, id));
+  await s3DeleteWithPrefix(`teams/${pc.team_id}/pc/${id}/`);
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.write] });

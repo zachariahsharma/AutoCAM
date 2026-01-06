@@ -1,4 +1,4 @@
-import { eq, relations, sql, SQL } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, relations, sql, SQL } from "drizzle-orm";
 import { customType, doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { TeamKeys, Teams } from "./entities";
 
@@ -81,21 +81,22 @@ export const PartsToPlates = pgTable("parts_to_plates", {
   unique().on(table.plate_id, table.part_id),
 ]);
 
-export const JobStatus = pgEnum('job_status', ["pending", "in progress", "completed"])
 export const JobKind = pgEnum('job_kind', ["plate:arrange", "plate:cam", "box_tube"])
 
 export const Jobs = pgTable("jobs", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  status: JobStatus().notNull().default("pending"),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
   kind: JobKind().notNull(),
-  created_at: timestamp().defaultNow(),
+  created_at: timestamp().notNull().defaultNow(),
   claimed_by: text().references(() => TeamKeys.digest),
   payload: jsonb().notNull(),
   response: jsonb()
 }, table => [
   // Make sure that a single runner can't pick up more than one job at a time
-  uniqueIndex("claimed_by_index").on(table.claimed_by).where(eq(table.status, sql`'in progress'`)),
+  uniqueIndex("claimed_by_index").on(table.claimed_by).where(and(
+    isNotNull(table.claimed_by),
+    isNull(table.response)
+  )!),
 ]);
 
 export const PlateJobs = pgTable("plate_jobs", {

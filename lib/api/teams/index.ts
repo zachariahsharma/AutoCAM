@@ -13,13 +13,12 @@ import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeRespons
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
-import { paginateListObjectsV2, PutObjectCommand, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });
 const UpdateSchema = createUpdateSchema(Teams).extend({
-  owner: zod.email().optional(),
-  logo: zod.httpUrl().optional()
-});
+  owner: zod.email().optional()
+}).omit({ logo: true });
 const Team = createSelectSchema(Teams).openapi("Team", { description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
 // OpenAPI route definitions
@@ -90,12 +89,9 @@ registry.registerPath({
     body: {
       description: "If the logo is a URL, use the application/json. If the logo is a file upload, use the multipart/form-data type.",
       content: {
-        "application/json": {
-          schema: UpdateSchema
-        },
         "multipart/form-data": {
           schema: zod.object({
-            data: UpdateSchema.omit({ logo: true }),
+            data: UpdateSchema,
             logo: zod.instanceof(File).openapi({ type: "string", format: "binary", description: "Logo upload" })
           })
         }
@@ -132,20 +128,29 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx) => {
+  const schema = Team.extend({
+    owner: zod.object({
+      email: zod.email()
+    }).transform(x => x.email).pipe(zod.email())
+  });
   if (authType.userId) {
     const teams = (await tx.query.TeamMembers.findMany({
       where: eq(TeamMembers.user_id, authType.userId),
-      with: { team: true }
+      with: { team: {
+        with: { owner: true }
+      } }
     })).map(x => x.team);
-    return routeResponse(200, await parseJsonBody(teams, zod.array(Team)));
+    return routeResponse(200, await parseJsonBody(teams, zod.array(schema)));
   }
   if (!authType.keyDigest) return routeResponse(401);
   const key = await tx.query.TeamKeys.findFirst({
     where: eq(TeamKeys.digest, authType.keyDigest),
-    with: { team: true }
+    with: { team: {
+      with: { owner: true }
+    } }
   });
   if (!key) return routeResponse(403, { message: "API Key is not valid" });
-  return routeResponse(200, await parseJsonBody(key.team, Team));
+  return routeResponse(200, await parseJsonBody(key.team, schema));
 }, { requiredScopes: [scopes.teams.read] });
 
 export const POST = routeFactory(async (req, authType, tx) => {
@@ -174,34 +179,27 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
       return newOwner.id;
     })
   });
-  const contentType = req.headers.get("content-type");
-  if (!contentType) return routeResponse(422, { message: "Content-Type not defined" });
-  if (contentType.includes("application/json")) {
-    const body = await parseJsonBody(await req.json(), schema);
-    return tx.update(Teams).set(body).where(eq(Teams.id, id)).returning({ id: Teams.id });
-  } else if (contentType.includes("multipart/form-data")) {
-    const { data, files } = await parseJsonFile(await req.formData(), schema.omit({ logo: true }));
-    let teamExists: boolean;
-    if (data) {
-      const result = await tx.update(Teams).set(data).where(eq(Teams.id, id)).returning({ id: Teams.id });
-      teamExists = result.length > 0;
-    } else {
-      teamExists = (await tx.query.Teams.findFirst({ where: eq(Teams.id, id) })) !== undefined;
-    }
-    if (!teamExists) return routeResponse(404);
-    if ("logo" in files) {
-      // TODO: Optimize into prev update query
-      await tx.update(Teams).set({ logo: `https://${process.env.AUTOCAM_BUCKET}.s3.amazonaws.com/teams/${id}/logo` });
-      await client.send(new PutObjectCommand({
-        Bucket: process.env.AUTOCAM_BUCKET,
-        Key: `teams/${id}/logo`,
-        Body: await files["logo"].bytes(),
-        ACL: "public-read",
-        ContentType: files["logo"].type
-      }));
-    }
-    return routeResponse(204);
-  } else return routeResponse(422, { message: "Content-Type not valid" })
+  const { data, files } = await parseJsonFile(await req.formData(), schema);
+  let teamExists: boolean;
+  if (data) {
+    const result = await tx.update(Teams).set(data).where(eq(Teams.id, id)).returning({ id: Teams.id });
+    teamExists = result.length > 0;
+  } else {
+    teamExists = (await tx.query.Teams.findFirst({ where: eq(Teams.id, id) })) !== undefined;
+  }
+  if (!teamExists) return routeResponse(404);
+  if ("logo" in files) {
+    // TODO: Optimize into prev update query
+    await tx.update(Teams).set({ logo: `https://${process.env.AUTOCAM_BUCKET}.s3.amazonaws.com/teams/${id}/logo` });
+    await client.send(new PutObjectCommand({
+      Bucket: process.env.AUTOCAM_BUCKET,
+      Key: `teams/${id}/logo`,
+      Body: await files["logo"].bytes(),
+      ACL: "public-read",
+      ContentType: files["logo"].type
+    }));
+  }
+  return routeResponse(204);
 }, { emailVerifiedNeeded: true });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
@@ -212,7 +210,6 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   });
   if (!team) return routeResponse(404);
   if (team.owner !== authType.userId) throw routeResponse(401, { message: "The user is not the owner of the team" });
-  const result = tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  tx.delete(Teams).where(eq(Teams.id, id));
   await s3DeleteWithPrefix(`teams/${id}/`);
-  return result;
 }, { emailVerifiedNeeded: true });

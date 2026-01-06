@@ -1,7 +1,7 @@
 import { BoxTubes, PartCategories, Parts } from "@/lib/db/schema/cam";
-import { parseJsonBody, routeFactory, routeResponse } from ".";
 import { and, eq, or, sql } from "drizzle-orm";
 import zod from "zod";
+import { routeFactory, routeResponse, parseJsonBody } from "./common";
 
 const SearchParams = zod.object({
   q: zod.string().trim().min(1).max(100),

@@ -1,12 +1,11 @@
 import { Jobs, PartsToPlates, PlateJobs, Plates } from "@/lib/db/schema/cam";
-import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { eq, inArray } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
-import { CommonAuthorization, Conflict, NotFound, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
 import { Job, queuePositionSubquery } from "../jobs";
 
 const CreateSchema = zod.discriminatedUnion("type", [

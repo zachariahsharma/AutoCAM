@@ -1,7 +1,16 @@
 import { ResponseConfig, RouteConfig } from "@asteasolutions/zod-to-openapi";
-import zod, { ZodObject } from "zod";
+import zod, { ZodObject, ZodType } from "zod";
 import { registry } from "../openapi/registry";
 import { apiKey, userSession } from "./auth";
+import { paginateListObjectsV2, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
+import { DrizzleQueryError, and, eq, arrayContains } from "drizzle-orm";
+import { headers } from "next/headers";
+import { NextResponse, NextRequest } from "next/server";
+import { DatabaseError } from "pg";
+import { auth, AuthType, getKeyDigest } from "../auth/server";
+import { client } from "../aws";
+import db, { Transaction } from "../db";
+import { TeamMembers, TeamKeys } from "../db/schema/entities";
 
 export const CommonAuthorization: Record<string, ResponseConfig> = {
   401: {
@@ -85,4 +94,180 @@ export function registerTeamEndpoint(scopes: string[], config: RouteConfig, user
     },
     ...userOverride
   })
+}
+
+/**
+ * Get authenticated user ID only (for operations that require email verification)
+ */
+export async function getUserId(): Promise<string | undefined> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  return session?.user.id;
+}
+
+/**
+ * Get authentication context with both userId and keyDigest
+ */
+export async function getAuthType(): Promise<AuthType> {
+  return {
+    userId: await getUserId(),
+    keyDigest: await getKeyDigest()
+  };
+}
+
+export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
+  if (!(authType.userId || authType.keyDigest))
+    throw routeResponse(401, { message: "No valid authorization found" });
+  if (emailVerifiedNeeded && authType.userId) {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session)
+      throw routeResponse(401, { message: "User session not found" });
+    if (!session.user.emailVerified)
+      throw routeResponse(403, { message: "User email has not been verified" });
+  }
+}
+
+/**
+ * Validate and parse request body against a Zod schema
+ */
+export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {
+  const result = await schema.safeParseAsync(json);
+  if (!result.success) {
+    throw NextResponse.json(result.error.issues, { status: 422 });
+  }
+  return result.data;
+}
+
+export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T): Promise<{ data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined, files: Record<string, File> }> {
+  const json = formData.get("data");
+  let data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined = undefined;
+  if (json) {
+    if (typeof json !== "string") {
+      const error: zod.core.$ZodIssue = {
+        code: "invalid_type",
+        expected: "string",
+        path: [],
+        message: 'Form Data type for "data" is not a string'
+      };
+      throw routeResponse(422, error);
+    }
+
+    let rawJson;
+    try {
+      rawJson = JSON.parse(json);
+    } catch {
+      const error: zod.core.$ZodIssue = {
+        code: "invalid_type",
+        expected: "object",
+        path: [],
+        message: 'Unable to parse JSON in "data"'
+      };
+      throw routeResponse(422, error);
+    }
+    data = await parseJsonBody(rawJson, schema);
+  }
+
+  const files: Record<string, File> = {};
+  formData.forEach(async (value, key) => {
+    if (value instanceof File)
+      files[key] = value;
+  });
+
+  return { data, files };
+}
+
+/**
+ * Common error handling for database operations
+ * Converts DatabaseError codes to appropriate HTTP status codes
+ */
+export function handleDatabaseError(err: unknown): NextResponse {
+  let cause = err;
+  if (err instanceof DrizzleQueryError)
+    cause = err.cause as DatabaseError;
+  if (cause instanceof DatabaseError) {
+    if (cause.code === "23505") return routeResponse(409); // Unique violation
+  }
+  throw err;
+}
+
+export function routeResponse(status = 200, data?: object) {
+  if (data === undefined)
+    return new NextResponse(null, { status });
+  return NextResponse.json(data, { status });
+}
+
+export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: number | undefined, admin: boolean = false) {
+  if (!tid) throw routeResponse(404);
+  if (!authType.userId) return;
+  const member = await tx.query.TeamMembers.findFirst({
+    where: and(
+      eq(TeamMembers.user_id, authType.userId),
+      eq(TeamMembers.team_id, tid)
+    )
+  });
+  if (!member) throw routeResponse(401, { message: "The user is not part of the team" });
+  if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
+}
+
+export interface RouteFactoryConfig<T> {
+  emailVerifiedNeeded?: boolean;
+  requiredScopes?: string[];
+  idSchema?: ZodType<T>
+}
+
+export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx: Transaction, id: T | null) => Promise<any>;
+
+export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config?: RouteFactoryConfig<T>) {
+  config ??= {};
+  return async (req: NextRequest, { params }: { params: Promise<{ id: string } | {} | undefined> }) => {
+    const authType = await getAuthType();
+    try { await validateAuthType(authType, config.emailVerifiedNeeded ?? false); }
+    catch (err) { return err; }
+    
+    return await db.transaction(async tx => {
+      try {
+        if (authType.keyDigest) {
+          if (!config.requiredScopes) throw routeResponse(403, { message: "API Keys are not authorized to use this endpoint" });
+          const result = await tx.query.TeamKeys.findFirst({
+            where: and(
+              eq(TeamKeys.digest, authType.keyDigest),
+              arrayContains(TeamKeys.scopes, config.requiredScopes)
+            )
+          });
+          if (!result) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" })
+        }
+        let id: T | null = null;
+        const p = await params;
+        if (p && "id" in p) {
+          const schema = (config.idSchema ?? zod.coerce.number().positive()) as ZodType<T>;
+          id = await parseJsonBody(p.id, schema);
+        }
+        const result = await callback(req, authType, tx, id);
+        if (result === undefined) return routeResponse(204);
+        return result;
+      } catch (err) {
+        if (err instanceof NextResponse) return err;
+        if (err instanceof DatabaseError || err instanceof DrizzleQueryError)
+          return handleDatabaseError(err);
+        throw err;
+      }
+    });
+  }
+}
+
+export async function s3DeleteWithPrefix(Prefix: string) {
+  const paginator = paginateListObjectsV2(
+    { client },
+    { Bucket: process.env.AUTOCAM_BUCKET, Prefix }
+  );
+  for await (const page of paginator) {
+    const objects = page.Contents ?? [];
+    const tagPromises = objects.map(obj => {
+      return client.send(new PutObjectTaggingCommand({
+        Bucket: process.env.AUTOCAM_BUCKET,
+        Key: obj.Key,
+        Tagging: { TagSet: [{ Key: "delete", Value: "true" }] }
+      }));
+    });
+    await Promise.all(tagPromises);
+  }
 }

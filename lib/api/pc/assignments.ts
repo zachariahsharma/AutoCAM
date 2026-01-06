@@ -4,8 +4,7 @@ import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { PartCategories, Parts, PartsToPlates, Plates } from "@/lib/db/schema/cam";
-import { CommonAuthorization, ValidationError } from "../common";
-import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
+import { checkUserTeam, CommonAuthorization, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
 import { and, eq, inArray } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(PartsToPlates);

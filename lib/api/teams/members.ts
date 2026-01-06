@@ -1,10 +1,9 @@
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { user } from "@/lib/db/schema/auth";
 import { and, eq, sql } from "drizzle-orm";
 import zod from "zod";
-import { CommonAuthorization, registerTeamEndpoint, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { registry } from "@/lib/openapi/registry";
 import { createSelectSchema } from "drizzle-zod";

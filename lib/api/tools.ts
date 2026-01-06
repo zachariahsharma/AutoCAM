@@ -1,11 +1,10 @@
 import zod from "zod";
 import { scopeNames as scopes } from "../scopes";
-import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { ToolMachines, ToolMaterials, Tools } from "../db/schema/cam";
 import { registry } from "../openapi/registry";
 import { apiKey, userSession } from "./auth";
-import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";

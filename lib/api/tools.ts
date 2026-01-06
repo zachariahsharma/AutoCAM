@@ -9,14 +9,16 @@ import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeRespons
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const CreateSchema = createInsertSchema(Tools).extend({
   machine_ids: zod.array(zod.number()),
   material_ids: zod.array(zod.number())
 }).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(Tools).omit({ team_id: true });
-const Tool = createSelectSchema(Tools).omit({ team_id: true }).openapi("Tool");
+const Tool = createSelectSchema(Tools).extend({ file: zod.httpUrl() }).omit({ team_id: true }).openapi("Tool");
+const MultipleTools = zod.array(Tool.omit({ file: true }));
 
 registerTeamEndpoint([scopes.tools.read], {
   method: "get",
@@ -28,13 +30,39 @@ registerTeamEndpoint([scopes.tools.read], {
       description: "This endpoint returns the tools from the given team",
       content: {
         "application/json": {
-          schema: zod.array(Tool)
+          schema: MultipleTools
         }
       }
     },
     ...CommonAuthorization
   }
 });
+
+registry.registerPath({
+  method: "get",
+  path: "/api/tools/{id}",
+  tags: ["Tools"],
+  summary: "Get Tool",
+  security: [
+    { [userSession.name]: [] },
+    { [apiKey.name]: [scopes.tools.read] }
+  ],
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "Tool ID" }) })
+  },
+  responses: {
+    200: {
+      description: "This endpoint returns the tool with a presigned URL for downloading the tool that is valid for 1 minute",
+      content: {
+        "application/json": {
+          schema: Tool
+        }
+      }
+    },
+    ...CommonAuthorization,
+    ...ValidationError,
+  }
+})
 
 registerTeamEndpoint([scopes.tools.write], {
   method: "post",
@@ -123,7 +151,23 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, id);
   return routeResponse(200, await parseJsonBody(await tx.query.Tools.findMany({
     where: eq(Tools.team_id, id)
-  }), zod.array(Tool)));
+  }), MultipleTools));
+}, { requiredScopes: [scopes.tools.read] });
+
+export const SingleGET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const tool = await tx.query.Tools.findFirst({
+    where: eq(Tools.id, id)
+  });
+  if (!tool) return routeResponse(404);
+  await checkUserTeam(tx, authType, tool.team_id);
+  return routeResponse(200, await parseJsonBody({
+    ...tool,
+    file: await getSignedUrl(client, new GetObjectCommand({
+      Bucket: process.env.AUTOCAM_BUCKET,
+      Key: `teams/${tool.team_id}/tools/${id}`
+    }), { expiresIn: 120 })
+  }, Tool));
 }, { requiredScopes: [scopes.tools.read] });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {

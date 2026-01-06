@@ -6,7 +6,7 @@ import { CommonAuthorization, Conflict, registerTeamEndpoint, ValidationError } 
 import { scopeNames as scopes } from "@/lib/scopes";
 import { checkUserTeam, parseJsonBody, routeFactory, routeResponse } from "..";
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import mailer from "@/lib/mailer";
 
 const CreateSchema = createInsertSchema(TeamInvites).omit({ team_id: true, id: true });
@@ -106,13 +106,13 @@ export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id, true);
 
-  const { email } = await parseJsonBody(await req.json(), DeleteSchema);
+  const { email } = await parseJsonBody({
+    email: req.nextUrl.searchParams.get("email")
+  }, DeleteSchema);
 
   await tx
     .delete(TeamInvites)
-    .where(
-      sql`${TeamInvites.team_id} = ${team_id} AND ${TeamInvites.email} = ${email}`
-    );
+    .where(and(eq(TeamInvites.team_id, team_id), eq(TeamInvites.email, email)));
 
   return routeResponse(204);
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.teams.invites.cancel] });

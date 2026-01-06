@@ -7,13 +7,17 @@ import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
 import { CommonAuthorization, Conflict, NotFound, registerTeamEndpoint, ValidationError } from "../common";
-import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
+import { checkUserTeam, getAuthType, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from "..";
 import { teamIdFromDigest } from "../../auth/server";
 import { eq } from "drizzle-orm";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { client } from "@/lib/aws";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const CreateSchema = createInsertSchema(BoxTubes).omit({ file: true, team_id: true });
-const UpdateSchema = createUpdateSchema(BoxTubes).omit({ file: true, team_id: true });
-const BoxTube = createSelectSchema(BoxTubes).omit({ file: true, team_id: true }).openapi("Box Tube");
+const CreateSchema = createInsertSchema(BoxTubes).omit({ team_id: true });
+const UpdateSchema = createUpdateSchema(BoxTubes).omit({ team_id: true });
+const BoxTube = createSelectSchema(BoxTubes).extend({ file: zod.httpUrl() }).omit({ team_id: true }).openapi("Box Tube");
+const MultipleBoxTubes = zod.array(BoxTube.omit({ file: true }));
 
 registerTeamEndpoint([scopes.boxTubes.read], {
   method: "get",
@@ -25,7 +29,7 @@ registerTeamEndpoint([scopes.boxTubes.read], {
       description: "This endpoint retunrs the box tubes from the team",
       content: {
         "application/json": {
-          schema: zod.array(BoxTube)
+          schema: MultipleBoxTubes
         }
       }
     },
@@ -125,8 +129,22 @@ export const GET = routeFactory(async (req, authType, tx, teamId) => {
 
   return routeResponse(200, await parseJsonBody(await tx.query.BoxTubes.findMany({
     where: eq(BoxTubes.team_id, teamId)
-  }), zod.array(BoxTube)));
+  }), MultipleBoxTubes));
 }, { requiredScopes: [scopes.boxTubes.read] });
+
+export const SingleGET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const boxTube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, id) });
+  if (!boxTube) return routeResponse(404);
+  await checkUserTeam(tx, authType, boxTube.team_id);
+  return routeResponse(200, await parseJsonBody({
+    ...boxTube,
+    file: await getSignedUrl(client, new GetObjectCommand({
+      Bucket: process.env.AUTOCAM_BUCKET,
+      Key: `teams/${boxTube.team_id}/boxTubes/${id}`
+    }), { expiresIn: 120 })
+  }, BoxTube));
+});
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -134,8 +152,14 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
   if (!data) return routeResponse(422);
-  const fileBuffer = await files["file"].arrayBuffer();
-  const [id] = await tx.insert(BoxTubes).values({ ...data, file: fileBuffer, team_id }).returning({ id: BoxTubes.id });
+  const [id] = await tx.insert(BoxTubes).values({ ...data, team_id }).returning({ id: BoxTubes.id });
+  await client.send(new PutObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${team_id}/boxTubes/${id.id}`,
+    ACL: "private",
+    Body: await files["file"].bytes(),
+    ContentType: files["file"].type
+  }));
   return routeResponse(201, id);
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] })
 
@@ -149,5 +173,12 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   await checkUserTeam(tx, authType, id);
-  return tx.delete(BoxTubes).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
+  const result = await tx.delete(BoxTubes).where(eq(BoxTubes.id, id)).returning({ team_id: BoxTubes.team_id });
+  if (result.length === 0) return result;
+  const [{ team_id }] = result;
+  await client.send(new DeleteObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${team_id}/boxTubes/${id}`
+  }));
+  return result;
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.boxTubes.write] });

@@ -132,20 +132,29 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx) => {
+  const schema = Team.extend({
+    owner: zod.object({
+      email: zod.email()
+    }).transform(x => x.email).pipe(zod.email())
+  });
   if (authType.userId) {
     const teams = (await tx.query.TeamMembers.findMany({
       where: eq(TeamMembers.user_id, authType.userId),
-      with: { team: true }
+      with: { team: {
+        with: { owner: true }
+      } }
     })).map(x => x.team);
-    return routeResponse(200, await parseJsonBody(teams, zod.array(Team)));
+    return routeResponse(200, await parseJsonBody(teams, zod.array(schema)));
   }
   if (!authType.keyDigest) return routeResponse(401);
   const key = await tx.query.TeamKeys.findFirst({
     where: eq(TeamKeys.digest, authType.keyDigest),
-    with: { team: true }
+    with: { team: {
+      with: { owner: true }
+    } }
   });
   if (!key) return routeResponse(403, { message: "API Key is not valid" });
-  return routeResponse(200, await parseJsonBody(key.team, Team));
+  return routeResponse(200, await parseJsonBody(key.team, schema));
 }, { requiredScopes: [scopes.teams.read] });
 
 export const POST = routeFactory(async (req, authType, tx) => {

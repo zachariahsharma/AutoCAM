@@ -1,33 +1,44 @@
-import { asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, isNull, SQL, sql } from "drizzle-orm";
 import { checkUserTeam, parseJsonBody, parseJsonFile, routeFactory, routeResponse } from ".";
-import { JobKind, Jobs } from "../db/schema/cam";
-import zod, { object } from "zod";
+import { Jobs } from "../db/schema/cam";
+import zod from "zod";
 import { createSelectSchema } from "drizzle-zod";
 import { client } from "../aws";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { scopeNames as scopes } from "../scopes";
+import { teamIdFromDigest } from "../auth/server";
+import { Transaction } from "../db";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
-export const Job = createSelectSchema(Jobs).omit({ team_id: true }).transform(x => {
+export const Job = createSelectSchema(Jobs).extend({
+  queue_position: zod.number()
+}).omit({ team_id: true }).transform(x => {
   const JobStatus = zod.enum(["pending", "in progress", "completed"])
   let status: zod.infer<typeof JobStatus> = "pending";
   if (x.claimed_by) status = "in progress";
   if (x.response !== null) status = "completed";
   return { ...x, status };
-});
+}).openapi("Job");
+
+export async function getQueuePosition(tx: Transaction, jobId: number): Promise<number> {
+  return (await tx.select({
+    pos: sql<number>`ROW_NUMBER() OVER (
+      PARTITION BY ${Jobs.team_id}
+      ORDER BY ${Jobs.created_at} ASC
+    )`
+  }).from(Jobs).where(eq(Jobs.id, jobId)))[0].pos;
+}
 
 export const Request = routeFactory(async (req, authType, tx) => {
   if (!authType.keyDigest) return routeResponse(401);
+  const teamId = await teamIdFromDigest(tx, authType);
   const result = await tx.update(Jobs).set({ claimed_by: authType.keyDigest })
     .where(eq(Jobs.id, tx.select({ id: Jobs.id })
-      .from(Jobs).where(isNull(Jobs.claimed_by))
+      .from(Jobs).where(and(eq(Jobs.team_id, teamId), isNull(Jobs.claimed_by)))
       .orderBy(asc(Jobs.created_at))
-      .for("update", { skipLocked: true }).limit(1))).returning({ id: Jobs.id }
-    );
+      .for("update", { skipLocked: true }).limit(1))).returning();
   if (result.length === 0) return routeResponse(204);
-  const [{ id }] = result;
-  const job = await tx.query.Jobs.findFirst({ where: eq(Jobs.id, id) });
-  if (!job) return routeResponse(204);
+  const [job] = result;
   return routeResponse(200, await parseJsonBody(job, RequestSchema));
 }, { requiredScopes: [scopes.jobs.process] });
 

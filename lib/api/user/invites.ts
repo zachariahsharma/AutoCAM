@@ -6,7 +6,6 @@ import zod from "zod";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth/server";
-import { withAuth } from "@/lib/db";
 import { headers } from "next/headers";
 
 const Invite = createSelectSchema(TeamInvites).extend({ team: zod.string() });
@@ -25,23 +24,21 @@ export const Accept = routeFactory<string>(async (req, authType, tx, id) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return routeResponse(401, { message: "User session not found" });
   
-  return await withAuth(authType, async tx => {
-    const invite = await tx.query.TeamInvites.findFirst({
-      where: eq(TeamInvites.id, id)
-    });
-    if (!invite) return routeResponse(404);
-    if (session.user.email !== invite.email) return routeResponse(403, { message: "User email does not match invite email" });
-
-    await tx.delete(TeamInvites).where(eq(TeamInvites.id, id));
-    await tx.insert(TeamMembers).values({
-      team_id: invite.team_id,
-      user_id: authType.userId!,
-      admin: invite.admin
-    });
-
-    // If accessed directly (email link), redirect to dashboard
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+  const invite = await tx.query.TeamInvites.findFirst({
+    where: eq(TeamInvites.id, id)
   });
+  if (!invite) return routeResponse(404);
+  if (session.user.email !== invite.email) return routeResponse(403, { message: "User email does not match invite email" });
+
+  await tx.delete(TeamInvites).where(eq(TeamInvites.id, id));
+  await tx.insert(TeamMembers).values({
+    team_id: invite.team_id,
+    user_id: authType.userId!,
+    admin: invite.admin
+  });
+
+  // If accessed directly (email link), redirect to dashboard
+  return NextResponse.redirect(new URL("/dashboard", req.url));
 }, { idSchema: zod.uuid() });
 
 export const DELETE = routeFactory<string>(async (req, authType, tx, id) => {

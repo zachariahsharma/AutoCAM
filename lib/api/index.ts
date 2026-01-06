@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseError } from "pg";
 import zod, { ZodType } from "zod";
-import { Transaction, withAuth } from "../db";
+import db, { Transaction } from "../db";
 import { paginateListObjectsV2, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
 import { client } from "../aws";
 
@@ -149,7 +149,7 @@ export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, conf
     try { await validateAuthType(authType, config.emailVerifiedNeeded ?? false); }
     catch (err) { return err; }
     
-    return withAuth(authType, async tx => {
+    return await db.transaction(async tx => {
       try {
         if (authType.keyDigest) {
           if (!config.requiredScopes) throw routeResponse(403, { message: "API Keys are not authorized to use this endpoint" });

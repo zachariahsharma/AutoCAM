@@ -81,7 +81,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     from: `"AutoCAM" <${process.env.SMTP_SENDER}>`,
     to: data.email,
     subject: `Join ${team.name}`,
-    text: `Join the ${team.name} Team with this link: ${new URL(`/api/user/invites/accept/${invite.id}`, `http://${process.env.BASE_URL}`)}`
+    text: `Join the ${team.name} Team with this link: ${new URL(`/api/user/invites/accept/${invite.id}`, `${process.env.BASE_URL}`)}`
   });
   return routeResponse(204);
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.teams.invites.send] });

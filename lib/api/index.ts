@@ -53,17 +53,6 @@ export async function validateAuthType(authType: AuthType, emailVerifiedNeeded =
 }
 
 /**
- * Validate and parse a parameter ID (converts to positive number)
- */
-export async function parseParamId(paramValue: string): Promise<number> {
-  const result = await zod.coerce.number().positive().safeParseAsync(paramValue);
-  if (!result.success) {
-    throw NextResponse.json(result.error.issues, { status: 422 });
-  }
-  return result.data;
-}
-
-/**
  * Validate and parse request body against a Zod schema
  */
 export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {
@@ -132,10 +121,6 @@ export function routeResponse(status = 200, data?: object) {
   return NextResponse.json(data, { status });
 }
 
-export function checkAnyChanges(records: any[]) {
-  return routeResponse(records.length === 0 ? 404 : 204);
-}
-
 export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: number | undefined, admin: boolean = false) {
   if (!tid) throw routeResponse(404);
   if (!authType.userId) return;
@@ -149,14 +134,15 @@ export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: nu
   if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
 }
 
-export interface RouteFactoryConfig {
+export interface RouteFactoryConfig<T> {
   emailVerifiedNeeded?: boolean;
   requiredScopes?: string[];
+  idSchema?: ZodType<T>
 }
 
-export type RouteFactoryCallback = (req: NextRequest, authType: AuthType, tx: Transaction, id: number | null) => Promise<any>;
+export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx: Transaction, id: T | null) => Promise<any>;
 
-export function routeFactory(callback: RouteFactoryCallback, config?: RouteFactoryConfig) {
+export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config?: RouteFactoryConfig<T>) {
   config ??= {};
   return async (req: NextRequest, { params }: { params: Promise<{ id: string } | {} | undefined> }) => {
     const authType = await getAuthType();
@@ -175,13 +161,14 @@ export function routeFactory(callback: RouteFactoryCallback, config?: RouteFacto
           });
           if (!result) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" })
         }
-        let id = null;
+        let id: T | null = null;
         const p = await params;
-        if (p && "id" in p)
-          id = await parseParamId(p.id)
+        if (p && "id" in p) {
+          const schema = (config.idSchema ?? zod.coerce.number().positive()) as ZodType<T>;
+          id = await parseJsonBody(p.id, schema);
+        }
         const result = await callback(req, authType, tx, id);
-        if (Array.isArray(result))
-          return checkAnyChanges(result);
+        if (result === undefined) return routeResponse(204);
         return result;
       } catch (err) {
         if (err instanceof NextResponse) return err;

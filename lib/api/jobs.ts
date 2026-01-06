@@ -52,10 +52,9 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!job) return routeResponse(404);
   await checkUserTeam(tx, authType, job.team_id);
 
-  const result = await tx.delete(Jobs).where(eq(Jobs.id, id)).returning({ id: Jobs.id });
+  await tx.delete(Jobs).where(eq(Jobs.id, id));
   await client.send(new DeleteObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${job.team_id}/jobs/${id}`
   }));
-  return result;
 }, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.delete] });

@@ -135,10 +135,10 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  await checkUserTeam(tx, authType, id, true);
-  return tx.delete(TeamKeys)
-    .where(eq(TeamKeys.id, id))
-    .returning({ id: TeamKeys.id });
+  const key = await tx.query.TeamKeys.findFirst({ where: eq(TeamKeys.id, id) });
+  if (!key) return routeResponse(404);
+  await checkUserTeam(tx, authType, key.team_id, true);
+  await tx.delete(TeamKeys).where(eq(TeamKeys.id, id));
 }, { emailVerifiedNeeded: true });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {

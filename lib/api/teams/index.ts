@@ -210,7 +210,6 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   });
   if (!team) return routeResponse(404);
   if (team.owner !== authType.userId) throw routeResponse(401, { message: "The user is not the owner of the team" });
-  const result = tx.delete(Teams).where(eq(Teams.id, id)).returning({ id: Teams.id });
+  tx.delete(Teams).where(eq(Teams.id, id));
   await s3DeleteWithPrefix(`teams/${id}/`);
-  return result;
 }, { emailVerifiedNeeded: true });

@@ -1,8 +1,7 @@
-import { boolean, char, integer, json, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, char, integer, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
-import { and, eq, getTableName, relations, SQL, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { Machines, Materials, PartCategories, Tools, BoxTubes } from "./cam";
-import { scopeNames as scopes } from "../../scopes";
 
 export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

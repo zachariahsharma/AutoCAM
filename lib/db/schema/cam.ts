@@ -1,5 +1,5 @@
-import { and, eq, isNotNull, isNull, relations, sql, SQL } from "drizzle-orm";
-import { customType, doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import { and, isNotNull, isNull, relations } from "drizzle-orm";
+import { doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { TeamKeys, Teams } from "./entities";
 
 export const PartCategories = pgTable("part_categories", {

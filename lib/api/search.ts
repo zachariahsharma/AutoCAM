@@ -1,5 +1,5 @@
 import { BoxTubes, PartCategories, Parts } from "@/lib/db/schema/cam";
-import { and, eq, or, sql } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 import zod from "zod";
 import { routeFactory, routeResponse, parseSchema } from "./common";
 
@@ -7,10 +7,6 @@ const SearchParams = zod.object({
   q: zod.string().trim().min(1).max(100),
   limit: zod.coerce.number().int().positive().max(25).optional().default(8),
 });
-
-function textMatch(column: unknown, pattern: string) {
-  return sql`lower(${column as any}) like lower(${pattern})`;
-}
 
 export const GET = routeFactory(async (req, _authType, tx, teamId) => {
   if (!teamId) return routeResponse(422);
@@ -45,7 +41,7 @@ export const GET = routeFactory(async (req, _authType, tx, teamId) => {
       and(
         eq(PartCategories.team_id, teamId),
         or(
-          textMatch(PartCategories.material, pattern),
+          ilike(PartCategories.material, pattern),
           hasNumeric ? eq(PartCategories.thickness, numeric) : undefined
         )
       )
@@ -70,10 +66,10 @@ export const GET = routeFactory(async (req, _authType, tx, teamId) => {
       and(
         eq(PartCategories.team_id, teamId),
         or(
-          textMatch(Parts.name, pattern),
-          textMatch(Parts.epic, pattern),
-          textMatch(Parts.ticket, pattern),
-          textMatch(PartCategories.material, pattern)
+          ilike(Parts.name, pattern),
+          ilike(Parts.epic, pattern),
+          ilike(Parts.ticket, pattern),
+          ilike(PartCategories.material, pattern)
         )
       )
     )
@@ -93,9 +89,9 @@ export const GET = routeFactory(async (req, _authType, tx, teamId) => {
       and(
         eq(BoxTubes.team_id, teamId),
         or(
-          textMatch(BoxTubes.name, pattern),
-          textMatch(BoxTubes.epic, pattern),
-          textMatch(BoxTubes.ticket, pattern)
+          ilike(BoxTubes.name, pattern),
+          ilike(BoxTubes.epic, pattern),
+          ilike(BoxTubes.ticket, pattern)
         )
       )
     )

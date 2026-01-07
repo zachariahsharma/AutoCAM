@@ -5,7 +5,7 @@ import zod from "zod";
 import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import mailer from "@/lib/mailer";
 
 const CreateSchema = createInsertSchema(TeamInvites).omit({ team_id: true, id: true });

@@ -1,6 +1,6 @@
 "use client";
 import { ReactNode } from "react";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import Link from "next/link";
 

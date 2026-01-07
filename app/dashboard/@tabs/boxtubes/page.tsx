@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import styles from "./boxtubes.module.css";
-import { BoxTube, Team } from "@/app/types";
+import { BoxTube } from "@/app/types";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";

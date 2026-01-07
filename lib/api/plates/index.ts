@@ -163,7 +163,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   });
   await checkUserTeam(tx, authType, plate?.category.team_id);
   const body = await parseSchema(await req.json(), UpdateSchema);
-  return tx.update(Plates).set(body).where(eq(Plates.id, id)).returning({ id: Plates.id });
+  await tx.update(Plates).set(body).where(eq(Plates.id, id)).returning({ id: Plates.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.plates.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

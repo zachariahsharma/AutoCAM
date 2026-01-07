@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
 import { eq } from "drizzle-orm";
 
 import "./jobs";
@@ -131,7 +131,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
   await checkUserTeam(tx, authType, pc?.team_id);
-  return routeResponse(200, await parseJsonBody(await tx.query.Plates.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.Plates.findMany({
     where: eq(Plates.category_id, id)
   }), zod.array(Plate)));
 }, { user: {}, apiKey: { scopes: [scopes.plates.read] } });
@@ -143,14 +143,14 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
     with: { category: true }
   });
   await checkUserTeam(tx, authType, plate?.category.team_id);
-  return routeResponse(200, await parseJsonBody(plate, Plate));
+  return routeResponse(200, await parseSchema(plate, Plate));
 }, { user: {}, apiKey: { scopes: [scopes.plates.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) });
   await checkUserTeam(tx, authType, pc?.team_id);
-  const data = await parseJsonBody(await req.json(), CreateSchema);
+  const data = await parseSchema(await req.json(), CreateSchema);
   const [id] = await tx.insert(Plates).values({ ...data, category_id }).returning({ id: Plates.id });
   return routeResponse(201, id);
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.plates.write] } });
@@ -162,7 +162,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     with: { category: true }
   });
   await checkUserTeam(tx, authType, plate?.category.team_id);
-  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  const body = await parseSchema(await req.json(), UpdateSchema);
   return tx.update(Plates).set(body).where(eq(Plates.id, id)).returning({ id: Plates.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.plates.write] } });
 

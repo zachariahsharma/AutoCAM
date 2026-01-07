@@ -129,7 +129,7 @@ export async function validateAuthType(authType: AuthType, emailVerifiedNeeded =
 /**
  * Validate and parse request body against a Zod schema
  */
-export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {
+export async function parseSchema<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {
   const result = await schema.safeParseAsync(json);
   if (!result.success) {
     throw NextResponse.json(result.error.issues, { status: 422 });
@@ -137,42 +137,21 @@ export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T)
   return result.data;
 }
 
-export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T): Promise<{ data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined, files: Record<string, File> }> {
-  const json = formData.get("data");
-  let data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined = undefined;
-  if (json) {
-    if (typeof json !== "string") {
-      const error: zod.core.$ZodIssue = {
-        code: "invalid_type",
-        expected: "string",
-        path: [],
-        message: 'Form Data type for "data" is not a string'
-      };
-      throw routeResponse(422, error);
-    }
+export async function parseFormData<T extends zod.ZodType>(formData: FormData, schema: T): Promise<zod.infer<typeof schema>> {
+  const rawData: Record<string, any> = {};
+  
+  formData.forEach((value, key) => {
+    if (key === 'data' && typeof value === 'string') {
+      try {
+        rawData[key] = JSON.parse(value);
+      } catch (e) {
+        throw routeResponse(422, { message: "Unable to parse JSON" });
+      }
+    } else
+      rawData[key] = value;
+  });
 
-    let rawJson;
-    try {
-      rawJson = JSON.parse(json);
-    } catch {
-      const error: zod.core.$ZodIssue = {
-        code: "invalid_type",
-        expected: "object",
-        path: [],
-        message: 'Unable to parse JSON in "data"'
-      };
-      throw routeResponse(422, error);
-    }
-    data = await parseJsonBody(rawJson, schema);
-  }
-
-  const files: Record<string, File> = {};
-  for (const [key, value] of formData.entries()) {
-    if (value instanceof File)
-      files[key] = value;
-  }
-
-  return { data, files };
+  return parseSchema(rawData, schema);
 }
 
 /**
@@ -267,7 +246,7 @@ export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, conf
       } else throw routeResponse(401, { message: "No valid form of authentication found" });
       if (hasId) {
         const schema = (config.idSchema ?? zod.coerce.number().positive()) as ZodType<T>;
-        id = await parseJsonBody(p.id, schema);
+        id = await parseSchema(p.id, schema);
       }
 
       return await db.transaction(async tx => {

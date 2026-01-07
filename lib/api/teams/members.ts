@@ -3,7 +3,7 @@ import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { user } from "@/lib/db/schema/auth";
 import { and, eq, sql } from "drizzle-orm";
 import zod from "zod";
-import { checkUserTeam, CommonAuthorization, IDPolicy, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { registry } from "@/lib/openapi/registry";
 import { createSelectSchema } from "drizzle-zod";
@@ -33,7 +33,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, id);
   
-  return routeResponse(200, await parseJsonBody((await tx.query.TeamMembers.findMany({
+  return routeResponse(200, await parseSchema((await tx.query.TeamMembers.findMany({
     where: eq(TeamMembers.team_id, id),
     with: { user: true },
   })).map(x => ({ ...x, ...x.user })), zod.array(Member)));
@@ -75,7 +75,7 @@ export const PATCH = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id, true);
 
-  const { email, admin } = await parseJsonBody(await req.json(), UpdateSchema);
+  const { email, admin } = await parseSchema(await req.json(), UpdateSchema);
 
   // Find the user by email
   const foundUser = await tx.query.user.findFirst({
@@ -123,7 +123,7 @@ export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id, true);
 
-  const { email } = await parseJsonBody({
+  const { email } = await parseSchema({
     email: req.nextUrl.searchParams.get("email")
   }, DeleteSchema);
 

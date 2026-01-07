@@ -5,7 +5,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
 import { Job, queuePositionSubquery } from "../jobs";
 
 const CreateSchema = zod.discriminatedUnion("type", [
@@ -90,7 +90,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   const result = (await tx.select().from(PlateJobs)
     .innerJoin(subquery, eq(PlateJobs.job_id, subquery.id))
     .where(eq(PlateJobs.plate_id, id))).map(x => x.job);
-  return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
+  return routeResponse(200, await parseSchema(result, zod.array(JobSchema)));
 }, { user: {}, apiKey: { scopes: [scopes.jobs.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {
@@ -102,7 +102,7 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   if (!plate) return routeResponse(404);
   console.log(plate);
   await checkUserTeam(tx, authType, plate?.category.team_id);
-  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const body = await parseSchema(await req.json(), CreateSchema);
 
   const { type, ...payload } = body;
   const assignments = await tx.query.PartCategoryAssignments.findMany({

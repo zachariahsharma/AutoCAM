@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { Job, queuePositionSubquery } from "../jobs";
@@ -83,7 +83,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   const result = (await tx.select().from(BoxTubeJobs)
     .innerJoin(subquery, eq(BoxTubeJobs.job_id, subquery.id))
     .where(eq(BoxTubeJobs.box_tube_id, id))).map(x => x.job);
-  return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
+  return routeResponse(200, await parseSchema(result, zod.array(JobSchema)));
 }, { user: {}, apiKey: { scopes: [scopes.jobs.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
@@ -92,7 +92,7 @@ export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   if (!tube) return routeResponse(404);
   await checkUserTeam(tx, authType, tube.team_id);
 
-  const payload = await parseJsonBody(await req.json(), CreateSchema);
+  const payload = await parseSchema(await req.json(), CreateSchema);
 
   const [id] = await tx.insert(Jobs).values({
     team_id: tube.team_id,

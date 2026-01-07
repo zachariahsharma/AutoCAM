@@ -3,7 +3,7 @@ import { registry } from "@/lib/openapi/registry";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { userSession } from "../auth";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
 import { ScopeEnum } from "@/lib/scopes";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
@@ -114,7 +114,7 @@ registry.registerPath({
 export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   await checkUserTeam(tx, authType, id);
-  return routeResponse(200, await parseJsonBody(await tx.query.TeamKeys.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.TeamKeys.findMany({
     where: eq(TeamKeys.team_id, id),
   }), zod.array(Key)));
 }, { user: {} });
@@ -123,7 +123,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   if (!team_id) return routeResponse(422);
   await checkUserTeam(tx, authType, team_id, true);
   const token = crypto.randomBytes(32).toString("hex");
-  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const body = await parseSchema(await req.json(), CreateSchema);
 
   await tx.insert(TeamKeys).values({
     ...body, team_id,
@@ -143,7 +143,7 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   await checkUserTeam(tx, authType, id, true);
-  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  const body = await parseSchema(await req.json(), UpdateSchema);
   return tx.update(TeamKeys)
     .set(body)
     .where(eq(TeamKeys.id, id))

@@ -4,7 +4,7 @@ import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { PartCategories, Parts, PartCategoryAssignments, Plates } from "@/lib/db/schema/cam";
-import { checkUserTeam, CommonAuthorization, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
 import { and, eq, inArray } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(PartCategoryAssignments).omit({ category_id: true });
@@ -74,11 +74,11 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   console.log(pc);
   if (!pc) return routeResponse(404);
   await checkUserTeam(tx, authType, pc.team_id);
-  return routeResponse(200, await parseJsonBody(pc.assignments, zod.array(Assignment)));
+  return routeResponse(200, await parseSchema(pc.assignments, zod.array(Assignment)));
 }, { user: {}, apiKey: { scopes: [scopes.pc.assignments.read] } });
 
 export const PUT = routeFactory(async (req, authType, tx) => {
-  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const body = await parseSchema(await req.json(), CreateSchema);
   const plate = await tx.query.Plates.findFirst({
     where: eq(Plates.id, body.plate_id),
     with: { category: true }

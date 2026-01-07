@@ -161,7 +161,7 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) });
   await checkUserTeam(tx, authType, pc?.team_id);
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
-  if (!data) return routeResponse(422);
+  if (!data || !("file" in files)) return routeResponse(422);
   const [id] = await tx
     .insert(Parts)
     .values({ ...data, original_quantity: data.quantity, category_id })

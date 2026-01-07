@@ -144,7 +144,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id, true);
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
-  if (!data) return routeResponse(422);
+  if (!data || !("file" in files)) return routeResponse(422);
   const [id] = await tx.insert(Machines).values({
     ...data,
     team_id

@@ -184,7 +184,10 @@ export function handleDatabaseError(err: unknown): NextResponse {
   if (err instanceof DrizzleQueryError)
     cause = err.cause as DatabaseError;
   if (cause instanceof DatabaseError) {
-    if (cause.code === "23505") return routeResponse(409); // Unique violation
+    switch (cause.code) {
+      case "23505":
+      case "23503": return routeResponse(409);
+    }
   }
   throw err;
 }

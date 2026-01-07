@@ -137,7 +137,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Parts.findMany({
     where: eq(Parts.category_id, id)
   }), MultipleParts));
-}, { requiredScopes: [scopes.parts.read] });
+}, { user: {}, apiKey: { scopes: [scopes.parts.read] } });
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -154,7 +154,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
       Key: `teams/${part.category.team_id}/pc/${part.category_id}/parts/${id}`
     }), { expiresIn: 120 })
   }, Part));
-}, { requiredScopes: [scopes.parts.read] });
+}, { user: {}, apiKey: { scopes: [scopes.parts.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
@@ -175,7 +175,7 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
     ContentType: files["file"].type
   }));
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.parts.write] } });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -186,7 +186,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, part?.category.team_id);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(Parts).set(body).where(eq(Parts.id, id)).returning({ id: Parts.id });
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.parts.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -202,4 +202,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/pc/${part.category_id}/parts/${id}`
   }));
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] })
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.parts.write] } });

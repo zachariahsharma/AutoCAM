@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
@@ -122,7 +122,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Machines.findMany({
     where: eq(Machines.team_id, id)
   }), MultipleMachines));
-}, { requiredScopes: [scopes.machines.read] });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.machines.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -138,7 +141,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
       Key: `teams/${machine.team_id}/machines/${id}`
     }), { expiresIn: 120 })
   }, Machine));
-}, { requiredScopes: [scopes.machines.read] })
+}, { user: {}, apiKey: { scopes: [scopes.machines.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -159,7 +162,10 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   }));
 
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.machines.write] });
+}, {
+  user: { emailVerified: true, idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.machines.write], idPolicy: IDPolicy.Forbidden }
+});
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -167,7 +173,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, machine?.team_id, true);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(Machines).set(body).where(eq(Machines.id, id)).returning({ id: Machines.id });
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.machines.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.machines.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -179,4 +185,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${machine.team_id}/machines/${id}`
   }));
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.machines.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.machines.write] } });

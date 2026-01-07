@@ -117,7 +117,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.TeamKeys.findMany({
     where: eq(TeamKeys.team_id, id),
   }), zod.array(Key)));
-});
+}, { user: {} });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   if (!team_id) return routeResponse(422);
@@ -130,7 +130,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     digest: crypto.createHmac("sha256", "key").update(token).digest("hex")
   });
   return routeResponse(201, { token });
-}, { emailVerifiedNeeded: true });
+}, { user: { emailVerified: true } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -138,7 +138,7 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!key) return routeResponse(404);
   await checkUserTeam(tx, authType, key.team_id, true);
   await tx.delete(TeamKeys).where(eq(TeamKeys.id, id));
-}, { emailVerifiedNeeded: true });
+}, { user: { emailVerified: true } });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -148,4 +148,4 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     .set(body)
     .where(eq(TeamKeys.id, id))
     .returning({ id: TeamKeys.id })
-}, { emailVerifiedNeeded: true })
+}, { user: { emailVerified: true } })

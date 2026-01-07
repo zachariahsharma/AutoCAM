@@ -84,7 +84,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     .innerJoin(subquery, eq(BoxTubeJobs.job_id, subquery.id))
     .where(eq(BoxTubeJobs.box_tube_id, id))).map(x => x.job);
   return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
-}, { requiredScopes: [scopes.jobs.read] });
+}, { user: {}, apiKey: { scopes: [scopes.jobs.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   if (!box_tube_id) return routeResponse(422);
@@ -101,4 +101,4 @@ export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   }).returning({ id: Jobs.id });
   await tx.insert(BoxTubeJobs).values({ job_id: id.id, box_tube_id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.create] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.jobs.create] } });

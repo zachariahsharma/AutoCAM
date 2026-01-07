@@ -41,7 +41,7 @@ export const Request = routeFactory(async (req, authType, tx) => {
   if (result.length === 0) return routeResponse(204);
   const [job] = result;
   return routeResponse(200, await parseJsonBody(job, RequestSchema));
-}, { requiredScopes: [scopes.jobs.process] });
+}, { apiKey: { scopes: [scopes.jobs.process] } });
 
 export const Complete = routeFactory(async (req, authType, tx, id) => {
   if (!authType.keyDigest) return routeResponse(401);
@@ -62,7 +62,7 @@ export const Complete = routeFactory(async (req, authType, tx, id) => {
     }));
   }
   return routeResponse(204);
-}, { requiredScopes: [scopes.jobs.process] });
+}, { apiKey: { scopes: [scopes.jobs.process] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -75,4 +75,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${job.team_id}/jobs/${id}`
   }));
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.delete] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.jobs.delete] } });

@@ -91,7 +91,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     .innerJoin(subquery, eq(PlateJobs.job_id, subquery.id))
     .where(eq(PlateJobs.plate_id, id))).map(x => x.job);
   return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
-}, { requiredScopes: [scopes.jobs.read] });
+}, { user: {}, apiKey: { scopes: [scopes.jobs.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   if (!plate_id) return routeResponse(422);
@@ -117,4 +117,4 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   // Create plate job
   await tx.insert(PlateJobs).values({ job_id: id.id, plate_id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.create] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.jobs.create] } });

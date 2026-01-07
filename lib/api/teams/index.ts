@@ -150,22 +150,21 @@ export const GET = routeFactory(async (req, authType, tx) => {
   });
   if (!key) return routeResponse(403, { message: "API Key is not valid" });
   return routeResponse(200, await parseJsonBody(key.team, schema));
-}, { requiredScopes: [scopes.teams.read] });
+}, { user: {}, apiKey: { scopes: [scopes.teams.read] } });
 
 export const POST = routeFactory(async (req, authType, tx) => {
-  if (!authType.userId) return routeResponse(401, { message: "User session not found" });
   const body = await parseJsonBody(await req.json(), CreateSchema);
   const [id] = await tx.insert(Teams).values({
     ...body,
-    owner: authType.userId
+    owner: authType.userId!
   }).returning({ id: Teams.id });
   await tx.insert(TeamMembers).values({
-    user_id: authType.userId,
+    user_id: authType.userId!,
     team_id: id.id,
     admin: true
   });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { user: { emailVerified: true } });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -194,7 +193,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     }));
   }
   return routeResponse(204);
-}, { emailVerifiedNeeded: true });
+}, { user: { emailVerified: true } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -206,4 +205,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (team.owner !== authType.userId) throw routeResponse(401, { message: "The user is not the owner of the team" });
   tx.delete(Teams).where(eq(Teams.id, id));
   await s3DeleteWithPrefix(`teams/${id}/`);
-}, { emailVerifiedNeeded: true });
+}, { user: { emailVerified: true } });

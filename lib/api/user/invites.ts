@@ -17,7 +17,7 @@ export const GET = routeFactory(async (req, authType, tx) => {
     with: { team: true },
     where: eq(TeamInvites.email, session.user.email)
   })).map(x => ({ ...x, team: x.team.name })), zod.array(Invite)))
-});
+}, { user: {} });
 
 export const Accept = routeFactory<string>(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -39,7 +39,7 @@ export const Accept = routeFactory<string>(async (req, authType, tx, id) => {
 
   // If accessed directly (email link), redirect to dashboard
   return NextResponse.redirect(new URL("/dashboard", req.url));
-}, { idSchema: zod.uuid() });
+}, { user: {}, idSchema: zod.uuid() });
 
 export const DELETE = routeFactory<string>(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -52,4 +52,4 @@ export const DELETE = routeFactory<string>(async (req, authType, tx, id) => {
   if (invite?.email !== session.user.email)
     return routeResponse(401);
   await tx.delete(TeamInvites).where(eq(TeamInvites.id, id));
-}, { idSchema: zod.uuid() });
+}, { user: {}, idSchema: zod.uuid() });

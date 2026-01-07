@@ -7,7 +7,7 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { scopeNames as scopes } from "../scopes";
 import { teamIdFromDigest } from "../auth/server";
 import { Transaction } from "../db";
-import { routeFactory, routeResponse, parseSchema, parseJsonFile, checkUserTeam, parseFormData } from "./common";
+import { routeFactory, routeResponse, parseSchema, checkUserTeam, parseFormData } from "./common";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ id: true, kind: true, payload: true });
 export const Job = createSelectSchema(Jobs).extend({

@@ -1,6 +1,6 @@
 import zod from "zod";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseFormData, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { ToolMachines, ToolMaterials, Tools } from "../db/schema/cam";
 import { registry } from "../openapi/registry";
@@ -11,10 +11,13 @@ import { client } from "../aws";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const CreateSchema = createInsertSchema(Tools).extend({
-  machine_ids: zod.array(zod.number()),
-  material_ids: zod.array(zod.number())
-}).omit({ team_id: true });
+const CreateSchema = zod.object({
+  data: createInsertSchema(Tools).extend({
+    machine_ids: zod.array(zod.number()),
+    material_ids: zod.array(zod.number())
+  }).omit({ team_id: true }),
+  file: zod.instanceof(File).openapi({ type: "string", format: "binary" })
+});
 const UpdateSchema = createUpdateSchema(Tools).omit({ team_id: true });
 const Tool = createSelectSchema(Tools).extend({ file: zod.httpUrl() }).omit({ team_id: true }).openapi("Tool");
 const MultipleTools = zod.array(Tool.omit({ file: true }));
@@ -178,8 +181,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id, true);
-  const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
-  if (!data || !("file" in files)) return routeResponse(422);
+  const { data, file } = await parseFormData(await req.formData(), CreateSchema);
   const [id] = await tx.insert(Tools).values({ ...data, team_id }).returning({ id: Tools.id });
   await tx.insert(ToolMachines).values(data.machine_ids.map(x => ({ machine_id: x, tool_id: id.id })));
   await tx.insert(ToolMaterials).values(data.material_ids.map(x => ({ material_id: x, tool_id: id.id })));
@@ -187,8 +189,8 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/tools/${id.id}`,
     ACL: "private",
-    Body: await files["file"].bytes(),
-    ContentType: files["file"].type
+    Body: await file.bytes(),
+    ContentType: file.type
   }));
   return routeResponse(201, id);
 }, {

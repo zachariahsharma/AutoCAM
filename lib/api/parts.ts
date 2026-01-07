@@ -4,13 +4,16 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, parseSchema, parseJsonFile, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, parseFormData, parseSchema, routeFactory, routeResponse, ValidationError } from "./common";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const CreateSchema = createInsertSchema(Parts).omit({ category_id: true, original_quantity: true });
+const CreateSchema = zod.object({
+  data: createInsertSchema(Parts).omit({ category_id: true, original_quantity: true }),
+  file: zod.instanceof(File).openapi({ type: "string", format: "binary" })
+});
 const UpdateSchema = createUpdateSchema(Parts).omit({ category_id: true, original_quantity: true });
 const Part = createSelectSchema(Parts).extend({ file: zod.httpUrl() }).omit({ category_id: true }).openapi("Part");
 const MultipleParts = zod.array(Part.omit({ file: true }));
@@ -160,8 +163,7 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) });
   await checkUserTeam(tx, authType, pc?.team_id);
-  const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
-  if (!data || !("file" in files)) return routeResponse(422);
+  const { data, file } = await parseFormData(await req.formData(), CreateSchema);
   const [id] = await tx
     .insert(Parts)
     .values({ ...data, original_quantity: data.quantity, category_id })
@@ -171,8 +173,8 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/pc/${category_id}/parts/${id.id}`,
     ACL: "private",
-    Body: await files["file"].bytes(),
-    ContentType: files["file"].type
+    Body: await file.bytes(),
+    ContentType: file.type
   }));
   return routeResponse(201, id);
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.parts.write] } });

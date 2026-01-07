@@ -6,14 +6,17 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, NotFound, parseSchema, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, NotFound, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, ValidationError, parseFormData } from "../common";
 import { teamIdFromDigest } from "../../auth/server";
 import { eq } from "drizzle-orm";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { client } from "@/lib/aws";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const CreateSchema = createInsertSchema(BoxTubes).omit({ team_id: true });
+const CreateSchema = zod.object({
+  data: createInsertSchema(BoxTubes).omit({ team_id: true }),
+  file: zod.instanceof(File).openapi({ type: "string", format: "binary" })
+});
 const UpdateSchema = createUpdateSchema(BoxTubes).omit({ team_id: true });
 const BoxTube = createSelectSchema(BoxTubes).extend({ file: zod.httpUrl() }).omit({ team_id: true }).openapi("Box Tube");
 const MultipleBoxTubes = zod.array(BoxTube.omit({ file: true }));
@@ -152,15 +155,14 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id);
 
-  const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
-  if (!data || !("file" in files)) return routeResponse(422);
+  const { data, file } = await parseFormData(await req.formData(), CreateSchema);
   const [id] = await tx.insert(BoxTubes).values({ ...data, team_id }).returning({ id: BoxTubes.id });
   await client.send(new PutObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/boxTubes/${id.id}`,
     ACL: "private",
-    Body: await files["file"].bytes(),
-    ContentType: files["file"].type
+    Body: await file.bytes(),
+    ContentType: file.type
   }));
   return routeResponse(201, id);
 }, {

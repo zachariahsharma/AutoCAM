@@ -5,7 +5,7 @@ import { apiKey, userSession } from "../auth";
 import { PartCategories } from "../../db/schema/cam";
 import { scopeNames as scopes } from "../../scopes";
 import zod from "zod";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
 import { teamIdFromDigest } from "../../auth/server";
 import { and, eq } from "drizzle-orm";
 import { client } from '@/lib/aws';
@@ -135,7 +135,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
       data.thickness ? eq(PartCategories.thickness, data.thickness) : undefined
     )
   }), zod.array(PartCategory)))
-}, { user: {}, apiKey: { scopes: [scopes.pc.read] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.pc.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -144,7 +147,10 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   const data = await parseJsonBody(await req.json(), CreateSchema);
   const [id] = await tx.insert(PartCategories).values({ ...data, team_id }).returning({ id: PartCategories.id })
   return routeResponse(201, id);
-}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.write] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.pc.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);

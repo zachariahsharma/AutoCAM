@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 
@@ -118,7 +118,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Materials.findMany({
     where: eq(Materials.team_id, id)
   }), zod.array(Material)));
-}, { user: {}, apiKey: { scopes: [scopes.materials.read] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.materials.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -135,7 +138,10 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
   const [id] = await tx.insert(Materials).values({ ...body, team_id }).returning({ id: Materials.id });
   return routeResponse(201, id);
-}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.materials.write] } });
+}, {
+  user: { emailVerified: true, idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.materials.write], idPolicy: IDPolicy.Forbidden }
+});
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);

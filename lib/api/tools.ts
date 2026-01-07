@@ -1,6 +1,6 @@
 import zod from "zod";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { ToolMachines, ToolMaterials, Tools } from "../db/schema/cam";
 import { registry } from "../openapi/registry";
@@ -151,7 +151,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Tools.findMany({
     where: eq(Tools.team_id, id)
   }), MultipleTools));
-}, { user: {}, apiKey: { scopes: [scopes.tools.read] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.tools.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -167,7 +170,10 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
       Key: `teams/${tool.team_id}/tools/${id}`
     }), { expiresIn: 120 })
   }, Tool));
-}, { user: {}, apiKey: { scopes: [scopes.tools.read] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.tools.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -185,7 +191,10 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     ContentType: files["file"].type
   }));
   return routeResponse(201, id);
-}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.tools.write] } });
+}, {
+  user: { emailVerified: true, idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.tools.write], idPolicy: IDPolicy.Forbidden }
+});
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);

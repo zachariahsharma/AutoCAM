@@ -3,7 +3,7 @@ import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { user } from "@/lib/db/schema/auth";
 import { and, eq, sql } from "drizzle-orm";
 import zod from "zod";
-import { checkUserTeam, CommonAuthorization, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, IDPolicy, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { registry } from "@/lib/openapi/registry";
 import { createSelectSchema } from "drizzle-zod";
@@ -37,7 +37,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     where: eq(TeamMembers.team_id, id),
     with: { user: true },
   })).map(x => ({ ...x, ...x.user })), zod.array(Member)));
-}, { user: {}, apiKey: { scopes: [scopes.teams.read] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.teams.read], idPolicy: IDPolicy.Forbidden }
+});
 
 const UpdateSchema = zod.object({ 
   email: zod.email(),

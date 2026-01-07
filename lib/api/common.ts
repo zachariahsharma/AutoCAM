@@ -208,7 +208,7 @@ export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: nu
   if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
 }
 
-enum IDPolicy {
+export enum IDPolicy {
   // The route cannot have an ID
   Forbidden,
   // The route must have an ID
@@ -250,6 +250,10 @@ export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, conf
       } else if (authType.keyDigest) {
         if (!config.apiKey)
           throw routeResponse(403, { message: "API keys are not allowed to use this route" });
+        if (config.apiKey.idPolicy === IDPolicy.Forbidden && hasId)
+          throw routeResponse(400, { message: "API key cannot have an ID parameter" });
+        else if (config.apiKey.idPolicy === IDPolicy.Required && !hasId)
+          throw routeResponse(400, { message: "API key must have an ID parameter" })
         const key = await db.query.TeamKeys.findFirst({
           where: and(
             eq(TeamKeys.digest, authType.keyDigest),
@@ -257,10 +261,6 @@ export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, conf
           )
         });
         if (!key) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" });
-        if (config.apiKey.idPolicy === IDPolicy.Forbidden && hasId)
-          throw routeResponse(400, { message: "API key cannot have an ID parameter" });
-        else if (config.apiKey.idPolicy === IDPolicy.Required && !hasId)
-          throw routeResponse(400, { message: "API key must have an ID parameter" })
       } else throw routeResponse(401, { message: "No valid form of authentication found" });
       if (hasId) {
         const schema = (config.idSchema ?? zod.coerce.number().positive()) as ZodType<T>;

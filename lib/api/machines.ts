@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
@@ -122,7 +122,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Machines.findMany({
     where: eq(Machines.team_id, id)
   }), MultipleMachines));
-}, { user: {}, apiKey: { scopes: [scopes.machines.read] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.machines.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -159,7 +162,10 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   }));
 
   return routeResponse(201, id);
-}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.machines.write] } });
+}, {
+  user: { emailVerified: true, idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.machines.write], idPolicy: IDPolicy.Forbidden }
+});
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);

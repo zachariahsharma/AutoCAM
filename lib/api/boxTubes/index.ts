@@ -6,7 +6,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, NotFound, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
 import { teamIdFromDigest } from "../../auth/server";
 import { eq } from "drizzle-orm";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -129,7 +129,10 @@ export const GET = routeFactory(async (req, authType, tx, teamId) => {
   return routeResponse(200, await parseJsonBody(await tx.query.BoxTubes.findMany({
     where: eq(BoxTubes.team_id, teamId)
   }), MultipleBoxTubes));
-}, { user: {}, apiKey: { scopes: [scopes.boxTubes.read] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.boxTubes.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -160,7 +163,10 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     ContentType: files["file"].type
   }));
   return routeResponse(201, id);
-}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.boxTubes.write] } });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.boxTubes.write], idPolicy: IDPolicy.Forbidden }
+});
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);

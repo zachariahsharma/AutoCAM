@@ -52,6 +52,14 @@ function PartsToPlatesCard({
         plate_id: number;
         quantity: number;
       }> = await res.json();
+      console.log(
+        "Assignments for plate",
+        currentPlateId,
+        ":",
+        assignments,
+        "for category",
+        categoryId
+      );
       const newAssignments = assignments
         .map((a) => {
           if (a.plate_id !== currentPlateId) return null;
@@ -61,12 +69,19 @@ function PartsToPlatesCard({
           };
         })
         .filter((a): a is { partId: number; quantity: number } => a !== null);
-      console.log("Assignments for plate", currentPlateId, ":", assignments);
       if (!mounted) return;
       setPartsToPlates((prev) => ({
         ...prev,
         [currentPlateId]: newAssignments,
       }));
+      const jobRes = await fetch(`/api/plates/${currentPlateId}/jobs`);
+      if (!jobRes.ok) {
+        console.error("Failed to fetch plate jobs:", await jobRes.text());
+        return;
+      }
+      const jobsData: Array<{ id: number; status: string }> =
+        await jobRes.json();
+      setJobs(jobsData);
     }
     assignedParts();
     return () => {
@@ -309,19 +324,62 @@ function PartsToPlatesCard({
         </button>
       </div>
       <div className={styles.jobsContainer}>
-        {jobs.map((job) => (
-          <div key={job.id} className={styles.jobCard}>
-            <span>Job ID: {job.id}</span>
-            <div>
-              <span>Queue</span>
-              <span />
-              <span>Arranging</span>
-              <span />
-              <span>Queue</span>
-              <span />
-              <span>CAM</span>
+        {jobs.map((job, index) => (
+          <div key={index} className={styles.jobCard}>
+            <span className={styles.jobId}>Job {index + 1}</span>
+            <div className={styles.jobStatus}>
+              <span className={styles.statusLabel + " " + styles.queued}>
+                <motion.svg
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    pointerEvents: "none",
+                    zIndex: 0,
+                  }}
+                >
+                  <motion.rect
+                    x=".5"
+                    y=".5"
+                    width="calc(100% - 1px)"
+                    height="calc(100% - 1px)"
+                    rx="10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    strokeDasharray="10 8"
+                    animate={{ strokeDashoffset: [0, -36] }}
+                    transition={{
+                      duration: 1.2,
+                      ease: "linear",
+                      repeat: Infinity,
+                    }}
+                  />
+                </motion.svg>
+                Queue
+              </span>
+              <span className={styles.statusDot} />
+              <span className={styles.statusLabel + " " + styles.largetext}>
+                Arranging
+              </span>
+              <span className={styles.statusDot} />
+              <span className={styles.statusLabel + " " + styles.queued}>
+                Queue
+              </span>
+              <span className={styles.statusDot} />
+              <span className={styles.statusLabel + " " + styles.largetext}>CAM</span>
             </div>
-            <span>Status: {job.status}</span>
+            <div className={styles.trashContainer}>
+              <Image
+                src={"/mat_thickness/trash.svg"}
+                alt={"Trash"}
+                width={2000}
+                height={2000}
+                className={styles.trashIcon}
+              />
+            </div>
           </div>
         ))}
       </div>

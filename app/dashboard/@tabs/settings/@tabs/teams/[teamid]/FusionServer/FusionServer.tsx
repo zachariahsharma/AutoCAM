@@ -1,11 +1,5 @@
 import styles from "./fusionserver.module.css";
-import {
-  ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useTabEvents } from "@/app/dashboard/@tabs/settings/teamUpdate";
@@ -14,15 +8,7 @@ import { Alert } from "@/app/signup/page";
 import type { ApiKey } from "@/app/types";
 
 // Scopes required for Fusion Server
-const FUSION_SERVER_SCOPES = [
-  "team:read",
-  "part_categories:read",
-  "part_categories:write",
-  "parts:read",
-  "parts:write",
-  "plates:read",
-  "plates:write",
-];
+const FUSION_SERVER_SCOPES = ["jobs:process", "parts:read", "plates:read"];
 
 export function Modal({
   children,
@@ -125,11 +111,11 @@ export default function FusionServerPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    
+
     if (id == undefined) {
       return;
     }
-    
+
     // Call the API key endpoint with fusion server scopes and flag
     const response = await fetch(`/api/teams/${id.id}/keys`, {
       method: "POST",
@@ -281,10 +267,7 @@ export default function FusionServerPage() {
             </div>
             <hr className={styles.divider} />
             <div id={styles.inputContainer}>
-              <div
-                className={styles.scopeInput}
-                id={styles.generatedInput}
-              >
+              <div className={styles.scopeInput} id={styles.generatedInput}>
                 <span id={styles.generatedKey}>
                   {generatedApiKey.slice(0, 5)}
                 </span>
@@ -293,7 +276,11 @@ export default function FusionServerPage() {
                 </span>
                 <div id={styles.copyIconContainer}>
                   <Image
-                    src={copied ? "/settings/teams/apikey/Check.svg" : "/settings/teams/apikey/Copy.svg"}
+                    src={
+                      copied
+                        ? "/settings/teams/apikey/Check.svg"
+                        : "/settings/teams/apikey/Copy.svg"
+                    }
                     width={2000}
                     height={2000}
                     alt="copy"

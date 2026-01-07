@@ -153,7 +153,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   await checkUserTeam(tx, authType, team_id);
 
   const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
-  if (!("file" in files)) return routeResponse(422);
+  if (!data || !("file" in files)) return routeResponse(422);
   const [id] = await tx.insert(BoxTubes).values({ ...data, team_id }).returning({ id: BoxTubes.id });
   await client.send(new PutObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,

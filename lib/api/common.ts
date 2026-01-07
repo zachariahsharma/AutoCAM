@@ -208,49 +208,76 @@ export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: nu
   if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
 }
 
+enum IDPolicy {
+  // The route cannot have an ID
+  Forbidden,
+  // The route must have an ID
+  Required
+};
+
 export interface RouteFactoryConfig<T> {
-  emailVerifiedNeeded?: boolean;
-  requiredScopes?: string[];
+  user?: {
+    // Whether the email needs to be verified
+    emailVerified?: boolean;
+    idPolicy?: IDPolicy
+  },
+  apiKey?: {
+    scopes: string[],
+    idPolicy?: IDPolicy
+  }
   idSchema?: ZodType<T>
 }
 
 export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx: Transaction, id: T | null) => Promise<any>;
 
-export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config?: RouteFactoryConfig<T>) {
-  config ??= {};
+export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config: RouteFactoryConfig<T>) {
   return async (req: NextRequest, { params }: { params: Promise<{ id: string } | {} | undefined> }) => {
-    const authType = await getAuthType();
-    try { await validateAuthType(authType, config.emailVerifiedNeeded ?? false); }
-    catch (err) { return err; }
-    
-    return await db.transaction(async tx => {
-      try {
-        if (authType.keyDigest) {
-          if (!config.requiredScopes) throw routeResponse(403, { message: "API Keys are not authorized to use this endpoint" });
-          const result = await tx.query.TeamKeys.findFirst({
-            where: and(
-              eq(TeamKeys.digest, authType.keyDigest),
-              arrayContains(TeamKeys.scopes, config.requiredScopes)
-            )
-          });
-          if (!result) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" })
-        }
-        let id: T | null = null;
-        const p = await params;
-        if (p && "id" in p) {
-          const schema = (config.idSchema ?? zod.coerce.number().positive()) as ZodType<T>;
-          id = await parseJsonBody(p.id, schema);
-        }
+    try {
+      const authType = await getAuthType();
+      let id: T | null = null;
+      const p = await params;
+      const hasId = p !== undefined && "id" in p;
+      if (authType.userId) {
+        if (!config.user)
+          throw routeResponse(403, { message: "Users are not allowed to use this route" });
+        const session = (await auth.api.getSession({ headers: await headers() }))!;
+        if ((config.user.emailVerified ?? false) && !session.user.emailVerified)
+          throw routeResponse(403, { message: "User email has not been verified" });
+        if (config.user.idPolicy === IDPolicy.Forbidden && hasId)
+          throw routeResponse(400, { message: "User cannot have an ID parameter" });
+        else if (config.user.idPolicy === IDPolicy.Required && !hasId)
+          throw routeResponse(400, { message: "User must have an ID parameter" })
+      } else if (authType.keyDigest) {
+        if (!config.apiKey)
+          throw routeResponse(403, { message: "API keys are not allowed to use this route" });
+        const key = await db.query.TeamKeys.findFirst({
+          where: and(
+            eq(TeamKeys.digest, authType.keyDigest),
+            arrayContains(TeamKeys.scopes, config.apiKey.scopes)
+          )
+        });
+        if (!key) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" });
+        if (config.apiKey.idPolicy === IDPolicy.Forbidden && hasId)
+          throw routeResponse(400, { message: "API key cannot have an ID parameter" });
+        else if (config.apiKey.idPolicy === IDPolicy.Required && !hasId)
+          throw routeResponse(400, { message: "API key must have an ID parameter" })
+      } else throw routeResponse(401, { message: "No valid form of authentication found" });
+      if (hasId) {
+        const schema = (config.idSchema ?? zod.coerce.number().positive()) as ZodType<T>;
+        id = await parseJsonBody(p.id, schema);
+      }
+
+      return await db.transaction(async tx => {
         const result = await callback(req, authType, tx, id);
         if (result === undefined) return routeResponse(204);
         return result;
-      } catch (err) {
-        if (err instanceof NextResponse) return err;
-        if (err instanceof DatabaseError || err instanceof DrizzleQueryError)
-          return handleDatabaseError(err);
-        throw err;
-      }
-    });
+      });
+    } catch (err) {
+      if (err instanceof NextResponse) return err;
+      if (err instanceof DatabaseError || err instanceof DrizzleQueryError)
+        return handleDatabaseError(err);
+      throw err;
+    }
   }
 }
 

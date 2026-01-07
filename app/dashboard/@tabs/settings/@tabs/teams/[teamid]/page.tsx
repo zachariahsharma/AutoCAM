@@ -1,7 +1,6 @@
 "use client";
 
 import styles from "./team.module.css";
-import { Material, Machine, Tool } from "@/app/types";
 import { useEffect, useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";

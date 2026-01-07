@@ -1,5 +1,5 @@
-import { and, eq, isNotNull, isNull, relations, sql, SQL } from "drizzle-orm";
-import { customType, doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import { and, isNotNull, isNull, relations } from "drizzle-orm";
+import { doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { TeamKeys, Teams } from "./entities";
 
 export const PartCategories = pgTable("part_categories", {
@@ -73,7 +73,8 @@ export const ToolMachines = pgTable("tool_machines", {
   machine_id: integer().notNull().references(() => Machines.id, { onDelete: "cascade" })
 })
 
-export const PartsToPlates = pgTable("parts_to_plates", {
+export const PartCategoryAssignments = pgTable("parts_to_plates", {
+  category_id: integer().notNull().references(() => PartCategories.id, { onDelete: "cascade" }),
   plate_id: integer().notNull().references(() => Plates.id, { onDelete: "cascade" }),
   part_id: integer().notNull().references(() => Parts.id, { onDelete: "cascade" }),
   quantity: integer().notNull()
@@ -123,7 +124,7 @@ export const PlatesRelations = relations(Plates, ({ one, many }) => ({
     fields: [Plates.category_id],
     references: [PartCategories.id]
   }),
-  assignments: many(PartsToPlates),
+  assignments: many(PartCategoryAssignments),
   jobs: many(PlateJobs)
 }));
 
@@ -152,21 +153,26 @@ export const BoxTubeJobsRelations = relations(BoxTubeJobs, ({ one }) => ({
 export const PartCategoriesRelations = relations(PartCategories, ({ many, one }) => ({
   parts: many(Parts),
   plates: many(Plates),
+  assignments: many(PartCategoryAssignments),
   team: one(Teams, {
     fields: [PartCategories.team_id],
     references: [Teams.id]
   })
 }));
 
-export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
+export const PartCategoryAssignmentsRelations = relations(PartCategoryAssignments, ({ one }) => ({
   part: one(Parts, {
-    fields: [PartsToPlates.part_id],
+    fields: [PartCategoryAssignments.part_id],
     references: [Parts.id]
   }),
   plate: one(Plates, {
-    fields: [PartsToPlates.plate_id],
+    fields: [PartCategoryAssignments.plate_id],
     references: [Plates.id]
   }),
+  category: one(PartCategories, {
+    fields: [PartCategoryAssignments.category_id],
+    references: [PartCategories.id]
+  })
 }));
 
 export const BoxTubesRelations = relations(BoxTubes, ({ one, many }) => ({

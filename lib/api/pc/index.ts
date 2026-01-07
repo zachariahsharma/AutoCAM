@@ -5,10 +5,9 @@ import { apiKey, userSession } from "../auth";
 import { PartCategories } from "../../db/schema/cam";
 import { scopeNames as scopes } from "../../scopes";
 import zod from "zod";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
 import { teamIdFromDigest } from "../../auth/server";
 import { and, eq } from "drizzle-orm";
-import { client } from '@/lib/aws';
 
 const CreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
@@ -124,35 +123,41 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, id);
   const params = req.nextUrl.searchParams;
 
-  const data = await parseJsonBody({
+  const data = await parseSchema({
     material: params.get("material"),
     thickness: params.get("thickness")
   }, SearchParams);
-  return routeResponse(200, await parseJsonBody(await tx.query.PartCategories.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.PartCategories.findMany({
     where: and(
       eq(PartCategories.team_id, id),
       data.material !== null ? eq(PartCategories.material, data.material) : undefined,
       data.thickness ? eq(PartCategories.thickness, data.thickness) : undefined
     )
   }), zod.array(PartCategory)))
-}, { requiredScopes: [scopes.pc.read] });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.pc.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id);
 
-  const data = await parseJsonBody(await req.json(), CreateSchema);
+  const data = await parseSchema(await req.json(), CreateSchema);
   const [id] = await tx.insert(PartCategories).values({ ...data, team_id }).returning({ id: PartCategories.id })
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.write] });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.pc.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
   await checkUserTeam(tx, authType, pc?.team_id);
-  const body = await parseJsonBody(await req.json(), UpdateSchema);
-  return tx.update(PartCategories).set(body).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id })
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.write] });
+  const body = await parseSchema(await req.json(), UpdateSchema);
+  await tx.update(PartCategories).set(body).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id })
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -161,4 +166,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, pc.team_id);
   await tx.delete(PartCategories).where(eq(PartCategories.id, id));
   await s3DeleteWithPrefix(`teams/${pc.team_id}/pc/${id}/`);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.write] } });

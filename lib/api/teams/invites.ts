@@ -2,10 +2,10 @@ import { TeamInvites, Teams } from "@/lib/db/schema/entities";
 import { user } from "@/lib/db/schema/auth";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import mailer from "@/lib/mailer";
 
 const CreateSchema = createInsertSchema(TeamInvites).omit({ team_id: true, id: true });
@@ -48,16 +48,19 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, id);
 
-  return routeResponse(200, await parseJsonBody(await tx.query.TeamInvites.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.TeamInvites.findMany({
     where: eq(TeamInvites.team_id, id)
   }), zod.array(Invite)));
-}, { requiredScopes: [scopes.teams.invites.read] });
+}, {
+  user: { idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.teams.invites.read], idPolicy: IDPolicy.Forbidden }
+});
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id, true);
 
-  const data = await parseJsonBody(await req.json(), CreateSchema);
+  const data = await parseSchema(await req.json(), CreateSchema);
 
   // Check if the user exists
   const existingUser = await tx.query.user.findFirst({
@@ -83,7 +86,10 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     text: `Join the ${team.name} Team with this link: ${new URL(`/api/user/invites/accept/${invite.id}`, `${process.env.BASE_URL}`)}`
   });
   return routeResponse(204);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.teams.invites.send] });
+}, {
+  user: { emailVerified: true, idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.teams.invites.send], idPolicy: IDPolicy.Forbidden }
+});
 
 const DeleteSchema = zod.object({ email: zod.email() });
 
@@ -105,7 +111,7 @@ export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id, true);
 
-  const { email } = await parseJsonBody({
+  const { email } = await parseSchema({
     email: req.nextUrl.searchParams.get("email")
   }, DeleteSchema);
 
@@ -114,4 +120,7 @@ export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
     .where(and(eq(TeamInvites.team_id, team_id), eq(TeamInvites.email, email)));
 
   return routeResponse(204);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.teams.invites.cancel] });
+}, {
+  user: { emailVerified: true, idPolicy: IDPolicy.Required },
+  apiKey: { scopes: [scopes.teams.invites.cancel], idPolicy: IDPolicy.Forbidden }
+});

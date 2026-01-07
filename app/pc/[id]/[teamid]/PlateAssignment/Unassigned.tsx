@@ -10,7 +10,6 @@ export function Unassigned() {
     setUnassignedParts,
     partsToPlates,
     setPartsToPlates,
-    plates,
   } = useMaterialEvents();
   function onReceive(data: {
     partId: number;
@@ -61,8 +60,8 @@ export function Unassigned() {
       <h1 className={styles.title}>Unassigned</h1>
       <div className={styles.cardsContainer}>
         {Object.entries(unassignedParts)
-          .filter(([partId, quantity]) => quantity > 0)
-          .map(([partId, quantity]) => (
+          .filter(([, quantity]) => quantity > 0)
+          .map(([partId]) => (
             <UnassignedCard key={partId} partId={Number(partId)} />
           ))}
       </div>

@@ -1,7 +1,7 @@
 import styles from "./partstoplates.module.css";
 import { useMaterialEvents } from "../materialEvents";
 import Image from "next/image";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function PartsToPlates({ categoryId }: { categoryId: number }) {
@@ -29,7 +29,6 @@ function PartsToPlatesCard({
     setPartsToPlates,
     plates,
     setPlates,
-    unassignedParts,
     setUnassignedParts,
   } = useMaterialEvents();
   const [jobs, setJobs] = useState<{ id: number; status: string }[]>([]);
@@ -87,7 +86,7 @@ function PartsToPlatesCard({
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [categoryId, name, plates, setPartsToPlates]);
   function onReceive(data: {
     partId: number;
     quantity: number;

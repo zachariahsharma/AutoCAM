@@ -1,11 +1,10 @@
-import { Jobs, PartsToPlates, PlateJobs, Plates } from "@/lib/db/schema/cam";
-import { eq, inArray } from "drizzle-orm";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { Jobs, PartCategoryAssignments, PlateJobs, Plates } from "@/lib/db/schema/cam";
+import { eq } from "drizzle-orm";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
 import { Job, queuePositionSubquery } from "../jobs";
 
 const CreateSchema = zod.discriminatedUnion("type", [
@@ -90,8 +89,8 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   const result = (await tx.select().from(PlateJobs)
     .innerJoin(subquery, eq(PlateJobs.job_id, subquery.id))
     .where(eq(PlateJobs.plate_id, id))).map(x => x.job);
-  return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
-}, { requiredScopes: [scopes.jobs.read] });
+  return routeResponse(200, await parseSchema(result, zod.array(JobSchema)));
+}, { user: {}, apiKey: { scopes: [scopes.jobs.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   if (!plate_id) return routeResponse(422);
@@ -102,11 +101,11 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   if (!plate) return routeResponse(404);
   console.log(plate);
   await checkUserTeam(tx, authType, plate?.category.team_id);
-  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const body = await parseSchema(await req.json(), CreateSchema);
 
   const { type, ...payload } = body;
-  const assignments = await tx.query.PartsToPlates.findMany({
-    where: eq(PartsToPlates.plate_id, plate_id),
+  const assignments = await tx.query.PartCategoryAssignments.findMany({
+    where: eq(PartCategoryAssignments.plate_id, plate_id),
     columns: { part_id: true, quantity: true }
   });
   const [id] = await tx.insert(Jobs).values({
@@ -117,4 +116,4 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   // Create plate job
   await tx.insert(PlateJobs).values({ job_id: id.id, plate_id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.create] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.jobs.create] } });

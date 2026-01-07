@@ -8,16 +8,19 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, parseJsonFile, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseSchema, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError, parseFormData } from "../common";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });
-const UpdateSchema = createUpdateSchema(Teams).extend({
-  owner: zod.email().optional()
-}).omit({ logo: true });
+const UpdateSchema = zod.object({
+  data: createUpdateSchema(Teams).extend({
+    owner: zod.email().optional()
+  }).omit({ logo: true }),
+  logo: zod.instanceof(File).optional().openapi({ type: "string", format: "binary" })
+});
 const Team = createSelectSchema(Teams).openapi("Team", { description: "A team represents an group of users that contain shared resources, such as materials, machines, part categories, etc." });
 
 // OpenAPI route definitions
@@ -135,66 +138,71 @@ export const GET = routeFactory(async (req, authType, tx) => {
   if (authType.userId) {
     const teams = (await tx.query.TeamMembers.findMany({
       where: eq(TeamMembers.user_id, authType.userId),
-      with: { team: {
-        with: { owner: true }
-      } }
+      with: {
+        team: {
+          with: { owner: true }
+        }
+      }
     })).map(x => x.team);
-    return routeResponse(200, await parseJsonBody(teams, zod.array(schema)));
+    return routeResponse(200, await parseSchema(teams, zod.array(schema)));
   }
   if (!authType.keyDigest) return routeResponse(401);
   const key = await tx.query.TeamKeys.findFirst({
     where: eq(TeamKeys.digest, authType.keyDigest),
-    with: { team: {
-      with: { owner: true }
-    } }
+    with: {
+      team: {
+        with: { owner: true }
+      }
+    }
   });
   if (!key) return routeResponse(403, { message: "API Key is not valid" });
-  return routeResponse(200, await parseJsonBody(key.team, schema));
-}, { requiredScopes: [scopes.teams.read] });
+  return routeResponse(200, await parseSchema(key.team, schema));
+}, { user: {}, apiKey: { scopes: [scopes.teams.read] } });
 
 export const POST = routeFactory(async (req, authType, tx) => {
-  if (!authType.userId) return routeResponse(401, { message: "User session not found" });
-  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const body = await parseSchema(await req.json(), CreateSchema);
   const [id] = await tx.insert(Teams).values({
     ...body,
-    owner: authType.userId
+    owner: authType.userId!
   }).returning({ id: Teams.id });
   await tx.insert(TeamMembers).values({
-    user_id: authType.userId,
+    user_id: authType.userId!,
     team_id: id.id,
     admin: true
   });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true });
+}, { user: { emailVerified: true } });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   await checkUserTeam(tx, authType, id, true);
   const schema = UpdateSchema.extend({
-    owner: zod.email().optional().transform(async owner => {
-      if (!owner) return;
-      const newOwner = await tx.query.user.findFirst({ where: eq(user.email, owner) });
-      if (!newOwner) throw routeResponse(404);
-      return newOwner.id;
+    data: UpdateSchema.shape.data.extend({
+      owner: zod.email().optional().transform(async owner => {
+        if (!owner) return;
+        const newOwner = await tx.query.user.findFirst({ where: eq(user.email, owner) });
+        if (!newOwner) throw routeResponse(404);
+        return newOwner.id;
+      })
     })
   });
-  const { data, files } = await parseJsonFile(await req.formData(), schema);
+  const { data, logo } = await parseFormData(await req.formData(), schema);
   if (!data) return routeResponse(422);
-  let logo: string | undefined;
-  if ("logo" in files)
-    logo = `https://${process.env.AUTOCAM_BUCKET}.s3.amazonaws.com/teams/${id}/logo`
-  await tx.update(Teams).set({ ...data, logo }).where(eq(Teams.id, id));
-  if ("logo" in files) {
+  let logoLink: string | undefined;
+  if (logo)
+    logoLink = `https://${process.env.AUTOCAM_BUCKET}.s3.amazonaws.com/teams/${id}/logo`
+  await tx.update(Teams).set({ ...data, logo: logoLink }).where(eq(Teams.id, id));
+  if (logo) {
     await client.send(new PutObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
       Key: `teams/${id}/logo`,
-      Body: await files["logo"].bytes(),
+      Body: await logo.bytes(),
       ACL: "public-read",
-      ContentType: files["logo"].type
+      ContentType: logo.type
     }));
   }
   return routeResponse(204);
-}, { emailVerifiedNeeded: true });
+}, { user: { emailVerified: true } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -206,4 +214,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (team.owner !== authType.userId) throw routeResponse(401, { message: "The user is not the owner of the team" });
   tx.delete(Teams).where(eq(Teams.id, id));
   await s3DeleteWithPrefix(`teams/${id}/`);
-}, { emailVerifiedNeeded: true });
+}, { user: { emailVerified: true } });

@@ -70,7 +70,7 @@ function SignupContainer({
       { backgroundColor: strengthCount >= 4 ? "#4ade80" : "rgba(0,0,0,0)" },
       { duration: 0.5 }
     );
-  }, [password]);
+  }, [password, animate1, animate2, animate3, animate4, scope1, scope2, scope3, scope4]);
   async function signup(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);

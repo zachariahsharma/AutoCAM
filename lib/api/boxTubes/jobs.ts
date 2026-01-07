@@ -1,9 +1,8 @@
 import { BoxTubeJobs, BoxTubes, Jobs } from "@/lib/db/schema/cam";
 import { eq } from "drizzle-orm";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { Job, queuePositionSubquery } from "../jobs";
@@ -13,7 +12,10 @@ const CreateSchema = zod.object({
   tool_id: zod.number()
 });
 
-const JobSchema = Job.transform(({ kind, ...rest }) => rest);
+const JobSchema = Job.transform(({ kind, ...rest }) => {
+  void kind;
+  return rest;
+});
 
 registry.registerPath({
   method: "get",
@@ -83,8 +85,8 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   const result = (await tx.select().from(BoxTubeJobs)
     .innerJoin(subquery, eq(BoxTubeJobs.job_id, subquery.id))
     .where(eq(BoxTubeJobs.box_tube_id, id))).map(x => x.job);
-  return routeResponse(200, await parseJsonBody(result, zod.array(JobSchema)));
-}, { requiredScopes: [scopes.jobs.read] });
+  return routeResponse(200, await parseSchema(result, zod.array(JobSchema)));
+}, { user: {}, apiKey: { scopes: [scopes.jobs.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   if (!box_tube_id) return routeResponse(422);
@@ -92,7 +94,7 @@ export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   if (!tube) return routeResponse(404);
   await checkUserTeam(tx, authType, tube.team_id);
 
-  const payload = await parseJsonBody(await req.json(), CreateSchema);
+  const payload = await parseSchema(await req.json(), CreateSchema);
 
   const [id] = await tx.insert(Jobs).values({
     team_id: tube.team_id,
@@ -101,4 +103,4 @@ export const POST = routeFactory(async (req, authType, tx, box_tube_id) => {
   }).returning({ id: Jobs.id });
   await tx.insert(BoxTubeJobs).values({ job_id: id.id, box_tube_id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.jobs.create] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.jobs.create] } });

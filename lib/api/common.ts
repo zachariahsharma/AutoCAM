@@ -129,7 +129,7 @@ export async function validateAuthType(authType: AuthType, emailVerifiedNeeded =
 /**
  * Validate and parse request body against a Zod schema
  */
-export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {
+export async function parseSchema<T extends ZodType>(json: unknown, schema: T): Promise<zod.infer<typeof schema>> {
   const result = await schema.safeParseAsync(json);
   if (!result.success) {
     throw NextResponse.json(result.error.issues, { status: 422 });
@@ -137,42 +137,21 @@ export async function parseJsonBody<T extends ZodType>(json: unknown, schema: T)
   return result.data;
 }
 
-export async function parseJsonFile<T extends ZodType>(formData: FormData, schema: T): Promise<{ data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined, files: Record<string, File> }> {
-  const json = formData.get("data");
-  let data: Awaited<ReturnType<typeof parseJsonBody<T>>> | undefined = undefined;
-  if (json) {
-    if (typeof json !== "string") {
-      const error: zod.core.$ZodIssue = {
-        code: "invalid_type",
-        expected: "string",
-        path: [],
-        message: 'Form Data type for "data" is not a string'
-      };
-      throw routeResponse(422, error);
-    }
-
-    let rawJson;
-    try {
-      rawJson = JSON.parse(json);
-    } catch {
-      const error: zod.core.$ZodIssue = {
-        code: "invalid_type",
-        expected: "object",
-        path: [],
-        message: 'Unable to parse JSON in "data"'
-      };
-      throw routeResponse(422, error);
-    }
-    data = await parseJsonBody(rawJson, schema);
-  }
-
-  const files: Record<string, File> = {};
-  formData.forEach(async (value, key) => {
-    if (value instanceof File)
-      files[key] = value;
+export async function parseFormData<T extends zod.ZodType>(formData: FormData, schema: T): Promise<zod.infer<typeof schema>> {
+  const rawData: Record<string, File | string | object> = {};
+  
+  formData.forEach((value, key) => {
+    if (key === 'data' && typeof value === 'string') {
+      try {
+        rawData[key] = JSON.parse(value);
+      } catch {
+        throw routeResponse(422, { message: "Unable to parse JSON" });
+      }
+    } else
+      rawData[key] = value;
   });
 
-  return { data, files };
+  return parseSchema(rawData, schema);
 }
 
 /**
@@ -184,7 +163,10 @@ export function handleDatabaseError(err: unknown): NextResponse {
   if (err instanceof DrizzleQueryError)
     cause = err.cause as DatabaseError;
   if (cause instanceof DatabaseError) {
-    if (cause.code === "23505") return routeResponse(409); // Unique violation
+    switch (cause.code) {
+      case "23505":
+      case "23503": return routeResponse(409);
+    }
   }
   throw err;
 }
@@ -204,53 +186,80 @@ export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: nu
       eq(TeamMembers.team_id, tid)
     )
   });
-  if (!member) throw routeResponse(401, { message: "The user is not part of the team" });
+  if (!member) throw routeResponse(403, { message: "The user is not part of the team" });
   if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
 }
 
+export enum IDPolicy {
+  // The route cannot have an ID
+  Forbidden,
+  // The route must have an ID
+  Required
+};
+
 export interface RouteFactoryConfig<T> {
-  emailVerifiedNeeded?: boolean;
-  requiredScopes?: string[];
+  user?: {
+    // Whether the email needs to be verified
+    emailVerified?: boolean;
+    idPolicy?: IDPolicy
+  },
+  apiKey?: {
+    scopes: string[],
+    idPolicy?: IDPolicy
+  }
   idSchema?: ZodType<T>
 }
 
-export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx: Transaction, id: T | null) => Promise<any>;
+export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx: Transaction, id: T | null) => Promise<NextResponse | undefined>;
 
-export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config?: RouteFactoryConfig<T>) {
-  config ??= {};
-  return async (req: NextRequest, { params }: { params: Promise<{ id: string } | {} | undefined> }) => {
-    const authType = await getAuthType();
-    try { await validateAuthType(authType, config.emailVerifiedNeeded ?? false); }
-    catch (err) { return err; }
-    
-    return await db.transaction(async tx => {
-      try {
-        if (authType.keyDigest) {
-          if (!config.requiredScopes) throw routeResponse(403, { message: "API Keys are not authorized to use this endpoint" });
-          const result = await tx.query.TeamKeys.findFirst({
-            where: and(
-              eq(TeamKeys.digest, authType.keyDigest),
-              arrayContains(TeamKeys.scopes, config.requiredScopes)
-            )
-          });
-          if (!result) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" })
-        }
-        let id: T | null = null;
-        const p = await params;
-        if (p && "id" in p) {
-          const schema = (config.idSchema ?? zod.coerce.number().positive()) as ZodType<T>;
-          id = await parseJsonBody(p.id, schema);
-        }
+export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config: RouteFactoryConfig<T>) {
+  return async (req: NextRequest, { params }: { params: Promise<object | undefined> }) => {
+    try {
+      const authType = await getAuthType();
+      let id: T | null = null;
+      const p = await params;
+      const hasId = p !== undefined && "id" in p;
+      if (authType.userId) {
+        if (!config.user)
+          throw routeResponse(403, { message: "Users are not allowed to use this route" });
+        const session = (await auth.api.getSession({ headers: await headers() }))!;
+        if ((config.user.emailVerified ?? false) && !session.user.emailVerified)
+          throw routeResponse(403, { message: "User email has not been verified" });
+        if (config.user.idPolicy === IDPolicy.Forbidden && hasId)
+          throw routeResponse(400, { message: "User cannot have an ID parameter" });
+        else if (config.user.idPolicy === IDPolicy.Required && !hasId)
+          throw routeResponse(400, { message: "User must have an ID parameter" })
+      } else if (authType.keyDigest) {
+        if (!config.apiKey)
+          throw routeResponse(403, { message: "API keys are not allowed to use this route" });
+        if (config.apiKey.idPolicy === IDPolicy.Forbidden && hasId)
+          throw routeResponse(400, { message: "API key cannot have an ID parameter" });
+        else if (config.apiKey.idPolicy === IDPolicy.Required && !hasId)
+          throw routeResponse(400, { message: "API key must have an ID parameter" })
+        const key = await db.query.TeamKeys.findFirst({
+          where: and(
+            eq(TeamKeys.digest, authType.keyDigest),
+            arrayContains(TeamKeys.scopes, config.apiKey.scopes)
+          )
+        });
+        if (!key) throw routeResponse(403, { message: "API Key does not have the required scopes for this endpoint" });
+      } else throw routeResponse(401, { message: "No valid form of authentication found" });
+      if (hasId) {
+        const schema = (config.idSchema ?? zod.coerce.number().positive()) as ZodType<T>;
+        id = await parseSchema(p.id, schema);
+      }
+
+      return await db.transaction(async tx => {
         const result = await callback(req, authType, tx, id);
         if (result === undefined) return routeResponse(204);
         return result;
-      } catch (err) {
-        if (err instanceof NextResponse) return err;
-        if (err instanceof DatabaseError || err instanceof DrizzleQueryError)
-          return handleDatabaseError(err);
-        throw err;
-      }
-    });
+      });
+    } catch (err) {
+      if (err instanceof NextResponse) return err;
+      if (err instanceof DatabaseError || err instanceof DrizzleQueryError)
+        return handleDatabaseError(err);
+      throw err;
+    }
   }
 }
 

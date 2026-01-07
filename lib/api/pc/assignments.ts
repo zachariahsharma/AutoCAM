@@ -3,12 +3,12 @@ import zod from "zod";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { PartCategories, Parts, PartsToPlates, Plates } from "@/lib/db/schema/cam";
-import { checkUserTeam, CommonAuthorization, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
-import { and, eq, inArray } from "drizzle-orm";
+import { PartCategories, PartCategoryAssignments, Plates } from "@/lib/db/schema/cam";
+import { checkUserTeam, CommonAuthorization, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
+import { and, eq } from "drizzle-orm";
 
-const CreateSchema = createInsertSchema(PartsToPlates);
-const Assignment = createSelectSchema(PartsToPlates).openapi("Part Category Assignment");
+const CreateSchema = createInsertSchema(PartCategoryAssignments).omit({ category_id: true });
+const Assignment = createSelectSchema(PartCategoryAssignments).omit({ category_id: true }).openapi("Part Category Assignment");
 
 registry.registerPath({
   method: "get",
@@ -66,41 +66,33 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
-  // FIXME: Might need to add a category_id column to the parts to plates table
   if (!id) return routeResponse(422);
-  const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
-  await checkUserTeam(tx, authType, pc?.team_id);
-  const parts = (await tx.query.Parts.findMany({
-    where: eq(Parts.category_id, id),
-    columns: { id: true }
-  })).map(x => x.id);
-  const plates = (await tx.query.Parts.findMany({
-    where: eq(Plates.category_id, id),
-    columns: { id: true }
-  })).map(x => x.id);
-  return routeResponse(200, await tx.query.PartsToPlates.findMany({
-    where: and(
-      inArray(PartsToPlates.part_id, parts),
-      inArray(PartsToPlates.plate_id, plates)
-    )
-  }));
-}, { requiredScopes: [scopes.pc.assignments.read] });
+  const pc = await tx.query.PartCategories.findFirst({
+    where: eq(PartCategories.id, id),
+    with: { assignments: true }
+  });
+  console.log(pc);
+  if (!pc) return routeResponse(404);
+  await checkUserTeam(tx, authType, pc.team_id);
+  return routeResponse(200, await parseSchema(pc.assignments, zod.array(Assignment)));
+}, { user: {}, apiKey: { scopes: [scopes.pc.assignments.read] } });
 
 export const PUT = routeFactory(async (req, authType, tx) => {
-  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const body = await parseSchema(await req.json(), CreateSchema);
   const plate = await tx.query.Plates.findFirst({
     where: eq(Plates.id, body.plate_id),
     with: { category: true }
   });
-  await checkUserTeam(tx, authType, plate?.category.team_id)
+  if (!plate) return routeResponse(404);
+  await checkUserTeam(tx, authType, plate.category.team_id)
   if (body.quantity > 0) {
-    await tx.insert(PartsToPlates).values(body)
-      .onConflictDoUpdate({ target: [PartsToPlates.plate_id, PartsToPlates.part_id], set: body });
+    await tx.insert(PartCategoryAssignments).values({ ...body, category_id: plate.category_id })
+      .onConflictDoUpdate({ target: [PartCategoryAssignments.plate_id, PartCategoryAssignments.part_id], set: body });
   } else {
-    await tx.delete(PartsToPlates).where(and(
-      eq(PartsToPlates.part_id, body.part_id),
-      eq(PartsToPlates.plate_id, body.plate_id)
+    await tx.delete(PartCategoryAssignments).where(and(
+      eq(PartCategoryAssignments.part_id, body.part_id),
+      eq(PartCategoryAssignments.plate_id, body.plate_id)
     ));
   }
   return routeResponse(204);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.assignments.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.assignments.write] } });

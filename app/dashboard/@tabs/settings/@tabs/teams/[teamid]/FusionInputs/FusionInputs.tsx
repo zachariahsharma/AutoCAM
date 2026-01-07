@@ -83,8 +83,9 @@ function Machines({ teamId }: { teamId: number }) {
     const timeout = setTimeout(() => {
       updateMachineApi(machineId, name);
       setPendingUpdates((prev) => {
-        const { [machineId]: _, ...rest } = prev;
-        return rest;
+        const next = { ...prev };
+        delete next[machineId];
+        return next;
       });
     }, 500);
 
@@ -238,8 +239,9 @@ function Materials({ teamId }: { teamId: number }) {
     const timeout = setTimeout(() => {
       updateMaterialApi(materialId, name);
       setPendingUpdates((prev) => {
-        const { [materialId]: _, ...rest } = prev;
-        return rest;
+        const next = { ...prev };
+        delete next[materialId];
+        return next;
       });
     }, 500);
 
@@ -674,8 +676,9 @@ function Tools({ teamId }: { teamId: number }) {
     const timeout = setTimeout(() => {
       updateToolNameApi(toolId, name);
       setPendingUpdates((prev) => {
-        const { [toolId]: _, ...rest } = prev;
-        return rest;
+        const next = { ...prev };
+        delete next[toolId];
+        return next;
       });
     }, 500);
 
@@ -778,7 +781,7 @@ export default function FusionInputs({ teamId }: { teamId: number }) {
             onClick={() => setSelectedTab("Machines")}
             className={selectedTab === "Machines" ? styles.active : ""}
           >
-            <img
+            <Image
               src="/settings/teams/machines.png"
               width={2000}
               height={2000}

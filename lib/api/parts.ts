@@ -4,13 +4,16 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, parseJsonFile, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, parseFormData, parseSchema, routeFactory, routeResponse, ValidationError } from "./common";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const CreateSchema = createInsertSchema(Parts).omit({ category_id: true, original_quantity: true });
+const CreateSchema = zod.object({
+  data: createInsertSchema(Parts).omit({ category_id: true, original_quantity: true }),
+  file: zod.instanceof(File).openapi({ type: "string", format: "binary" })
+});
 const UpdateSchema = createUpdateSchema(Parts).omit({ category_id: true, original_quantity: true });
 const Part = createSelectSchema(Parts).extend({ file: zod.httpUrl() }).omit({ category_id: true }).openapi("Part");
 const MultipleParts = zod.array(Part.omit({ file: true }));
@@ -134,10 +137,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
   await checkUserTeam(tx, authType, pc?.team_id);
-  return routeResponse(200, await parseJsonBody(await tx.query.Parts.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.Parts.findMany({
     where: eq(Parts.category_id, id)
   }), MultipleParts));
-}, { requiredScopes: [scopes.parts.read] });
+}, { user: {}, apiKey: { scopes: [scopes.parts.read] } });
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -147,21 +150,20 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   });
   if (!part) return routeResponse(404);
   await checkUserTeam(tx, authType, part.category.team_id);
-  return routeResponse(200, await parseJsonBody({
+  return routeResponse(200, await parseSchema({
     ...part,
     file: await getSignedUrl(client, new GetObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
       Key: `teams/${part.category.team_id}/pc/${part.category_id}/parts/${id}`
     }), { expiresIn: 120 })
   }, Part));
-}, { requiredScopes: [scopes.parts.read] });
+}, { user: {}, apiKey: { scopes: [scopes.parts.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {
   if (!category_id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, category_id) });
   await checkUserTeam(tx, authType, pc?.team_id);
-  const { data, files } = await parseJsonFile(await req.formData(), CreateSchema);
-  if (!data) return routeResponse(422);
+  const { data, file } = await parseFormData(await req.formData(), CreateSchema);
   const [id] = await tx
     .insert(Parts)
     .values({ ...data, original_quantity: data.quantity, category_id })
@@ -171,11 +173,11 @@ export const POST = routeFactory(async (req, authType, tx, category_id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/pc/${category_id}/parts/${id.id}`,
     ACL: "private",
-    Body: await files["file"].bytes(),
-    ContentType: files["file"].type
+    Body: await file.bytes(),
+    ContentType: file.type
   }));
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.parts.write] } });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -184,9 +186,9 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     with: { category: true }
   });
   await checkUserTeam(tx, authType, part?.category.team_id);
-  const body = await parseJsonBody(await req.json(), UpdateSchema);
-  return tx.update(Parts).set(body).where(eq(Parts.id, id)).returning({ id: Parts.id });
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] });
+  const body = await parseSchema(await req.json(), UpdateSchema);
+  await tx.update(Parts).set(body).where(eq(Parts.id, id)).returning({ id: Parts.id });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.parts.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -202,4 +204,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/pc/${part.category_id}/parts/${id}`
   }));
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.parts.write] })
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.parts.write] } });

@@ -1,7 +1,7 @@
 import {
   PartCategories,
   Parts,
-  PartsToPlates,
+  PartCategoryAssignments,
   Plates,
   BoxTubes,
 } from "@/lib/db/schema/cam";
@@ -20,7 +20,7 @@ export type Part = InferSelectModel<typeof Parts> & { category?: PartCategory };
 export type Plate = InferSelectModel<typeof Plates> & {
   category?: PartCategory;
 };
-export type PartToPlate = InferSelectModel<typeof PartsToPlates> & {
+export type PartToPlate = InferSelectModel<typeof PartCategoryAssignments> & {
   plate?: Plate;
   part?: Part;
 };

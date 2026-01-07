@@ -213,7 +213,7 @@ export interface RouteFactoryConfig<T> {
 export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx: Transaction, id: T | null) => Promise<NextResponse | undefined>;
 
 export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config: RouteFactoryConfig<T>) {
-  return async (req: NextRequest, { params }: { params: Promise<{ id: string } | {} | undefined> }) => {
+  return async (req: NextRequest, { params }: { params: Promise<object | undefined> }) => {
     try {
       const authType = await getAuthType();
       let id: T | null = null;

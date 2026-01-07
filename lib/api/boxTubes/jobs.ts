@@ -12,7 +12,10 @@ const CreateSchema = zod.object({
   tool_id: zod.number()
 });
 
-const JobSchema = Job.transform(({ kind, ...rest }) => rest);
+const JobSchema = Job.transform(({ kind, ...rest }) => {
+  void kind;
+  return rest;
+});
 
 registry.registerPath({
   method: "get",

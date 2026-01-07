@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, parseJsonBody, parseJsonFile, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, parseSchema, parseJsonFile, routeFactory, routeResponse, ValidationError } from "./common";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -134,7 +134,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
   await checkUserTeam(tx, authType, pc?.team_id);
-  return routeResponse(200, await parseJsonBody(await tx.query.Parts.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.Parts.findMany({
     where: eq(Parts.category_id, id)
   }), MultipleParts));
 }, { user: {}, apiKey: { scopes: [scopes.parts.read] } });
@@ -147,7 +147,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   });
   if (!part) return routeResponse(404);
   await checkUserTeam(tx, authType, part.category.team_id);
-  return routeResponse(200, await parseJsonBody({
+  return routeResponse(200, await parseSchema({
     ...part,
     file: await getSignedUrl(client, new GetObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
@@ -184,7 +184,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     with: { category: true }
   });
   await checkUserTeam(tx, authType, part?.category.team_id);
-  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  const body = await parseSchema(await req.json(), UpdateSchema);
   return tx.update(Parts).set(body).where(eq(Parts.id, id)).returning({ id: Parts.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.parts.write] } });
 

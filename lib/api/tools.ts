@@ -1,6 +1,6 @@
 import zod from "zod";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { ToolMachines, ToolMaterials, Tools } from "../db/schema/cam";
 import { registry } from "../openapi/registry";
@@ -148,7 +148,7 @@ registry.registerPath({
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, id);
-  return routeResponse(200, await parseJsonBody(await tx.query.Tools.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.Tools.findMany({
     where: eq(Tools.team_id, id)
   }), MultipleTools));
 }, {
@@ -163,7 +163,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   });
   if (!tool) return routeResponse(404);
   await checkUserTeam(tx, authType, tool.team_id);
-  return routeResponse(200, await parseJsonBody({
+  return routeResponse(200, await parseSchema({
     ...tool,
     file: await getSignedUrl(client, new GetObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
@@ -200,7 +200,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const tool = await tx.query.Tools.findFirst({ where: eq(Tools.id, id) });
   await checkUserTeam(tx, authType, tool?.team_id, true);
-  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  const body = await parseSchema(await req.json(), UpdateSchema);
   return tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.tools.write] } });
 

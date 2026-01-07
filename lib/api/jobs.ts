@@ -1,13 +1,13 @@
 import { and, asc, eq, getTableColumns, isNull, SQL, sql } from "drizzle-orm";
-import { Jobs } from "../db/schema/cam";
-import zod from "zod";
+import { JobKind, Jobs } from "../db/schema/cam";
+import zod, { ZodType } from "zod";
 import { createSelectSchema } from "drizzle-zod";
 import { client } from "../aws";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { scopeNames as scopes } from "../scopes";
 import { teamIdFromDigest } from "../auth/server";
 import { Transaction } from "../db";
-import { routeFactory, routeResponse, parseJsonBody, parseJsonFile, checkUserTeam } from "./common";
+import { routeFactory, routeResponse, parseSchema, parseJsonFile, checkUserTeam, parseFormData } from "./common";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ id: true, kind: true, payload: true });
 export const Job = createSelectSchema(Jobs).extend({
@@ -19,6 +19,30 @@ export const Job = createSelectSchema(Jobs).extend({
   if (x.response !== null) status = "completed";
   return { ...x, status };
 }).openapi("Job");
+
+const SuccessJobResponse = zod.object({
+  file: zod.instanceof(File),
+  data: zod.strictObject({})
+})
+
+const ErrorJobResponse = zod.object({
+  data: zod.object({
+    error: zod.string()
+  })
+});
+
+const JobResponses = {
+  "box_tube": zod.union([SuccessJobResponse, ErrorJobResponse]),
+  "plate:cam": zod.union([SuccessJobResponse, ErrorJobResponse]),
+  "plate:arrange": zod.union([SuccessJobResponse, ErrorJobResponse.extend({
+    data: ErrorJobResponse.shape.data.extend({
+      excess_parts: zod.array(zod.object({
+        part_id: zod.number(),
+        quantity: zod.number()
+      }))
+    })
+  })])
+} as const satisfies Record<(typeof JobKind.enumValues)[number], ZodType>;
 
 export function queuePositionSubquery(tx: Transaction) {
   return tx.select({
@@ -40,25 +64,28 @@ export const Request = routeFactory(async (req, authType, tx) => {
       .for("update", { skipLocked: true }).limit(1))).returning();
   if (result.length === 0) return routeResponse(204);
   const [job] = result;
-  return routeResponse(200, await parseJsonBody(job, RequestSchema));
+  return routeResponse(200, await parseSchema(job, RequestSchema));
 }, { apiKey: { scopes: [scopes.jobs.process] } });
 
 export const Complete = routeFactory(async (req, authType, tx, id) => {
   if (!authType.keyDigest) return routeResponse(401);
   const job = await tx.query.Jobs.findFirst({
-    where: eq(Jobs.claimed_by, authType.keyDigest)
+    where: and(
+      eq(Jobs.claimed_by, authType.keyDigest),
+      isNull(Jobs.response)
+    )
   });
   if (!job) return routeResponse(404);
-  const { data, files } = await parseJsonFile(await req.formData(), zod.object().catchall(zod.any()));
-  const result = await tx.update(Jobs).set({ response: data }).where(eq(Jobs.id, job.id));
+  const body = await parseFormData(await req.formData(), JobResponses[job.kind]);
+  const result = await tx.update(Jobs).set({ response: body.data }).where(eq(Jobs.id, job.id));
   if (result.rowCount === 0) return routeResponse(404);
-  if ("file" in files) {
+  if ("file" in body) {
     await client.send(new PutObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
       Key: `teams/${job.team_id}/jobs/${job.id}`,
       ACL: "private",
-      Body: await files["file"].bytes(),
-      ContentType: files["file"].type
+      Body: await body.file.bytes(),
+      ContentType: body.file.type
     }));
   }
   return routeResponse(204);

@@ -8,7 +8,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseJsonBody, parseJsonFile, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseSchema, parseJsonFile, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
@@ -139,7 +139,7 @@ export const GET = routeFactory(async (req, authType, tx) => {
         with: { owner: true }
       } }
     })).map(x => x.team);
-    return routeResponse(200, await parseJsonBody(teams, zod.array(schema)));
+    return routeResponse(200, await parseSchema(teams, zod.array(schema)));
   }
   if (!authType.keyDigest) return routeResponse(401);
   const key = await tx.query.TeamKeys.findFirst({
@@ -149,11 +149,11 @@ export const GET = routeFactory(async (req, authType, tx) => {
     } }
   });
   if (!key) return routeResponse(403, { message: "API Key is not valid" });
-  return routeResponse(200, await parseJsonBody(key.team, schema));
+  return routeResponse(200, await parseSchema(key.team, schema));
 }, { user: {}, apiKey: { scopes: [scopes.teams.read] } });
 
 export const POST = routeFactory(async (req, authType, tx) => {
-  const body = await parseJsonBody(await req.json(), CreateSchema);
+  const body = await parseSchema(await req.json(), CreateSchema);
   const [id] = await tx.insert(Teams).values({
     ...body,
     owner: authType.userId!

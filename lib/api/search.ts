@@ -1,7 +1,7 @@
 import { BoxTubes, PartCategories, Parts } from "@/lib/db/schema/cam";
 import { and, eq, or, sql } from "drizzle-orm";
 import zod from "zod";
-import { routeFactory, routeResponse, parseJsonBody } from "./common";
+import { routeFactory, routeResponse, parseSchema } from "./common";
 
 const SearchParams = zod.object({
   q: zod.string().trim().min(1).max(100),
@@ -16,7 +16,7 @@ export const GET = routeFactory(async (req, _authType, tx, teamId) => {
   if (!teamId) return routeResponse(422);
 
   const params = req.nextUrl.searchParams;
-  const data = await parseJsonBody(
+  const data = await parseSchema(
     {
       q: params.get("q")?.toString(),
       limit: params.get("limit")?.toString(),

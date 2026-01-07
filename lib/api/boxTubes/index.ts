@@ -6,7 +6,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "../../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, NotFound, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, NotFound, parseSchema, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
 import { teamIdFromDigest } from "../../auth/server";
 import { eq } from "drizzle-orm";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -126,7 +126,7 @@ export const GET = routeFactory(async (req, authType, tx, teamId) => {
   teamId ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, teamId);
 
-  return routeResponse(200, await parseJsonBody(await tx.query.BoxTubes.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.BoxTubes.findMany({
     where: eq(BoxTubes.team_id, teamId)
   }), MultipleBoxTubes));
 }, {
@@ -139,7 +139,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   const boxTube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, id) });
   if (!boxTube) return routeResponse(404);
   await checkUserTeam(tx, authType, boxTube.team_id);
-  return routeResponse(200, await parseJsonBody({
+  return routeResponse(200, await parseSchema({
     ...boxTube,
     file: await getSignedUrl(client, new GetObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
@@ -173,7 +173,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const boxTube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, id) });
   if (!boxTube) return routeResponse(404);
   await checkUserTeam(tx, authType, boxTube.team_id);
-  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  const body = await parseSchema(await req.json(), UpdateSchema);
   return tx.update(BoxTubes).set(body).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.boxTubes.write] } });
 

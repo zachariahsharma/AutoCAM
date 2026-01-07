@@ -4,7 +4,7 @@ import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { scopeNames as scopes } from "../scopes";
-import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseJsonBody, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
+import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, parseJsonFile, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "./common";
 import { teamIdFromDigest } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { client } from "../aws";
@@ -119,7 +119,7 @@ registry.registerPath({
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, id);
-  return routeResponse(200, await parseJsonBody(await tx.query.Machines.findMany({
+  return routeResponse(200, await parseSchema(await tx.query.Machines.findMany({
     where: eq(Machines.team_id, id)
   }), MultipleMachines));
 }, {
@@ -134,7 +134,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   });
   if (!machine) return routeResponse(404);
   await checkUserTeam(tx, authType, machine.team_id);
-  return routeResponse(200, await parseJsonBody({
+  return routeResponse(200, await parseSchema({
     ...machine,
     file: getSignedUrl(client, new GetObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
@@ -171,7 +171,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const machine = await tx.query.Machines.findFirst({ where: eq(Machines.id, id) });
   await checkUserTeam(tx, authType, machine?.team_id, true);
-  const body = await parseJsonBody(await req.json(), UpdateSchema);
+  const body = await parseSchema(await req.json(), UpdateSchema);
   return tx.update(Machines).set(body).where(eq(Machines.id, id)).returning({ id: Machines.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.machines.write] } });
 

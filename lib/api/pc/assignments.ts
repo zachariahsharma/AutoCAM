@@ -7,8 +7,8 @@ import { PartCategories, Parts, PartCategoryAssignments, Plates } from "@/lib/db
 import { checkUserTeam, CommonAuthorization, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
 import { and, eq, inArray } from "drizzle-orm";
 
-const CreateSchema = createInsertSchema(PartCategoryAssignments);
-const Assignment = createSelectSchema(PartCategoryAssignments).openapi("Part Category Assignment");
+const CreateSchema = createInsertSchema(PartCategoryAssignments).omit({ category_id: true });
+const Assignment = createSelectSchema(PartCategoryAssignments).omit({ category_id: true }).openapi("Part Category Assignment");
 
 registry.registerPath({
   method: "get",
@@ -66,24 +66,15 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
-  // FIXME: Might need to add a category_id column to the parts to plates table
   if (!id) return routeResponse(422);
-  const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
-  await checkUserTeam(tx, authType, pc?.team_id);
-  const parts = (await tx.query.Parts.findMany({
-    where: eq(Parts.category_id, id),
-    columns: { id: true }
-  })).map(x => x.id);
-  const plates = (await tx.query.Parts.findMany({
-    where: eq(Plates.category_id, id),
-    columns: { id: true }
-  })).map(x => x.id);
-  return routeResponse(200, await tx.query.PartCategoryAssignments.findMany({
-    where: and(
-      inArray(PartCategoryAssignments.part_id, parts),
-      inArray(PartCategoryAssignments.plate_id, plates)
-    )
-  }));
+  const pc = await tx.query.PartCategories.findFirst({
+    where: eq(PartCategories.id, id),
+    with: { assignments: true }
+  });
+  console.log(pc);
+  if (!pc) return routeResponse(404);
+  await checkUserTeam(tx, authType, pc.team_id);
+  return routeResponse(200, await parseJsonBody(pc.assignments, zod.array(Assignment)));
 }, { user: {}, apiKey: { scopes: [scopes.pc.assignments.read] } });
 
 export const PUT = routeFactory(async (req, authType, tx) => {
@@ -92,9 +83,10 @@ export const PUT = routeFactory(async (req, authType, tx) => {
     where: eq(Plates.id, body.plate_id),
     with: { category: true }
   });
-  await checkUserTeam(tx, authType, plate?.category.team_id)
+  if (!plate) return routeResponse(404);
+  await checkUserTeam(tx, authType, plate.category.team_id)
   if (body.quantity > 0) {
-    await tx.insert(PartCategoryAssignments).values(body)
+    await tx.insert(PartCategoryAssignments).values({ ...body, category_id: plate.category_id })
       .onConflictDoUpdate({ target: [PartCategoryAssignments.plate_id, PartCategoryAssignments.part_id], set: body });
   } else {
     await tx.delete(PartCategoryAssignments).where(and(

@@ -5,7 +5,7 @@ import { SecondaryButton } from "@/components/Buttons/Buttons";
 import { Header } from "@/app/page";
 import { authClient } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, Dispatch, SetStateAction, use } from "react";
+import { FormEvent, useState, Dispatch, SetStateAction } from "react";
 import { RobotPic } from "../signup/page";
 import { Alert } from "../signup/page";
 import { ErrorModal } from "../dashboard/@tabs/settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";

@@ -15,7 +15,6 @@ export default function AvailableParts({
     setUnassignedParts,
     unassignedParts,
     plates,
-    partsToPlates,
     setPartsToPlates,
   } = useMaterialEvents();
 
@@ -63,13 +62,13 @@ export default function AvailableParts({
     [plates, setPartsToPlates, setUnassignedParts]
   );
   useEffect(() => {
-    Object.entries(epicsMap).forEach(([epic, parts]) =>
+    Object.entries(epicsMap).forEach(([, parts]) =>
       parts.forEach((part) => {
         setUnassignedParts((obj) => ({ ...obj, [part.id]: 0 }));
         setSelectedParts((obj) => ({ ...obj, [part.id]: 0 }));
       })
     );
-  }, []);
+  }, [epicsMap, setSelectedParts, setUnassignedParts]);
   return (
     <div className={styles.container}>
       <div className={styles.header}>

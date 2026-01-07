@@ -142,9 +142,10 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  await checkUserTeam(tx, authType, id, true);
+  const key = await tx.query.TeamKeys.findFirst({ where: eq(TeamKeys.id, id) });
+  await checkUserTeam(tx, authType, key?.team_id, true);
   const body = await parseSchema(await req.json(), UpdateSchema);
-  return tx.update(TeamKeys)
+  await tx.update(TeamKeys)
     .set(body)
     .where(eq(TeamKeys.id, id))
     .returning({ id: TeamKeys.id })

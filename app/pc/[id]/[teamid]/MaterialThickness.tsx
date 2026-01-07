@@ -36,9 +36,7 @@ export default function MaterialThickness({
     plates,
     selectedParts,
     setSelectedParts,
-    partsToPlates,
     setPartsToPlates,
-    unassignedParts,
     setUnassignedParts,
   } = useMaterialEvents();
 
@@ -175,7 +173,7 @@ export default function MaterialThickness({
     return () => {
       mounted = false;
     };
-  }, [teamid]);
+  }, [teamid, pcid, setPlates]);
 
   const materialMissing =
     !!partcategory?.material &&

@@ -176,7 +176,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!boxTube) return routeResponse(404);
   await checkUserTeam(tx, authType, boxTube.team_id);
   const body = await parseSchema(await req.json(), UpdateSchema);
-  return tx.update(BoxTubes).set(body).where(eq(BoxTubes.id, id)).returning({ id: BoxTubes.id });
+  await tx.update(BoxTubes).set(body).where(eq(BoxTubes.id, id));
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.boxTubes.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

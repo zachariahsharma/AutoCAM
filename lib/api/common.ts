@@ -138,13 +138,13 @@ export async function parseSchema<T extends ZodType>(json: unknown, schema: T): 
 }
 
 export async function parseFormData<T extends zod.ZodType>(formData: FormData, schema: T): Promise<zod.infer<typeof schema>> {
-  const rawData: Record<string, any> = {};
+  const rawData: Record<string, File | string | object> = {};
   
   formData.forEach((value, key) => {
     if (key === 'data' && typeof value === 'string') {
       try {
         rawData[key] = JSON.parse(value);
-      } catch (e) {
+      } catch {
         throw routeResponse(422, { message: "Unable to parse JSON" });
       }
     } else
@@ -210,7 +210,7 @@ export interface RouteFactoryConfig<T> {
   idSchema?: ZodType<T>
 }
 
-export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx: Transaction, id: T | null) => Promise<any>;
+export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx: Transaction, id: T | null) => Promise<NextResponse | undefined>;
 
 export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config: RouteFactoryConfig<T>) {
   return async (req: NextRequest, { params }: { params: Promise<{ id: string } | {} | undefined> }) => {

@@ -50,7 +50,7 @@ function TeamDropdown() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [setTeam]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

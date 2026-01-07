@@ -1,7 +1,7 @@
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { TeamMembers, Teams } from "@/lib/db/schema/entities";
+import { TeamMembers } from "@/lib/db/schema/entities";
 import { user } from "@/lib/db/schema/auth";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import zod from "zod";
 import { checkUserTeam, CommonAuthorization, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, ValidationError } from "../common";
 import { scopeNames as scopes } from "@/lib/scopes";

@@ -3,7 +3,6 @@ import db, { Transaction } from "../db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from '../db/schema/auth';
 import transporter from "../mailer";
-import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";

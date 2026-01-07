@@ -203,7 +203,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const tool = await tx.query.Tools.findFirst({ where: eq(Tools.id, id) });
   await checkUserTeam(tx, authType, tool?.team_id, true);
   const body = await parseSchema(await req.json(), UpdateSchema);
-  return tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
+  await tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.tools.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

@@ -3,9 +3,9 @@ import zod from "zod";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { PartCategories, Parts, PartCategoryAssignments, Plates } from "@/lib/db/schema/cam";
+import { PartCategories, PartCategoryAssignments, Plates } from "@/lib/db/schema/cam";
 import { checkUserTeam, CommonAuthorization, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 const CreateSchema = createInsertSchema(PartCategoryAssignments).omit({ category_id: true });
 const Assignment = createSelectSchema(PartCategoryAssignments).omit({ category_id: true }).openapi("Part Category Assignment");

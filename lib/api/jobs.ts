@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns, isNull, SQL, sql } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, isNull, sql } from "drizzle-orm";
 import { JobKind, Jobs } from "../db/schema/cam";
 import zod, { ZodType } from "zod";
 import { createSelectSchema } from "drizzle-zod";
@@ -13,8 +13,7 @@ const RequestSchema = createSelectSchema(Jobs).pick({ id: true, kind: true, payl
 export const Job = createSelectSchema(Jobs).extend({
   queue_position: zod.number()
 }).omit({ team_id: true }).transform(x => {
-  const JobStatus = zod.enum(["pending", "in progress", "completed"])
-  let status: zod.infer<typeof JobStatus> = "pending";
+  let status = "pending";
   if (x.claimed_by) status = "in progress";
   if (x.response !== null) status = "completed";
   return { ...x, status };
@@ -67,7 +66,7 @@ export const Request = routeFactory(async (req, authType, tx) => {
   return routeResponse(200, await parseSchema(job, RequestSchema));
 }, { apiKey: { scopes: [scopes.jobs.process] } });
 
-export const Complete = routeFactory(async (req, authType, tx, id) => {
+export const Complete = routeFactory(async (req, authType, tx) => {
   if (!authType.keyDigest) return routeResponse(401);
   const job = await tx.query.Jobs.findFirst({
     where: and(

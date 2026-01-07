@@ -8,7 +8,6 @@ import zod from "zod";
 import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
 import { teamIdFromDigest } from "../../auth/server";
 import { and, eq } from "drizzle-orm";
-import { client } from '@/lib/aws';
 
 const CreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
@@ -157,7 +156,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const pc = await tx.query.PartCategories.findFirst({ where: eq(PartCategories.id, id) });
   await checkUserTeam(tx, authType, pc?.team_id);
   const body = await parseSchema(await req.json(), UpdateSchema);
-  return tx.update(PartCategories).set(body).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id })
+  await tx.update(PartCategories).set(body).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id })
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

@@ -118,5 +118,5 @@ export const GET = routeFactory(async (req, _authType, tx, teamId) => {
     partCategories,
     boxTubes,
   });
-});
+}, { user: {} });
 

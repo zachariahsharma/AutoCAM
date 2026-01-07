@@ -3,12 +3,12 @@ import zod from "zod";
 import { apiKey, userSession } from "../auth";
 import { scopeNames as scopes } from "@/lib/scopes";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { PartCategories, Parts, PartsToPlates, Plates } from "@/lib/db/schema/cam";
+import { PartCategories, Parts, PartCategoryAssignments, Plates } from "@/lib/db/schema/cam";
 import { checkUserTeam, CommonAuthorization, parseJsonBody, routeFactory, routeResponse, ValidationError } from "../common";
 import { and, eq, inArray } from "drizzle-orm";
 
-const CreateSchema = createInsertSchema(PartsToPlates);
-const Assignment = createSelectSchema(PartsToPlates).openapi("Part Category Assignment");
+const CreateSchema = createInsertSchema(PartCategoryAssignments);
+const Assignment = createSelectSchema(PartCategoryAssignments).openapi("Part Category Assignment");
 
 registry.registerPath({
   method: "get",
@@ -78,10 +78,10 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     where: eq(Plates.category_id, id),
     columns: { id: true }
   })).map(x => x.id);
-  return routeResponse(200, await tx.query.PartsToPlates.findMany({
+  return routeResponse(200, await tx.query.PartCategoryAssignments.findMany({
     where: and(
-      inArray(PartsToPlates.part_id, parts),
-      inArray(PartsToPlates.plate_id, plates)
+      inArray(PartCategoryAssignments.part_id, parts),
+      inArray(PartCategoryAssignments.plate_id, plates)
     )
   }));
 }, { user: {}, apiKey: { scopes: [scopes.pc.assignments.read] } });
@@ -94,12 +94,12 @@ export const PUT = routeFactory(async (req, authType, tx) => {
   });
   await checkUserTeam(tx, authType, plate?.category.team_id)
   if (body.quantity > 0) {
-    await tx.insert(PartsToPlates).values(body)
-      .onConflictDoUpdate({ target: [PartsToPlates.plate_id, PartsToPlates.part_id], set: body });
+    await tx.insert(PartCategoryAssignments).values(body)
+      .onConflictDoUpdate({ target: [PartCategoryAssignments.plate_id, PartCategoryAssignments.part_id], set: body });
   } else {
-    await tx.delete(PartsToPlates).where(and(
-      eq(PartsToPlates.part_id, body.part_id),
-      eq(PartsToPlates.plate_id, body.plate_id)
+    await tx.delete(PartCategoryAssignments).where(and(
+      eq(PartCategoryAssignments.part_id, body.part_id),
+      eq(PartCategoryAssignments.plate_id, body.plate_id)
     ));
   }
   return routeResponse(204);

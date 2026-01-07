@@ -73,7 +73,7 @@ export const ToolMachines = pgTable("tool_machines", {
   machine_id: integer().notNull().references(() => Machines.id, { onDelete: "cascade" })
 })
 
-export const PartsToPlates = pgTable("parts_to_plates", {
+export const PartCategoryAssignments = pgTable("parts_to_plates", {
   plate_id: integer().notNull().references(() => Plates.id, { onDelete: "cascade" }),
   part_id: integer().notNull().references(() => Parts.id, { onDelete: "cascade" }),
   quantity: integer().notNull()
@@ -123,7 +123,7 @@ export const PlatesRelations = relations(Plates, ({ one, many }) => ({
     fields: [Plates.category_id],
     references: [PartCategories.id]
   }),
-  assignments: many(PartsToPlates),
+  assignments: many(PartCategoryAssignments),
   jobs: many(PlateJobs)
 }));
 
@@ -158,13 +158,13 @@ export const PartCategoriesRelations = relations(PartCategories, ({ many, one })
   })
 }));
 
-export const PartsToPlatesRelations = relations(PartsToPlates, ({ one }) => ({
+export const PartCategoryAssignmentsRelations = relations(PartCategoryAssignments, ({ one }) => ({
   part: one(Parts, {
-    fields: [PartsToPlates.part_id],
+    fields: [PartCategoryAssignments.part_id],
     references: [Parts.id]
   }),
   plate: one(Plates, {
-    fields: [PartsToPlates.plate_id],
+    fields: [PartCategoryAssignments.plate_id],
     references: [Plates.id]
   }),
 }));

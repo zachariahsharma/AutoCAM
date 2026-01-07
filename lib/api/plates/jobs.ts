@@ -1,4 +1,4 @@
-import { Jobs, PartsToPlates, PlateJobs, Plates } from "@/lib/db/schema/cam";
+import { Jobs, PartCategoryAssignments, PlateJobs, Plates } from "@/lib/db/schema/cam";
 import { eq, inArray } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";
@@ -105,8 +105,8 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
   const body = await parseJsonBody(await req.json(), CreateSchema);
 
   const { type, ...payload } = body;
-  const assignments = await tx.query.PartsToPlates.findMany({
-    where: eq(PartsToPlates.plate_id, plate_id),
+  const assignments = await tx.query.PartCategoryAssignments.findMany({
+    where: eq(PartCategoryAssignments.plate_id, plate_id),
     columns: { part_id: true, quantity: true }
   });
   const [id] = await tx.insert(Jobs).values({

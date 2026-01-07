@@ -84,7 +84,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
       inArray(PartsToPlates.plate_id, plates)
     )
   }));
-}, { requiredScopes: [scopes.pc.assignments.read] });
+}, { user: {}, apiKey: { scopes: [scopes.pc.assignments.read] } });
 
 export const PUT = routeFactory(async (req, authType, tx) => {
   const body = await parseJsonBody(await req.json(), CreateSchema);
@@ -103,4 +103,4 @@ export const PUT = routeFactory(async (req, authType, tx) => {
     ));
   }
   return routeResponse(204);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.assignments.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.assignments.write] } });

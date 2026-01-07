@@ -118,7 +118,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.Materials.findMany({
     where: eq(Materials.team_id, id)
   }), zod.array(Material)));
-}, { requiredScopes: [scopes.materials.read] });
+}, { user: {}, apiKey: { scopes: [scopes.materials.read] } });
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -126,7 +126,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!material) return routeResponse(404);
   await checkUserTeam(tx, authType, material.team_id);
   return routeResponse(200, await parseJsonBody(material, Material));
-}, { requiredScopes: [scopes.materials.read] })
+}, { user: {}, apiKey: { scopes: [scopes.materials.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -135,7 +135,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
   const [id] = await tx.insert(Materials).values({ ...body, team_id }).returning({ id: Materials.id });
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.materials.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.materials.write] } });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -145,12 +145,11 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
 
   const result = await tx.update(Materials).set(body).where(eq(Materials.id, id));
   return routeResponse(result.rowCount === 0 ? 404 : 204);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.materials.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.materials.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const material = await tx.query.Materials.findFirst({ where: eq(Materials.id, id) });
   await checkUserTeam(tx, authType, material?.team_id, true);
   await tx.delete(Materials).where(eq(Materials.id, id));
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.materials.write] });
-
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.materials.write] } });

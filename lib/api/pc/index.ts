@@ -135,7 +135,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
       data.thickness ? eq(PartCategories.thickness, data.thickness) : undefined
     )
   }), zod.array(PartCategory)))
-}, { requiredScopes: [scopes.pc.read] });
+}, { user: {}, apiKey: { scopes: [scopes.pc.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -144,7 +144,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   const data = await parseJsonBody(await req.json(), CreateSchema);
   const [id] = await tx.insert(PartCategories).values({ ...data, team_id }).returning({ id: PartCategories.id })
   return routeResponse(201, id);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.write] } });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -152,7 +152,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, pc?.team_id);
   const body = await parseJsonBody(await req.json(), UpdateSchema);
   return tx.update(PartCategories).set(body).where(eq(PartCategories.id, id)).returning({ id: PartCategories.id })
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
@@ -161,4 +161,4 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, pc.team_id);
   await tx.delete(PartCategories).where(eq(PartCategories.id, id));
   await s3DeleteWithPrefix(`teams/${pc.team_id}/pc/${id}/`);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.pc.write] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.pc.write] } });

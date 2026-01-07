@@ -37,7 +37,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     where: eq(TeamMembers.team_id, id),
     with: { user: true },
   })).map(x => ({ ...x, ...x.user })), zod.array(Member)));
-}, { requiredScopes: [scopes.teams.read] });
+}, { user: {}, apiKey: { scopes: [scopes.teams.read] } });
 
 const UpdateSchema = zod.object({ 
   email: zod.email(),
@@ -94,7 +94,7 @@ export const PATCH = routeFactory(async (req, authType, tx, team_id) => {
     );
 
   return routeResponse(204);
-});
+}, { user: { emailVerified: true } });
 
 const DeleteSchema = zod.object({ email: zod.email() });
 
@@ -143,4 +143,4 @@ export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
     );
 
   return routeResponse(204);
-});
+}, { user: { emailVerified: true } });

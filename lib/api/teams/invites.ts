@@ -51,7 +51,7 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   return routeResponse(200, await parseJsonBody(await tx.query.TeamInvites.findMany({
     where: eq(TeamInvites.team_id, id)
   }), zod.array(Invite)));
-}, { requiredScopes: [scopes.teams.invites.read] });
+}, { user: {}, apiKey: { scopes: [scopes.teams.invites.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
@@ -83,7 +83,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
     text: `Join the ${team.name} Team with this link: ${new URL(`/api/user/invites/accept/${invite.id}`, `${process.env.BASE_URL}`)}`
   });
   return routeResponse(204);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.teams.invites.send] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.teams.invites.send] } });
 
 const DeleteSchema = zod.object({ email: zod.email() });
 
@@ -114,4 +114,4 @@ export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
     .where(and(eq(TeamInvites.team_id, team_id), eq(TeamInvites.email, email)));
 
   return routeResponse(204);
-}, { emailVerifiedNeeded: true, requiredScopes: [scopes.teams.invites.cancel] });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.teams.invites.cancel] } });

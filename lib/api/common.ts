@@ -167,10 +167,10 @@ export async function parseJsonFile<T extends ZodType>(formData: FormData, schem
   }
 
   const files: Record<string, File> = {};
-  formData.forEach(async (value, key) => {
+  for (const [key, value] of formData.entries()) {
     if (value instanceof File)
       files[key] = value;
-  });
+  }
 
   return { data, files };
 }
@@ -204,7 +204,7 @@ export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: nu
       eq(TeamMembers.team_id, tid)
     )
   });
-  if (!member) throw routeResponse(401, { message: "The user is not part of the team" });
+  if (!member) throw routeResponse(403, { message: "The user is not part of the team" });
   if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
 }
 

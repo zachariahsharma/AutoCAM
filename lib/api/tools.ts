@@ -6,19 +6,19 @@ import { ToolMachines, ToolMaterials, Tools } from "../db/schema/cam";
 import { registry } from "../openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { teamIdFromDigest } from "../auth/server";
-import { eq } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import { client } from "../aws";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const CreateSchema = zod.object({
-  data: createInsertSchema(Tools).extend({
-    machine_ids: zod.array(zod.number()),
-    material_ids: zod.array(zod.number())
-  }).omit({ team_id: true }),
+  data: createInsertSchema(Tools).omit({ team_id: true }),
   file: zod.instanceof(File).openapi({ type: "string", format: "binary" })
 });
-const UpdateSchema = createUpdateSchema(Tools).omit({ team_id: true });
+const UpdateSchema = createUpdateSchema(Tools).extend({
+  machine_ids: zod.array(zod.number()),
+  material_ids: zod.array(zod.number())
+}).omit({ team_id: true });
 const Tool = createSelectSchema(Tools).extend({ file: zod.httpUrl() }).omit({ team_id: true }).openapi("Tool");
 const MultipleTools = zod.array(Tool.omit({ file: true }));
 
@@ -183,8 +183,6 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   await checkUserTeam(tx, authType, team_id, true);
   const { data, file } = await parseFormData(await req.formData(), CreateSchema);
   const [id] = await tx.insert(Tools).values({ ...data, team_id }).returning({ id: Tools.id });
-  await tx.insert(ToolMachines).values(data.machine_ids.map(x => ({ machine_id: x, tool_id: id.id })));
-  await tx.insert(ToolMaterials).values(data.material_ids.map(x => ({ material_id: x, tool_id: id.id })));
   await client.send(new PutObjectCommand({
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${team_id}/tools/${id.id}`,
@@ -203,6 +201,16 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const tool = await tx.query.Tools.findFirst({ where: eq(Tools.id, id) });
   await checkUserTeam(tx, authType, tool?.team_id, true);
   const body = await parseSchema(await req.json(), UpdateSchema);
+  await tx.delete(ToolMachines).where(and(
+    eq(ToolMachines.tool_id, id),
+    notInArray(ToolMachines.machine_id, body.machine_ids)
+  ));
+  await tx.delete(ToolMaterials).where(and(
+    eq(ToolMaterials.tool_id, id),
+    notInArray(ToolMaterials.material_id, body.material_ids)
+  ));
+  await tx.insert(ToolMachines).values(body.machine_ids.map(x => ({ machine_id: x, tool_id: id }))).onConflictDoNothing();
+  await tx.insert(ToolMaterials).values(body.material_ids.map(x => ({ material_id: x, tool_id: id }))).onConflictDoNothing();
   await tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.tools.write] } });
 

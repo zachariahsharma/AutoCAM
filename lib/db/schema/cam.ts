@@ -204,8 +204,8 @@ export const ToolsRelations = relations(Tools, ({ one, many }) => ({
     fields: [Tools.team_id],
     references: [Teams.id]
   }),
-  toolMachines: many(ToolMachines),
-  toolMaterials: many(ToolMaterials)
+  machines: many(ToolMachines),
+  materials: many(ToolMaterials)
 }))
 
 export const ToolMachinesRelations = relations(ToolMachines, ({ one }) => ({

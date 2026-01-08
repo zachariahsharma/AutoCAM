@@ -19,7 +19,11 @@ const UpdateSchema = createUpdateSchema(Tools).extend({
   machine_ids: zod.array(zod.number()).optional(),
   material_ids: zod.array(zod.number()).optional()
 }).omit({ team_id: true });
-const Tool = createSelectSchema(Tools).extend({ file: zod.httpUrl() }).omit({ team_id: true }).openapi("Tool");
+const Tool = createSelectSchema(Tools).extend({
+  file: zod.httpUrl(),
+  machine_ids: zod.array(zod.number()),
+  material_ids: zod.array(zod.number())
+}).omit({ team_id: true }).openapi("Tool");
 const MultipleTools = zod.array(Tool.omit({ file: true }));
 
 registerTeamEndpoint([scopes.tools.read], {
@@ -151,9 +155,14 @@ registry.registerPath({
 export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, id);
-  return routeResponse(200, await parseSchema(await tx.query.Tools.findMany({
-    where: eq(Tools.team_id, id)
-  }), MultipleTools));
+  return routeResponse(200, await parseSchema((await tx.query.Tools.findMany({
+    where: eq(Tools.team_id, id),
+    with: { machines: true, materials: true }
+  })).map(x => ({
+    ...x,
+    material_ids: x.materials.map(m => m.material_id),
+    machine_ids: x.machines.map(m => m.machine_id)
+  })), MultipleTools));
 }, {
   user: { idPolicy: IDPolicy.Required },
   apiKey: { scopes: [scopes.tools.read], idPolicy: IDPolicy.Forbidden }
@@ -162,12 +171,15 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const tool = await tx.query.Tools.findFirst({
-    where: eq(Tools.id, id)
+    where: eq(Tools.id, id),
+    with: { machines: true, materials: true }
   });
   if (!tool) return routeResponse(404);
   await checkUserTeam(tx, authType, tool.team_id);
   return routeResponse(200, await parseSchema({
     ...tool,
+    material_ids: tool.materials.map(x => x.material_id),
+    machine_ids: tool.machines.map(x => x.machine_id),
     file: await getSignedUrl(client, new GetObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
       Key: `teams/${tool.team_id}/tools/${id}`

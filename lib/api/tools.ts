@@ -16,8 +16,8 @@ const CreateSchema = zod.object({
   file: zod.instanceof(File).openapi({ type: "string", format: "binary" })
 });
 const UpdateSchema = createUpdateSchema(Tools).extend({
-  machine_ids: zod.array(zod.number()),
-  material_ids: zod.array(zod.number())
+  machine_ids: zod.array(zod.number()).optional(),
+  material_ids: zod.array(zod.number()).optional()
 }).omit({ team_id: true });
 const Tool = createSelectSchema(Tools).extend({ file: zod.httpUrl() }).omit({ team_id: true }).openapi("Tool");
 const MultipleTools = zod.array(Tool.omit({ file: true }));
@@ -200,18 +200,23 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   const tool = await tx.query.Tools.findFirst({ where: eq(Tools.id, id) });
   await checkUserTeam(tx, authType, tool?.team_id, true);
-  const body = await parseSchema(await req.json(), UpdateSchema);
-  await tx.delete(ToolMachines).where(and(
-    eq(ToolMachines.tool_id, id),
-    notInArray(ToolMachines.machine_id, body.machine_ids)
-  ));
-  await tx.delete(ToolMaterials).where(and(
-    eq(ToolMaterials.tool_id, id),
-    notInArray(ToolMaterials.material_id, body.material_ids)
-  ));
-  await tx.insert(ToolMachines).values(body.machine_ids.map(x => ({ machine_id: x, tool_id: id }))).onConflictDoNothing();
-  await tx.insert(ToolMaterials).values(body.material_ids.map(x => ({ material_id: x, tool_id: id }))).onConflictDoNothing();
-  await tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
+  const { machine_ids, material_ids, ...body } = await parseSchema(await req.json(), UpdateSchema);
+  if (machine_ids !== undefined) {
+    await tx.delete(ToolMachines).where(and(
+      eq(ToolMachines.tool_id, id),
+      notInArray(ToolMachines.machine_id, machine_ids)
+    ));
+    await tx.insert(ToolMachines).values(machine_ids.map(x => ({ machine_id: x, tool_id: id }))).onConflictDoNothing();
+  }
+  if (material_ids !== undefined) {
+    await tx.delete(ToolMaterials).where(and(
+      eq(ToolMaterials.tool_id, id),
+      notInArray(ToolMaterials.material_id, material_ids)
+    ));
+    await tx.insert(ToolMaterials).values(material_ids.map(x => ({ material_id: x, tool_id: id }))).onConflictDoNothing();
+  }
+  if (Object.keys(body).length > 0)
+    await tx.update(Tools).set(body).where(eq(Tools.id, id)).returning({ id: Tools.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.tools.write] } });
 
 export const DELETE = routeFactory(async (req, authType, tx, id) => {

@@ -1,6 +1,6 @@
 "use client";
 import styles from "./layout.module.css";
-import { motion, useAnimate } from "framer-motion";
+import { useAnimate } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
@@ -35,7 +35,7 @@ function Sidebar() {
     return () => {
       mounted = false;
     };
-  }, [setTeams, updateCount]);
+  }, [updateCount]);
 
   useEffect(() => {
     // Determine which key to look for
@@ -66,13 +66,7 @@ function Sidebar() {
   }, [tab, teams, animate, scope]);
 
   return (
-    <motion.aside 
-      className={styles.sidebar} 
-      ref={sidebarRef}
-      initial={{ x: -160, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-    >
+    <aside className={styles.sidebar} ref={sidebarRef}>
       <span id={styles.selected} ref={scope} />
       <div
         ref={(el) => { itemsRef.current["personal"] = el; }}
@@ -179,28 +173,21 @@ function Sidebar() {
         />
         <span>Join Team</span>
       </div>
-    </motion.aside>
+    </aside>
   );
 }
 
 export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
   useEffect(() => {
     try {
-      const perf = (
-        globalThis as {
-          performance?: { measure?: (...args: unknown[]) => unknown };
-        }
-      ).performance;
+      const perf: any = (globalThis as any).performance;
       if (!perf || typeof perf.measure !== "function") return;
       const orig = perf.measure.bind(perf);
-      perf.measure = (...args: unknown[]) => {
+      perf.measure = (...args: any[]) => {
         try {
           return orig(...args);
-        } catch (err) {
-          if (
-            err instanceof Error &&
-            err.message.includes("cannot have a negative time stamp")
-          )
+        } catch (err: any) {
+          if (err?.message?.includes("cannot have a negative time stamp"))
             return;
           throw err;
         }
@@ -211,26 +198,14 @@ export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
   }, []);
   return (
     <div className={styles.container}>
-      <motion.div 
-        className={styles.header}
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
+      <div className={styles.header}>
         <h1>Settings</h1>
         <hr />
-      </motion.div>
+      </div>
       <TabEventsProvider>
         <div className={styles.mainContent}>
           <Sidebar />
-          <motion.main 
-            className={styles.main}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            {tabs}
-          </motion.main>
+          <main className={styles.main}>{tabs}</main>
         </div>
       </TabEventsProvider>
     </div>

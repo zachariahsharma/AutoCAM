@@ -10,6 +10,7 @@ import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMa
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 
 function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
+  if (!part) return null;
   const [quantity, setQuantity] = useState<number>(part.quantity);
   useEffect(() => {
     fetch(`/api/parts/${part.id}`, {
@@ -19,18 +20,12 @@ function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
       },
       body: JSON.stringify({ quantity: quantity }),
     });
-  }, [quantity, part.id]);
+  }, [quantity]);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ 
-        delay: delay, 
-        duration: 0.4,
-        ease: [0.25, 0.46, 0.45, 0.94]
-      }}
-      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: delay, duration: 0.3 }}
       className={styles.quantitycard}
     >
       <div id={styles.quantitycardheader}>
@@ -79,41 +74,21 @@ function NoTeamCard() {
   return (
     <div className={styles.noTeamContainer}>
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ 
-          duration: 0.5,
-          ease: [0.25, 0.46, 0.45, 0.94]
-        }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
         className={styles.noTeamCard}
       >
-        <motion.h2
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-        >
-          No Team Found
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.3 }}
-        >
-          You need to be part of a team to adjust part quantities.
-        </motion.p>
-        <motion.div 
-          className={styles.noTeamButtons}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.3 }}
-        >
+        <h2>No Team Found</h2>
+        <p>You need to be part of a team to adjust part quantities.</p>
+        <div className={styles.noTeamButtons}>
           <PrimaryButton onClick={() => router.push("/dashboard/settings/newteam")}>
             <span className="textGradient">Create a Team</span>
           </PrimaryButton>
           <SecondaryButton onClick={() => router.push("/dashboard/settings/jointeam")}>
             <span className="textGradient">Join a Team</span>
           </SecondaryButton>
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   );

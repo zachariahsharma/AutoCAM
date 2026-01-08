@@ -1,6 +1,7 @@
 "use client";
 
 import styles from "./team.module.css";
+import { Material, Machine, Tool } from "@/app/types";
 import { useEffect, useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";
@@ -10,8 +11,6 @@ import { useParams, useRouter } from "next/navigation";
 import ApiKeys from "./ApiKeys/ApiKeys";
 import FusionServer from "./FusionServer/FusionServer";
 import { authClient } from "@/lib/auth/client";
-import { motion } from "framer-motion";
-
 export function TeamName({
   oldTeamName,
   rename = true,
@@ -24,23 +23,20 @@ export function TeamName({
   const [teamName, setTeamName] = useState(oldTeamName);
   return (
     <form
-      className={styles.teamNameForm}
       onSubmit={(e) => {
         e.preventDefault();
         handleFormSubmit(teamName);
       }}
     >
-      <label className={styles.sectionLabel}>Team Name</label>
+      <label>Team Name</label>
       <div id={styles.teamNameContainer}>
-        <div id={styles.teamNameInputContainer}>
-          <input
-            type="text"
-            placeholder="Add Team Name"
-            value={teamName}
-            min={3}
-            onChange={(val) => setTeamName(val.target.value)}
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="Add Team Name"
+          value={teamName}
+          min={3}
+          onChange={(val) => setTeamName(val.target.value)}
+        />
         <PrimaryButton id={styles.teamNameButton}>
           <span className="textGradient">{rename ? "Rename" : "Save"}</span>
         </PrimaryButton>
@@ -52,9 +48,12 @@ export function TeamName({
 export default function TeamSettingsPage() {
   const router = useRouter();
   const [teamName, setTeamName] = useState<string>("");
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [machines, setMachines] = useState<Machine[]>([]);
   const { teamid } = useParams();
   const [teamDbId, setTeamDbId] = useState<number>(0);
   const { teams, notifyUpdate } = useTabEvents();
+  const [tools, setTools] = useState<Tool[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
@@ -71,6 +70,7 @@ export default function TeamSettingsPage() {
   const [isLeaving, setIsLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
 
+  // Check if current user is the owner and get their email
   useEffect(() => {
     async function checkOwnership() {
       const { data } = await authClient.getSession();
@@ -80,7 +80,7 @@ export default function TeamSettingsPage() {
         const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
         const teamIndex = parseInt(idStr, 10);
         const team = teams[teamIndex];
-        if (team && team.owner === data.user.email) {
+        if (team && team.owner === data.user.id) {
           setIsOwner(true);
         } else {
           setIsOwner(false);
@@ -90,6 +90,7 @@ export default function TeamSettingsPage() {
     checkOwnership();
   }, [teamid, teams]);
 
+  // Fetch members to check admin status
   useEffect(() => {
     if (!teamDbId || !currentUserEmail) return;
     async function fetchMembers() {
@@ -108,7 +109,10 @@ export default function TeamSettingsPage() {
           const currentMember = members.find(
             (m) => m.email === currentUserEmail
           );
+          // Owner is always treated as admin for settings access
           setIsAdmin(currentMember?.admin ?? currentMember?.isOwner ?? false);
+
+          // Get other members (excluding current user) for ownership transfer
           setOtherMembers(members.filter((m) => m.email !== currentUserEmail));
         }
       } catch (err) {
@@ -119,12 +123,15 @@ export default function TeamSettingsPage() {
   }, [teamDbId, currentUserEmail]);
 
   useEffect(() => {
+    // Wait for teams to load before checking access
     if (teams.length === 0) return;
 
     const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
     const teamIndex = parseInt(idStr, 10);
     console.log("Loading team with id:", idStr, "and index:", teamIndex);
     const team = teams[teamIndex];
+
+    // If team doesn't exist at this index, user doesn't have access - redirect
     console.log(
       !team || isNaN(teamIndex) || teamIndex < 0 || teamIndex >= teams.length
     );
@@ -140,6 +147,9 @@ export default function TeamSettingsPage() {
 
     setTeamName(team.name);
     setTeamDbId(team.id);
+    setMaterials(team.materials || []);
+    setMachines(team.machines || []);
+    setTools(team.tools || []);
   }, [teamid, teams, router]);
 
   const handleDeleteTeam = async () => {
@@ -190,15 +200,13 @@ export default function TeamSettingsPage() {
     if (!currentUserEmail) return;
     setIsLeaving(true);
     try {
-      const response = await fetch(
-        `/api/teams/${teamDbId}/members?email=${currentUserEmail}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`/api/teams/${teamDbId}/members`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: currentUserEmail }),
+      });
       if (response.ok) {
         notifyUpdate();
         router.push("/dashboard/settings/personal");
@@ -228,14 +236,10 @@ export default function TeamSettingsPage() {
         !newOwnerMember.admin
       ) {
         // Make new owner an admin
-        const formData = new FormData();
-        formData.append(
-          "data",
-          JSON.stringify({ email: selectedNewOwner, admin: true })
-        );
         const adminResponse = await fetch(`/api/teams/${teamDbId}/members`, {
           method: "PATCH",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: selectedNewOwner, admin: true }),
         });
         if (!adminResponse.ok) {
           console.error(
@@ -248,11 +252,10 @@ export default function TeamSettingsPage() {
       }
 
       // Transfer ownership
-      const formData = new FormData();
-      formData.append("data", JSON.stringify({ email: selectedNewOwner }));
       const transferResponse = await fetch(`/api/teams/${teamDbId}`, {
         method: "PATCH",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner: selectedNewOwner }),
       });
       if (!transferResponse.ok) {
         console.error(
@@ -283,107 +286,68 @@ export default function TeamSettingsPage() {
       setSelectedNewOwner(null);
     }
   };
-
-  const sectionDelayStep = 0.15;
-  const sectionEase = [0.25, 0.46, 0.45, 0.94] as const;
-  let sectionIndex = 0;
-  const getNextSectionMotion = () => {
-    const transition = {
-      delay: sectionIndex * sectionDelayStep,
-      duration: 0.5,
-      ease: sectionEase,
-    };
-    sectionIndex += 1;
-    return {
-      initial: { opacity: 0, y: 20 },
-      animate: { opacity: 1, y: 0 },
-      transition,
-    };
-  };
   return (
-    <motion.div
-      className={styles.teamPage}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.5,
-        ease: [0.25, 0.46, 0.45, 0.94],
-      }}
-    >
+    <div>
       <div className={styles.teamContainer}>
-        <motion.div {...getNextSectionMotion()}>
-          <h1 className={styles.teamTitle}>{teamName}</h1>
-          <hr className={styles.teamDivider} />
-        </motion.div>
+        <h1>{teamName}</h1>
+        <hr />
         {isAdmin && emailVerified && teamName ? (
-          <motion.div {...getNextSectionMotion()}>
-            <TeamName
-              oldTeamName={teamName}
-              handleFormSubmit={async (newName) => {
-                const response = await fetch("/api/teams/" + teamDbId, {
-                  method: "PATCH",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ name: newName }),
-                });
-                if (response.ok) {
-                  setTeamName(newName);
-                  notifyUpdate();
-                } else {
-                  console.error("Error renaming team:", await response.text());
-                }
-              }}
-            />
-          </motion.div>
+          <TeamName
+            oldTeamName={teamName}
+            handleFormSubmit={async (newName) => {
+              const response = await fetch("/api/teams/" + teamDbId, {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name: newName }),
+              });
+              if (response.ok) {
+                setTeamName(newName);
+                notifyUpdate();
+              } else {
+                console.error("Error renaming team:", await response.text());
+              }
+            }}
+          />
         ) : null}
         <br />
-        <motion.div {...getNextSectionMotion()}>
-          <CollaboratorsSettingsPage
-            teamDbId={teamDbId}
-            readOnly={!isAdmin || !emailVerified}
-          />
-        </motion.div>
+        <CollaboratorsSettingsPage
+          teamDbId={teamDbId}
+          readOnly={!isAdmin || !emailVerified}
+        />
         <br />
         {isAdmin && emailVerified && (
-          <motion.div {...getNextSectionMotion()}>
-            <FusionInputs teamId={teamDbId} />
-          </motion.div>
+          <FusionInputs
+            defaultMachines={machines}
+            defaultMaterials={materials}
+            defaultTools={tools}
+            teamId={teamDbId}
+          />
         )}
       </div>
       {isAdmin && emailVerified && (
         <>
-          <motion.div {...getNextSectionMotion()}>
-            <br />
-            <ApiKeys />
-          </motion.div>
-          <motion.div {...getNextSectionMotion()}>
-            <br />
-            <FusionServer />
-          </motion.div>
+          <br />
+          <ApiKeys />
+          <br />
+          <FusionServer />
         </>
       )}
 
-      <motion.div className={styles.teamActions} {...getNextSectionMotion()}>
-        <motion.button
-          className={styles.leaveTeamButton}
-          onClick={handleLeaveClick}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
+      <div className={styles.teamActions}>
+        <button className={styles.leaveTeamButton} onClick={handleLeaveClick}>
           Leave Team
-        </motion.button>
+        </button>
         {isOwner && (
-          <motion.button
+          <button
             className={styles.deleteTeamButton}
             onClick={() => setShowDeleteModal(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             Delete Team
-          </motion.button>
+          </button>
         )}
-      </motion.div>
+      </div>
       {leaveError && <p className={styles.leaveError}>{leaveError}</p>}
 
       {showLeaveModal && (
@@ -493,6 +457,6 @@ export default function TeamSettingsPage() {
           </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

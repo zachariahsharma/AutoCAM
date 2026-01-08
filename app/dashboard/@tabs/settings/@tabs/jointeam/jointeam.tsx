@@ -6,35 +6,6 @@ import Image from "next/image";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTabEvents } from "../../teamUpdate";
-import { motion, AnimatePresence } from "framer-motion";
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1
-    }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 15 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number]
-    }
-  },
-  exit: { 
-    opacity: 0, 
-    x: -20,
-    transition: { duration: 0.2 }
-  }
-};
 
 export default function JoinTeamSettingsPage() {
   const [invites, setInvites] = useState<TeamInvite[]>([]);
@@ -76,47 +47,26 @@ export default function JoinTeamSettingsPage() {
   }
 
   return (
-    <motion.div 
-      className={styles.jointeamContainer}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <motion.h1 variants={itemVariants}>Join Team</motion.h1>
-      <motion.hr variants={itemVariants} />
-      <AnimatePresence mode="popLayout">
-        {invites.length === 0 ? (
-          <motion.p 
-            className={styles.noInvites}
-            variants={itemVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            No pending invites
-          </motion.p>
-        ) : (
-          invites.map((invite, index) => (
-            <JoinCard 
-              key={invite.id} 
-              invite={invite} 
-              setInvites={setInvites}
-              delay={index * 0.1}
-            />
-          ))
-        )}
-      </AnimatePresence>
-    </motion.div>
+    <div className={styles.jointeamContainer}>
+      <h1>Join Team</h1>
+      <hr />
+      {invites.length === 0 ? (
+        <p className={styles.noInvites}>No pending invites</p>
+      ) : (
+        invites.map((invite) => (
+          <JoinCard key={invite.id} invite={invite} setInvites={setInvites} />
+        ))
+      )}
+    </div>
   );
 }
 
 function JoinCard({
   invite,
   setInvites,
-  delay = 0,
 }: {
   invite: TeamInvite;
   setInvites: React.Dispatch<React.SetStateAction<TeamInvite[]>>;
-  delay?: number;
 }) {
   const { notifyUpdate, setTeams } = useTabEvents();
   const router = useRouter();
@@ -125,6 +75,7 @@ function JoinCard({
   const handleJoin = async () => {
     setIsJoining(true);
     try {
+      // Call the accept endpoint via fetch to get the team_id
       const response = await fetch(`/api/user/invites/accept/${invite.id}`, {
         headers: {
           "Accept": "application/json",
@@ -134,16 +85,20 @@ function JoinCard({
       if (response.ok) {
         const { team_id } = await response.json();
         
+        // Remove the invite from the local list
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
         
+        // Reload the teams list
         const teamsResponse = await fetch("/api/teams");
         if (teamsResponse.ok) {
           const teamsData = await teamsResponse.json();
           teamsData.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
           setTeams(teamsData);
           
+          // Find the index of the newly joined team
           const teamIndex = teamsData.findIndex((t: { id: number }) => t.id === team_id);
           
+          // Notify other components and navigate to the new team's settings
           notifyUpdate();
           router.push(`/dashboard/settings/teams/${teamIndex >= 0 ? teamIndex : 0}`);
         }
@@ -158,27 +113,19 @@ function JoinCard({
   };
 
   const handleDecline = () => {
-    //! Fix this to call API to decline invite
+    // Note: There's no API endpoint to decline invites, so we just remove from UI
+    // The invite will remain in the database until it's accepted or cancelled by the team admin
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
     notifyUpdate();
   };
 
   return (
-    <motion.div 
-      className={styles.joinCard}
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ delay: delay, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-      layout
-    >
+    <div className={styles.joinCard}>
       <span>{invite.teamName}</span>
-      <motion.button
+      <button
         className={styles.joinButton}
         onClick={handleJoin}
         disabled={isJoining}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
       >
         <Image
           src="/settings/join/Join.svg"
@@ -187,13 +134,8 @@ function JoinCard({
           width={2000}
           height={2000}
         />
-      </motion.button>
-      <motion.button 
-        className={styles.declineButton} 
-        onClick={handleDecline}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-      >
+      </button>
+      <button className={styles.declineButton} onClick={handleDecline}>
         <Image
           src="/settings/join/Decline.svg"
           alt="Decline Invite"
@@ -201,7 +143,7 @@ function JoinCard({
           width={2000}
           height={2000}
         />
-      </motion.button>
-    </motion.div>
+      </button>
+    </div>
   );
 }

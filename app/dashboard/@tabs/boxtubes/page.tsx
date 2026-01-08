@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import styles from "./boxtubes.module.css";
-import { BoxTube } from "@/app/types";
+import { BoxTube, Team } from "@/app/types";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
@@ -13,16 +13,9 @@ import Image from "next/image";
 function BoxTubeCard({ boxtube, delay }: { boxtube: BoxTube; delay: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ 
-        delay: delay, 
-        duration: 0.4,
-        ease: [0.25, 0.46, 0.45, 0.94]
-      }}
-      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: delay, duration: 0.3 }}
       className={styles.boxtubecard}
     >
       <div id={styles.boxtubecardheader}>
@@ -77,41 +70,21 @@ function NoTeamCard() {
   return (
     <div className={styles.noTeamContainer}>
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ 
-          duration: 0.5,
-          ease: [0.25, 0.46, 0.45, 0.94]
-        }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
         className={styles.noTeamCard}
       >
-        <motion.h2
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-        >
-          No Team Found
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.3 }}
-        >
-          You need to be part of a team to view box tubes.
-        </motion.p>
-        <motion.div 
-          className={styles.noTeamButtons}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.3 }}
-        >
+        <h2>No Team Found</h2>
+        <p>You need to be part of a team to view box tubes.</p>
+        <div className={styles.noTeamButtons}>
           <PrimaryButton onClick={() => router.push("/dashboard/settings/newteam")}>
             <span className="textGradient">Create a Team</span>
           </PrimaryButton>
           <SecondaryButton onClick={() => router.push("/dashboard/settings/jointeam")}>
             <span className="textGradient">Join a Team</span>
           </SecondaryButton>
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   );
@@ -139,23 +112,29 @@ export default function Boxtubes() {
       if (response.ok) {
         const data = await response.json();
         if (mounted) {
-          const statusedData = await Promise.all(
-            data.map(async (bt: BoxTube): Promise<BoxTube> => {
+          let statusedData = await Promise.all(
+            data.map(async (bt: BoxTube) => {
               const response = await fetch(`/api/boxTubes/${bt.id}/jobs`, {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
                 },
               });
-              if (!response.ok) return { ...bt, status: "pending" };
-
-              const jobs: Array<{ status: string }> = await response.json();
-              console.log("Jobs for box tube", bt.id, ":", jobs);
-
-              if (jobs.length === 0) return { ...bt, status: "pending" };
-
-              const allCompleted = jobs.every((job) => job.status === "completed");
-              return { ...bt, status: allCompleted ? "completed" : "in progress" };
+              if (response.ok) {
+                const jobs = await response.json();
+                console.log("Jobs for box tube", bt.id, ":", jobs);
+                if (jobs.length === 0) {
+                  bt.status = "pending";
+                  return bt;
+                }
+                const allCompleted = jobs.every(
+                  (job: any) => job.status === "completed"
+                );
+                return {
+                  ...bt,
+                  status: allCompleted ? "completed" : "in progress",
+                };
+              }
             })
           );
           setBoxTubes(statusedData);

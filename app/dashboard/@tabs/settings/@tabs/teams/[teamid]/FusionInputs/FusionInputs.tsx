@@ -154,7 +154,7 @@ function Machines({ teamId }: { teamId: number }) {
             />
             <Image
               alt="Trash"
-              src="/settings/teams/Trash.svg"
+              src="/settings/teams/trash.svg"
               width={2000}
               height={2000}
               onClick={() => deleteMachine(machine.id)}
@@ -302,7 +302,7 @@ function Materials({ teamId }: { teamId: number }) {
             />
             <Image
               alt="Trash"
-              src="/settings/teams/Trash.svg"
+              src="/settings/teams/trash.svg"
               width={2000}
               height={2000}
               onClick={() => deleteMaterial(material.id)}
@@ -515,7 +515,7 @@ function ToolItem({
       </div>
       <Image
         alt="Trash"
-        src="/settings/teams/Trash.svg"
+        src="/settings/teams/trash.svg"
         width={2000}
         height={2000}
         onClick={() => onDeleteTool(tool.id)}

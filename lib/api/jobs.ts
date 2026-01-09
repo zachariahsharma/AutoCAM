@@ -61,7 +61,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, job.team_id);
   return routeResponse(200, {
     // FIXME: Move file into schema and move parseJsonBody up a level
-    ...await parseJsonBody(job, Job),
+    ...await parseSchema(job, Job),
     file: await getSignedUrl(client, new GetObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
       Key: `teams/${job.team_id}/jobs/${id}`

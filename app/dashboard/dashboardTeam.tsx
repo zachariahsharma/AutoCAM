@@ -8,6 +8,9 @@ type TabEvents = {
   setTeam: React.Dispatch<React.SetStateAction<Team | null>>;
   emailVerified: boolean;
   isLoadingAuth: boolean;
+  userId: string | null;
+  userEmail: string | null;
+  sessionExpiresAt: string | null;
 };
 
 const Ctx = createContext<TabEvents | null>(null);
@@ -20,6 +23,9 @@ export function DashboardEventsProvider({
   const [team, setTeam] = useState<Team | null>(null);
   const [emailVerified, setEmailVerified] = useState(true); // Default to true to avoid flash
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkEmailVerification() {
@@ -27,6 +33,18 @@ export function DashboardEventsProvider({
         const { data } = await authClient.getSession();
         if (data?.user) {
           setEmailVerified(data.user.emailVerified ?? false);
+          setUserId(data.user.id ?? null);
+          setUserEmail(data.user.email ?? null);
+          const expiresAt = (data as unknown as { session?: { expiresAt?: unknown } })
+            ?.session?.expiresAt;
+          if (expiresAt instanceof Date) setSessionExpiresAt(expiresAt.toISOString());
+          else if (typeof expiresAt === "string") setSessionExpiresAt(expiresAt);
+          else if (typeof expiresAt === "number") setSessionExpiresAt(new Date(expiresAt).toISOString());
+          else setSessionExpiresAt(null);
+        } else {
+          setUserId(null);
+          setUserEmail(null);
+          setSessionExpiresAt(null);
         }
       } catch (err) {
         console.error("Error checking email verification:", err);
@@ -43,8 +61,11 @@ export function DashboardEventsProvider({
       setTeam,
       emailVerified,
       isLoadingAuth,
+      userId,
+      userEmail,
+      sessionExpiresAt,
     }),
-    [team, emailVerified, isLoadingAuth]
+    [team, emailVerified, isLoadingAuth, userId, userEmail, sessionExpiresAt]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

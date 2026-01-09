@@ -11,7 +11,6 @@ import {
 } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useTabEvents } from "@/app/dashboard/@tabs/settings/teamUpdate";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert } from "@/app/signup/page";
 import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMarquee";
@@ -46,14 +45,13 @@ export default function ApiKeysPage() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { teamid } = useParams();
-  const { teams } = useTabEvents();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
   const [selectedOpen, setSelectedOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [updates, setUpdates] = useState(true);
   const [generatedapikey, setGeneratedapikey] = useState("");
-  const id = teams[Number(teamid)];
+  const teamDbId = Number(Array.isArray(teamid) ? teamid[0] : teamid);
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -76,32 +74,31 @@ export default function ApiKeysPage() {
   }, [generatedapikey]);
 
   useEffect(() => {
-    if (id) {
-      let mounted = true;
-      setIsLoading(true);
-      async function loadApiKeys() {
-        try {
-          const response = await fetch(`/api/teams/${id.id}/keys`);
-          const data: ApiKey[] = await response.json();
-          if (mounted) {
-            console.log("Loaded API keys:", data);
-            // Filter out fusion server keys - they're shown in a separate section
-            setApiKeys(data.filter((key) => !key.is_fusion_server));
-          }
-        } catch (error) {
-          console.error("Error loading API keys:", error);
-        } finally {
-          if (mounted) {
-            setIsLoading(false);
-          }
+    if (!Number.isFinite(teamDbId)) return;
+    let mounted = true;
+    setIsLoading(true);
+    async function loadApiKeys() {
+      try {
+        const response = await fetch(`/api/teams/${teamDbId}/keys`);
+        const data: ApiKey[] = await response.json();
+        if (mounted) {
+          console.log("Loaded API keys:", data);
+          // Filter out fusion server keys - they're shown in a separate section
+          setApiKeys(data.filter((key) => !key.is_fusion_server));
+        }
+      } catch (error) {
+        console.error("Error loading API keys:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
         }
       }
-      loadApiKeys();
-      return () => {
-        mounted = false;
-      };
     }
-  }, [id, updates]);
+    loadApiKeys();
+    return () => {
+      mounted = false;
+    };
+  }, [teamDbId, updates]);
   useEffect(() => {
     if (modalOpen === false) {
       setSelectedScopes([]);
@@ -122,15 +119,13 @@ export default function ApiKeysPage() {
     console.log("selected scopes ", selectedScopes);
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name");
-    if (id == undefined) {
-      return;
-    }
+    if (!Number.isFinite(teamDbId)) return;
     if (selectedScopes.length === 0) {
       setAlertText("1+ Scopes Required");
       setAlertOpen(true);
       return;
     }
-    const response = await fetch(`/api/teams/${id.id}/keys`, {
+    const response = await fetch(`/api/teams/${teamDbId}/keys`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

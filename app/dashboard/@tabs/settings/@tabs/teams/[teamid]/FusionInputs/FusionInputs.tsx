@@ -316,19 +316,21 @@ function Materials({ teamId }: { teamId: number }) {
 }
 
 function ToolItem({
-  setTools,
   tool,
   totalMaterials,
   totalMachines,
   onDeleteTool,
   onUpdateToolName,
+  onToggleToolMaterial,
+  onToggleToolMachine,
 }: {
   tool: Tool;
-  setTools: React.Dispatch<React.SetStateAction<Tool[]>>;
   totalMaterials: Material[];
   totalMachines: Machine[];
   onDeleteTool: (toolId: number) => void;
   onUpdateToolName: (toolId: number, name: string) => void;
+  onToggleToolMaterial: (toolId: number, material: Material) => void;
+  onToggleToolMachine: (toolId: number, machine: Machine) => void;
 }) {
   const [dropdownMaterialsEnabled, setDropdownMaterialsEnabled] =
     useState<boolean>(false);
@@ -420,22 +422,7 @@ function ToolItem({
                           type="checkbox"
                           checked={materials.some((m) => m.id === material.id)}
                           onChange={() => {
-                            setTools((prev) =>
-                              prev.map((t) => {
-                                if (t.id !== tool.id) return t;
-                                const exists = t.materials.some(
-                                  (m) => m.id === material.id
-                                );
-                                return {
-                                  ...t,
-                                  materials: exists
-                                    ? t.materials.filter(
-                                        (m) => m.id !== material.id
-                                      )
-                                    : [...t.materials, material],
-                                };
-                              })
-                            );
+                            onToggleToolMaterial(tool.id, material);
                           }}
                         />
                         <span className={styles.checkboxBox}>
@@ -499,22 +486,7 @@ function ToolItem({
                           type="checkbox"
                           checked={machines.some((m) => m.id === machine.id)}
                           onChange={() => {
-                            setTools((prev) =>
-                              prev.map((t) => {
-                                if (t.id !== tool.id) return t;
-                                const exists = t.machines.some(
-                                  (m) => m.id === machine.id
-                                );
-                                return {
-                                  ...t,
-                                  machines: exists
-                                    ? t.machines.filter(
-                                        (m) => m.id !== machine.id
-                                      )
-                                    : [...t.machines, machine],
-                                };
-                              })
-                            );
+                            onToggleToolMachine(tool.id, machine);
                           }}
                         />
                         <span className={styles.checkboxBox}>
@@ -560,8 +532,16 @@ function Tools({ teamId }: { teamId: number }) {
   const [pendingUpdates, setPendingUpdates] = useState<
     Record<number, NodeJS.Timeout>
   >({});
+  const [pendingAssignmentUpdates, setPendingAssignmentUpdates] = useState<
+    Record<number, NodeJS.Timeout>
+  >({});
   const [totalMaterials, setTotalMaterials] = useState<Material[]>([]);
   const [totalMachines, setTotalMachines] = useState<Machine[]>([]);
+  const toolsRef = useRef<Tool[]>([]);
+
+  useEffect(() => {
+    toolsRef.current = tools;
+  }, [tools]);
 
   // Load tools/materials/machines from API
   useEffect(() => {
@@ -579,34 +559,46 @@ function Tools({ teamId }: { teamId: number }) {
 
         if (!mounted) return;
 
+        let materials: Material[] = [];
+        let machines: Machine[] = [];
+
         if (materialsRes.ok) {
-          const materials = (await materialsRes.json()) as Material[];
-          setTotalMaterials(materials);
-        } else {
-          setTotalMaterials([]);
+          materials = (await materialsRes.json()) as Material[];
         }
 
         if (machinesRes.ok) {
-          const machines = (await machinesRes.json()) as Partial<Machine>[];
-          setTotalMachines(
-            machines.map((m) => ({
-              id: m.id as number,
-              name: m.name as string,
-              file: typeof m.file === "string" ? m.file : "",
-            }))
-          );
-        } else {
-          setTotalMachines([]);
+          const rawMachines = (await machinesRes.json()) as Partial<Machine>[];
+          machines = rawMachines.map((m) => ({
+            id: m.id as number,
+            name: m.name as string,
+            file: typeof m.file === "string" ? m.file : "",
+          }));
         }
 
+        setTotalMaterials(materials);
+        setTotalMachines(machines);
+
         if (toolsRes.ok) {
-          const tools = (await toolsRes.json()) as { id: number; name: string }[];
+          const tools = (await toolsRes.json()) as Array<{
+            id: number;
+            name: string;
+            material_ids?: number[];
+            machine_ids?: number[];
+          }>;
+
+          const materialsById = new Map(materials.map((m) => [m.id, m] as const));
+          const machinesById = new Map(machines.map((m) => [m.id, m] as const));
+
           setTools(
             tools.map((t) => ({
               id: t.id,
               name: t.name,
-              materials: [],
-              machines: [],
+              materials: (t.material_ids ?? [])
+                .map((id) => materialsById.get(id))
+                .filter((m): m is Material => Boolean(m)),
+              machines: (t.machine_ids ?? [])
+                .map((id) => machinesById.get(id))
+                .filter((m): m is Machine => Boolean(m)),
               file: "",
             }))
           );
@@ -636,6 +628,12 @@ function Tools({ teamId }: { teamId: number }) {
       Object.values(pendingUpdates).forEach(clearTimeout);
     };
   }, [pendingUpdates]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(pendingAssignmentUpdates).forEach(clearTimeout);
+    };
+  }, [pendingAssignmentUpdates]);
 
   const handleAddTool = async (name: string, file: File) => {
     if (!teamId) return;
@@ -676,21 +674,28 @@ function Tools({ teamId }: { teamId: number }) {
     const timeout = setTimeout(() => {
       updateToolNameApi(toolId, name);
       setPendingUpdates((prev) => {
-        const next = { ...prev };
-        delete next[toolId];
-        return next;
-      });
-    }, 500);
+      const next = { ...prev };
+      delete next[toolId];
+      return next;
+    });
+  }, 500);
 
     setPendingUpdates((prev) => ({ ...prev, [toolId]: timeout }));
   }
 
   async function updateToolNameApi(toolId: number, name: string) {
+    const current = toolsRef.current.find((t) => t.id === toolId);
+    const materialIds = current?.materials.map((m) => m.id) ?? [];
+    const machineIds = current?.machines.map((m) => m.id) ?? [];
     try {
       const response = await fetch(`/api/tools/${toolId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({
+          name,
+          material_ids: materialIds,
+          machine_ids: machineIds,
+        }),
       });
       if (!response.ok) {
         console.error("Failed to update tool:", await response.text());
@@ -698,6 +703,89 @@ function Tools({ teamId }: { teamId: number }) {
     } catch (error) {
       console.error("Error updating tool:", error);
     }
+  }
+
+  function scheduleAssignmentsUpdate(
+    toolId: number,
+    materialIds: number[],
+    machineIds: number[]
+  ) {
+    if (pendingAssignmentUpdates[toolId]) {
+      clearTimeout(pendingAssignmentUpdates[toolId]);
+    }
+
+    const timeout = setTimeout(() => {
+      updateToolAssignmentsApi(toolId, materialIds, machineIds);
+      setPendingAssignmentUpdates((prev) => {
+        const next = { ...prev };
+        delete next[toolId];
+        return next;
+      });
+    }, 500);
+
+    setPendingAssignmentUpdates((prev) => ({ ...prev, [toolId]: timeout }));
+  }
+
+  async function updateToolAssignmentsApi(
+    toolId: number,
+    materialIds: number[],
+    machineIds: number[]
+  ) {
+    try {
+      const response = await fetch(`/api/tools/${toolId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ material_ids: materialIds, machine_ids: machineIds }),
+      });
+      if (!response.ok) {
+        console.error(
+          "Failed to update tool assignments:",
+          await response.text()
+        );
+      }
+    } catch (error) {
+      console.error("Error updating tool assignments:", error);
+    }
+  }
+
+  function toggleToolMaterial(toolId: number, material: Material) {
+    const current = toolsRef.current.find((t) => t.id === toolId);
+    if (!current) return;
+
+    const exists = current.materials.some((m) => m.id === material.id);
+    const nextMaterials = exists
+      ? current.materials.filter((m) => m.id !== material.id)
+      : [...current.materials, material];
+    const machineIds = current.machines.map((m) => m.id);
+
+    setTools((prev) =>
+      prev.map((t) => (t.id === toolId ? { ...t, materials: nextMaterials } : t))
+    );
+    scheduleAssignmentsUpdate(
+      toolId,
+      nextMaterials.map((m) => m.id),
+      machineIds
+    );
+  }
+
+  function toggleToolMachine(toolId: number, machine: Machine) {
+    const current = toolsRef.current.find((t) => t.id === toolId);
+    if (!current) return;
+
+    const exists = current.machines.some((m) => m.id === machine.id);
+    const nextMachines = exists
+      ? current.machines.filter((m) => m.id !== machine.id)
+      : [...current.machines, machine];
+    const materialIds = current.materials.map((m) => m.id);
+
+    setTools((prev) =>
+      prev.map((t) => (t.id === toolId ? { ...t, machines: nextMachines } : t))
+    );
+    scheduleAssignmentsUpdate(
+      toolId,
+      materialIds,
+      nextMachines.map((m) => m.id)
+    );
   }
 
   async function deleteTool(toolId: number) {
@@ -745,11 +833,12 @@ function Tools({ teamId }: { teamId: number }) {
           <ToolItem
             key={tool.id}
             tool={tool}
-            setTools={setTools}
             totalMaterials={totalMaterials}
             totalMachines={totalMachines}
             onDeleteTool={deleteTool}
             onUpdateToolName={updateToolNameLocal}
+            onToggleToolMaterial={toggleToolMaterial}
+            onToggleToolMachine={toggleToolMachine}
           />
         ))
       )}

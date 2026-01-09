@@ -4,10 +4,12 @@ import { useAnimate } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
-import { useSelectedLayoutSegment } from "next/navigation";
+import { useSelectedLayoutSegments } from "next/navigation";
 export function useCurrentTab() {
-  const segment = useSelectedLayoutSegment("tabs");
-  return segment ?? "default";
+  const segments = useSelectedLayoutSegments("tabs");
+  if (segments.length === 0) return "default";
+  if (segments[0] === "teams") return segments[1] ?? "teams";
+  return segments[0] ?? "default";
 }
 import { TabEventsProvider, useTabEvents } from "./teamUpdate";
 
@@ -93,17 +95,17 @@ function Sidebar() {
         />
         <span>Personal</span>
       </div>
-      {teams.map((team, index) => (
+      {teams.map((team) => (
         <div
-          key={index}
-          ref={(el) => { itemsRef.current[`team-${index}`] = el; }}
+          key={team.id}
+          ref={(el) => { itemsRef.current[`team-${team.id}`] = el; }}
           onClick={() => {
-            if (tab !== String(index)) {
-              router.push("/dashboard/settings/teams/" + index);
+            if (tab !== String(team.id)) {
+              router.push("/dashboard/settings/teams/" + team.id);
             }
           }}
           style={
-            tab === String(index)
+            tab === String(team.id)
               ? {
                   backgroundColor: "rgba(255,255,255,.15)",
                   marginBottom: "2px",

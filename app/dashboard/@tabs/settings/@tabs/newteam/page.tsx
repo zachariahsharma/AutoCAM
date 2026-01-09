@@ -12,7 +12,7 @@ export default function NewteamSettingsPage() {
   const [teamName, setTeamName] = useState("");
   const router = useRouter();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const { notifyUpdate, teams } = useTabEvents();
+  const { notifyUpdate } = useTabEvents();
   async function handleCreateTeam(e: React.FormEvent) {
     e.preventDefault();
     console.log(
@@ -52,7 +52,7 @@ export default function NewteamSettingsPage() {
       }
 
       notifyUpdate();
-      router.push("/dashboard/settings/teams/" + teams.length);
+      router.push("/dashboard/settings/teams/" + data.id);
     } else {
       console.error("Error creating team:", response.statusText);
     }

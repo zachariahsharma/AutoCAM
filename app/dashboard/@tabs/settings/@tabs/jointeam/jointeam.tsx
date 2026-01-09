@@ -96,11 +96,8 @@ function JoinCard({
           setTeams(teamsData);
           
           // Find the index of the newly joined team
-          const teamIndex = teamsData.findIndex((t: { id: number }) => t.id === team_id);
-          
-          // Notify other components and navigate to the new team's settings
           notifyUpdate();
-          router.push(`/dashboard/settings/teams/${teamIndex >= 0 ? teamIndex : 0}`);
+          router.push(`/dashboard/settings/teams/${team_id}`);
         }
       } else {
         console.error("Failed to accept invite");

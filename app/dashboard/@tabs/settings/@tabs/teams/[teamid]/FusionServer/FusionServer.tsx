@@ -2,13 +2,12 @@ import styles from "./fusionserver.module.css";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useTabEvents } from "@/app/dashboard/@tabs/settings/teamUpdate";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert } from "@/app/signup/page";
 import type { ApiKey } from "@/app/types";
 
 // Scopes required for Fusion Server
-const FUSION_SERVER_SCOPES = ["jobs:process", "parts:read", "plates:read"];
+const FUSION_SERVER_SCOPES = ["jobs:process", "parts:read", "plates:read", "tools:read", "materials:read", "machines:read"];
 
 export function Modal({
   children,
@@ -37,7 +36,6 @@ export default function FusionServerPage() {
   const [fusionServers, setFusionServers] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { teamid } = useParams();
-  const { teams } = useTabEvents();
   const [modalOpen, setModalOpen] = useState(false);
   const [clipboardModalOpen, setClipboardModalOpen] = useState(false);
   const [generatedApiKey, setGeneratedApiKey] = useState("");
@@ -46,7 +44,7 @@ export default function FusionServerPage() {
   const [updates, setUpdates] = useState(true);
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const id = teams[Number(teamid)];
+  const teamDbId = Number(Array.isArray(teamid) ? teamid[0] : teamid);
 
   // Cleanup timeout on unmount to prevent memory leak
   useEffect(() => {
@@ -68,32 +66,31 @@ export default function FusionServerPage() {
 
   // Load existing fusion server API keys
   useEffect(() => {
-    if (id) {
-      let mounted = true;
-      setIsLoading(true);
-      async function loadFusionServers() {
-        try {
-          const response = await fetch(`/api/teams/${id.id}/keys`);
-          const data: ApiKey[] = await response.json();
-          if (mounted) {
-            // Filter to only show keys marked as fusion server
-            const fusionKeys = data.filter((key) => key.is_fusion_server);
-            setFusionServers(fusionKeys);
-          }
-        } catch (error) {
-          console.error("Error loading fusion servers:", error);
-        } finally {
-          if (mounted) {
-            setIsLoading(false);
-          }
+    if (!Number.isFinite(teamDbId)) return;
+    let mounted = true;
+    setIsLoading(true);
+    async function loadFusionServers() {
+      try {
+        const response = await fetch(`/api/teams/${teamDbId}/keys`);
+        const data: ApiKey[] = await response.json();
+        if (mounted) {
+          // Filter to only show keys marked as fusion server
+          const fusionKeys = data.filter((key) => key.is_fusion_server);
+          setFusionServers(fusionKeys);
+        }
+      } catch (error) {
+        console.error("Error loading fusion servers:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
         }
       }
-      loadFusionServers();
-      return () => {
-        mounted = false;
-      };
     }
-  }, [id, updates]);
+    loadFusionServers();
+    return () => {
+      mounted = false;
+    };
+  }, [teamDbId, updates]);
 
   useEffect(() => {
     if (modalOpen === false) {
@@ -112,12 +109,10 @@ export default function FusionServerPage() {
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
 
-    if (id == undefined) {
-      return;
-    }
+    if (!Number.isFinite(teamDbId)) return;
 
     // Call the API key endpoint with fusion server scopes and flag
-    const response = await fetch(`/api/teams/${id.id}/keys`, {
+    const response = await fetch(`/api/teams/${teamDbId}/keys`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

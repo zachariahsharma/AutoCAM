@@ -208,3 +208,351 @@
   border-radius: 5px;
   border: 1px solid white;
 }
+.trashButton {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.trashButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.jobsError {
+  padding: 8px 12px;
+  margin: 10px 15px 0px 15px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 0, 0, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font-roboto);
+  font-size: 13px;
+}
+
+.stageQueued {
+  background-color: rgba(230, 221, 94, 0.12);
+  color: var(--yellow-1);
+}
+
+.stageComplete {
+  background-color: rgba(230, 221, 94, 0.12);
+  border-color: var(--yellow-3);
+  color: var(--yellow-1);
+}
+
+.dotComplete {
+  border-color: var(--yellow-3);
+}
+
+.noBorder {
+  border-color: transparent !important;
+}
+
+.tooltipTarget::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 14px);
+  transform: translate(-50%, 8px) scale(0.98);
+  transform-origin: bottom center;
+  background: linear-gradient(
+    180deg,
+    rgba(24, 24, 24, 0.96),
+    rgba(0, 0, 0, 0.94)
+  );
+  color: white;
+  padding: 8px 12px;
+  border-radius: 12px;
+  white-space: nowrap;
+  font-family: var(--font-roboto);
+  font-size: 12px;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  filter: blur(1px);
+  transition:
+    opacity 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+}
+
+.tooltipTarget::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%) translateY(6px);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(12, 12, 12, 0.94);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  transition:
+    opacity 140ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.tooltipTarget:hover::before,
+.tooltipTarget:focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  filter: blur(0);
+}
+
+.tooltipTarget:hover::after,
+.tooltipTarget:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.tooltipTarget[data-tooltip=""]::before,
+.tooltipTarget[data-tooltip=""]::after {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltipTarget::before,
+  .tooltipTarget::after {
+    transition: none;
+    transform: none;
+    filter: none;
+  }
+}
+
+.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+@keyframes camPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+.stageAction {
+  background-color: rgba(245, 158, 11, 0.12);
+  border-color: #f59e0b;
+  color: #f59e0b;
+  animation: camPulse 1.4s ease-in-out infinite;
+}
+
+.camModalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.camModal {
+  width: min(1100px, 92vw);
+  max-height: 90vh;
+  overflow: hidden;
+  background: #0f141a;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.camModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--bs-border-color);
+  font-family: var(--font-roboto);
+  color: white;
+}
+
+.camModalClose {
+  background: none;
+  border: none;
+  padding: 4px;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camModalClose:hover {
+  opacity: 1;
+}
+
+.camModalBody {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.camModalScreenshot {
+  background: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camModalImage {
+  max-width: 100%;
+  max-height: 70vh;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.camModalPlaceholder {
+  padding: 18px;
+  color: #9aa1a9;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+}
+
+.camModalControls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.machineGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.machineOption {
+  text-align: left;
+  padding: 10px 12px;
+  background-color: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 10px;
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.machineOption:hover:enabled {
+  background-color: #111923;
+  border-color: #3b4754;
+}
+
+.machineOption:active:enabled {
+  transform: scale(0.98);
+}
+
+.machineOptionSelected {
+  border-color: var(--yellow-3);
+  background: rgba(230, 221, 94, 0.12);
+  color: var(--yellow-1);
+}
+
+.machineOption:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.camModalLabel {
+  color: #a1a1a1;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.camModalSelect {
+  padding: 10px 12px;
+  background-color: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 8px;
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+}
+
+.camModalSelect:focus {
+  outline: none;
+  border-color: #3b4754;
+}
+
+.camModalError {
+  margin-top: 6px;
+  color: #f87171;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+}
+
+.camModalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.camModalCancel {
+  padding: 10px 14px;
+  background: none;
+  border: 1px solid #3b4754;
+  border-radius: 8px;
+  color: #c9d1d9;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+}
+
+.camModalCancel:hover:enabled {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.camModalConfirm {
+  padding: 10px 14px;
+  border: 1px solid var(--yellow-3);
+  background: rgba(230, 221, 94, 0.12);
+  border-radius: 8px;
+  color: var(--yellow-1);
+  font-family: var(--font-roboto);
+  font-size: 14px;
+}
+
+.camModalConfirm:disabled {
+  opacity: 0.5;
+}
+
+@media screen and (max-width: 994px) {
+  .camModalBody {
+    grid-template-columns: 1fr;
+  }
+}

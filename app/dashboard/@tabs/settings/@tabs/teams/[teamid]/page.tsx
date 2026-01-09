@@ -1,7 +1,6 @@
 "use client";
 
 import styles from "./team.module.css";
-import { Material, Machine, Tool } from "@/app/types";
 import { useEffect, useState } from "react";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";
@@ -48,12 +47,9 @@ export function TeamName({
 export default function TeamSettingsPage() {
   const router = useRouter();
   const [teamName, setTeamName] = useState<string>("");
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [machines, setMachines] = useState<Machine[]>([]);
   const { teamid } = useParams();
   const [teamDbId, setTeamDbId] = useState<number>(0);
   const { teams, notifyUpdate } = useTabEvents();
-  const [tools, setTools] = useState<Tool[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
@@ -70,25 +66,23 @@ export default function TeamSettingsPage() {
   const [isLeaving, setIsLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
 
-  // Check if current user is the owner and get their email
+  // Load current user session info
   useEffect(() => {
-    async function checkOwnership() {
+    async function loadSession() {
       const { data } = await authClient.getSession();
       if (data?.user?.id) {
         setCurrentUserEmail(data.user.email ?? null);
         setEmailVerified(data.user.emailVerified ?? false);
-        const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
-        const teamIndex = parseInt(idStr, 10);
-        const team = teams[teamIndex];
-        if (team && team.owner === data.user.id) {
-          setIsOwner(true);
-        } else {
-          setIsOwner(false);
-        }
       }
     }
-    checkOwnership();
-  }, [teamid, teams]);
+    loadSession();
+  }, []);
+
+  const routeTeamId = (() => {
+    const idStr = Array.isArray(teamid) ? teamid[0] : teamid;
+    const parsed = Number(idStr);
+    return Number.isFinite(parsed) ? parsed : null;
+  })();
 
   // Fetch members to check admin status
   useEffect(() => {
@@ -109,6 +103,7 @@ export default function TeamSettingsPage() {
           const currentMember = members.find(
             (m) => m.email === currentUserEmail
           );
+          setIsOwner(currentMember?.isOwner ?? false);
           // Owner is always treated as admin for settings access
           setIsAdmin(currentMember?.admin ?? currentMember?.isOwner ?? false);
 
@@ -126,30 +121,20 @@ export default function TeamSettingsPage() {
     // Wait for teams to load before checking access
     if (teams.length === 0) return;
 
-    const idStr = Array.isArray(teamid) ? teamid[0] : teamid ?? "0";
-    const teamIndex = parseInt(idStr, 10);
-    console.log("Loading team with id:", idStr, "and index:", teamIndex);
-    const team = teams[teamIndex];
+    if (!routeTeamId) {
+      router.push("/dashboard/settings/personal");
+      return;
+    }
+    const team = teams.find((t) => t.id === routeTeamId);
 
-    // If team doesn't exist at this index, user doesn't have access - redirect
-    console.log(
-      !team || isNaN(teamIndex) || teamIndex < 0 || teamIndex >= teams.length
-    );
-    if (
-      !team ||
-      isNaN(teamIndex) ||
-      teamIndex < 0 ||
-      teamIndex >= teams.length
-    ) {
+    // If team doesn't exist, user doesn't have access - redirect
+    if (!team) {
       router.push("/dashboard/settings/personal");
       return;
     }
 
     setTeamName(team.name);
     setTeamDbId(team.id);
-    setMaterials(team.materials || []);
-    setMachines(team.machines || []);
-    setTools(team.tools || []);
   }, [teamid, teams, router]);
 
   const handleDeleteTeam = async () => {
@@ -319,9 +304,6 @@ export default function TeamSettingsPage() {
         <br />
         {isAdmin && emailVerified && (
           <FusionInputs
-            defaultMachines={machines}
-            defaultMaterials={materials}
-            defaultTools={tools}
             teamId={teamDbId}
           />
         )}

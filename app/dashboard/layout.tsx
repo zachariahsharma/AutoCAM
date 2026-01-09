@@ -681,9 +681,99 @@ export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
             <Sidebar />
             <main className={styles.main}>{tabs}</main>
           </div>
+          <EmailVerificationModal />
           <EmailVerificationWarning />
         </DashboardEventsProvider>
       </SidebarProvider>
+    </div>
+  );
+}
+
+function EmailVerificationModal() {
+  const { emailVerified, isLoadingAuth, userId, userEmail, sessionExpiresAt } =
+    useDashboardEvents();
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoadingAuth || emailVerified) {
+      setOpen(false);
+      return;
+    }
+    if (!userId) return;
+    if (pathname.includes("/dashboard/settings/personal")) return;
+
+    const storageKey = `autocam:emailVerificationModalDismissed:${userId}:${
+      sessionExpiresAt ?? "unknown"
+    }`;
+    if (sessionStorage.getItem(storageKey) === "1") return;
+
+    setOpen(true);
+  }, [emailVerified, isLoadingAuth, pathname, sessionExpiresAt, userId]);
+
+  const close = () => {
+    if (userId) {
+      const storageKey = `autocam:emailVerificationModalDismissed:${userId}:${
+        sessionExpiresAt ?? "unknown"
+      }`;
+      sessionStorage.setItem(storageKey, "1");
+    }
+    setOpen(false);
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className={styles.verificationModalOverlay} role="presentation">
+      <div
+        className={styles.verificationModal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Verify your email"
+      >
+        <div className={styles.verificationModalHeader}>
+          <div className={styles.verificationModalTitle}>
+            Verify your email
+          </div>
+          <button
+            type="button"
+            className={styles.verificationModalClose}
+            onClick={close}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div className={styles.verificationModalBody}>
+          <p className={styles.verificationModalText}>
+            We sent a verification link to{" "}
+            <span className={styles.verificationModalEmail}>
+              {userEmail ?? "your email"}
+            </span>
+            . Please check your inbox (and spam) to verify your account.
+          </p>
+        </div>
+        <div className={styles.verificationModalActions}>
+          <button
+            type="button"
+            className={styles.verificationModalSecondary}
+            onClick={close}
+          >
+            Not now
+          </button>
+          <button
+            type="button"
+            className={styles.verificationModalPrimary}
+            onClick={() => {
+              close();
+              router.push("/dashboard/settings/personal");
+            }}
+          >
+            Go to verification →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

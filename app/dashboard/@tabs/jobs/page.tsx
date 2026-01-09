@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import styles from "./jobs.module.css";
-import { PartCategory, Team } from "@/app/types";
+import type { PartCategory, PlatesJob, Team } from "@/app/types";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -101,7 +101,7 @@ async function fetchPartCategories({
           for (const plate of cat.plates) {
             const jobResponse = await fetch(`/api/plates/${plate.id}/jobs`);
             if (jobResponse.ok) {
-              const jobsData = await jobResponse.json();
+              const jobsData: PlatesJob[] = await jobResponse.json();
               plate.jobs = jobsData;
             }
           }

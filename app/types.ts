@@ -8,6 +8,8 @@ import {
 import { Teams } from "@/lib/db/schema/entities";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
+
+
 export type PartCategory = Omit<
   InferSelectModel<typeof PartCategories>,
   "thickness"
@@ -81,4 +83,15 @@ export interface ApiKey {
 export interface TeamInvite {
   id: string;
   teamName: string;
+}
+
+export type PlatesJobStatus = "pending" | "in progress" | "completed";
+
+export type PlatesJobKind = "arrange" | "cam";
+
+export interface PlatesJob {
+  id: number;
+  kind: PlatesJobKind;
+  status: PlatesJobStatus;
+  queue_position: number;
 }

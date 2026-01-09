@@ -56,8 +56,11 @@ export function queuePositionSubquery(tx: Transaction) {
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  const job = await tx.query.Jobs.findFirst({ where: eq(Jobs.id, id) });
-  if (!job) return routeResponse(404);
+  const jobs = await tx.select()
+    .from(queuePositionSubquery(tx))
+    .where(eq(Jobs.id, id));
+  if (jobs.length === 0) return routeResponse(404);
+  const [job] = jobs;
   await checkUserTeam(tx, authType, job.team_id);
   return routeResponse(200, {
     // FIXME: Move file into schema and move parseJsonBody up a level

@@ -99,7 +99,6 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
     with: { category: true }
   });
   if (!plate) return routeResponse(404);
-  console.log(plate);
   await checkUserTeam(tx, authType, plate?.category.team_id);
   const body = await parseSchema(await req.json(), CreateSchema);
 

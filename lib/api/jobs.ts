@@ -56,8 +56,11 @@ export function queuePositionSubquery(tx: Transaction) {
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  const job = await tx.query.Jobs.findFirst({ where: eq(Jobs.id, id) });
-  if (!job) return routeResponse(404);
+  const jobs = await tx.select()
+    .from(queuePositionSubquery(tx))
+    .where(eq(Jobs.id, id));
+  if (jobs.length === 0) return routeResponse(404);
+  const [job] = jobs;
   await checkUserTeam(tx, authType, job.team_id);
   return routeResponse(200, {
     // FIXME: Move file into schema and move parseJsonBody up a level
@@ -118,7 +121,3 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Key: `teams/${job.team_id}/jobs/${id}`
   }));
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.jobs.delete] } });
-function parseJsonBody(job: { id: number; created_at: Date; team_id: number; kind: "plate:arrange" | "plate:cam" | "box_tube"; claimed_by: string | null; payload: unknown; response: unknown; }, Job: zod.ZodPipe<zod.ZodObject<{ id: zod.ZodInt; created_at: zod.ZodDate; kind: zod.ZodEnum<{ "plate:arrange": "plate:arrange"; "plate:cam": "plate:cam"; box_tube: "box_tube"; }>; claimed_by: zod.ZodNullable<zod.ZodString>; payload: zod.ZodType<Json, unknown, zod.core.$ZodTypeInternals<Json, unknown>>; response: zod.ZodNullable<zod.ZodType<Json, unknown, zod.core.$ZodTypeInternals<Json, unknown>>>; queue_position: zod.ZodNumber; }, { out: {}; in: {}; }>, zod.ZodTransform<{ status: string; id: number; created_at: Date; kind: "plate:arrange" | "plate:cam" | "box_tube"; claimed_by: string | null; payload: Json; response: Json; queue_position: number; }, { id: number; created_at: Date; kind: "plate:arrange" | "plate:cam" | "box_tube"; claimed_by: string | null; payload: Json; response: Json; queue_position: number; }>>): object | PromiseLike<object | undefined> | undefined {
-  throw new Error("Function not implemented.");
-}
-

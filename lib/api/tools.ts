@@ -185,10 +185,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
       Key: `teams/${tool.team_id}/tools/${id}`
     }), { expiresIn: 120 })
   }, Tool));
-}, {
-  user: { idPolicy: IDPolicy.Required },
-  apiKey: { scopes: [scopes.tools.read], idPolicy: IDPolicy.Forbidden }
-});
+}, { user: {}, apiKey: { scopes: [scopes.tools.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);

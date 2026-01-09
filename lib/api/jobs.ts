@@ -56,9 +56,10 @@ export function queuePositionSubquery(tx: Transaction) {
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
+  const subquery = queuePositionSubquery(tx);
   const jobs = await tx.select()
-    .from(queuePositionSubquery(tx))
-    .where(eq(Jobs.id, id));
+    .from(subquery)
+    .where(eq(subquery.id, id));
   if (jobs.length === 0) return routeResponse(404);
   const [job] = jobs;
   await checkUserTeam(tx, authType, job.team_id);

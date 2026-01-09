@@ -12,7 +12,7 @@ const CreateSchema = zod.discriminatedUnion("type", [
   zod.object({
     type: zod.literal("cam"),
     machine_id: zod.number(),
-    tool_id: zod.number()
+    tool_ids: zod.array(zod.number())
   })
 ]);
 

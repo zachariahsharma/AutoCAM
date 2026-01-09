@@ -139,7 +139,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   await checkUserTeam(tx, authType, machine.team_id);
   return routeResponse(200, await parseSchema({
     ...machine,
-    file: getSignedUrl(client, new GetObjectCommand({
+    file: await getSignedUrl(client, new GetObjectCommand({
       Bucket: process.env.AUTOCAM_BUCKET,
       Key: `teams/${machine.team_id}/machines/${id}`
     }), { expiresIn: 120 })

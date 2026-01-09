@@ -67,7 +67,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
       Key: `teams/${job.team_id}/jobs/${id}`
     }), { expiresIn: 120 })
   })
-}, { apiKey: { scopes: [scopes.jobs.read] } });
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.jobs.read] } });
 
 export const Request = routeFactory(async (req, authType, tx) => {
   if (!authType.keyDigest) return routeResponse(401);

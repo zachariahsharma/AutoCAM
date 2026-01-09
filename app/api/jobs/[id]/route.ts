@@ -1,1 +1,1 @@
-export { DELETE } from "@/lib/api/jobs";
+export { SingleGET, DELETE } from "@/lib/api/jobs";

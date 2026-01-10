@@ -2,6 +2,7 @@
 
 import styles from "./team.module.css";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import FusionInputs from "./FusionInputs/FusionInputs";
 import CollaboratorsSettingsPage from "./Collaborators/Collaborators";
@@ -272,7 +273,11 @@ export default function TeamSettingsPage() {
     }
   };
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+    >
       <div className={styles.teamContainer}>
         <h1>{teamName}</h1>
         <hr />
@@ -439,6 +444,6 @@ export default function TeamSettingsPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

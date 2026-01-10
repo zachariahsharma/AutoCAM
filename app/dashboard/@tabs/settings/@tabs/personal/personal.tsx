@@ -2,6 +2,7 @@
 
 import styles from "./personal.module.css";
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { authClient } from "@/lib/auth/client";
 import Image from "next/image";
@@ -159,16 +160,26 @@ export default function PersonalSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className={styles.personalContainer}>
+      <motion.div
+        className={styles.personalContainer}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      >
         <h1>Personal</h1>
         <hr />
         <p>Loading...</p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className={styles.personalContainer}>
+    <motion.div
+      className={styles.personalContainer}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+    >
       <h1>Personal</h1>
       <hr />
       <div className={styles.contentWrapper}>
@@ -289,6 +300,6 @@ export default function PersonalSettingsPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

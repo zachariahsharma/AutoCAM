@@ -28,13 +28,13 @@ function LoginContainer({
         onSuccess: () => router.push("/dashboard"),
       }
     );
-    console.log("error: ", result.error);
     if (result.error && result.error.message === "Invalid email or password") {
       setPasswordAlertOpen(true);
       setTimeout(() => {
         setPasswordAlertOpen(false);
       }, 3000);
     } else if (result.error) {
+      console.error(result.error)
       setErrorModalOpen(true);
     }
   };

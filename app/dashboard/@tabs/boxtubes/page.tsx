@@ -197,7 +197,6 @@ export default function Boxtubes() {
             )
           ).filter(Boolean) as BoxTubeWithStatus[];
           setBoxTubes(statusedData);
-          console.log("Loaded box tubes:", data);
         }
       }
       if (mounted) {

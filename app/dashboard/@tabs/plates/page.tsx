@@ -145,10 +145,8 @@ export default function Plates() {
     const load = async () => {
       setIsLoading(true);
       const categories = await fetchPartCategories({ team });
-      if (mounted && categories) {
-        console.log("categories", categories);
+      if (mounted && categories)
         setCategories(categories);
-      }
       if (mounted) {
         setIsLoading(false);
       }

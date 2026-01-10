@@ -155,7 +155,6 @@ export default function Quantitys() {
       ) : (
         <div className={styles.quantityslist}>
           {parts.map((part, index) => {
-            console.log("Rendering part:", part, "parts list:", parts);
             return (
               <QuantitiesCard
                 key={index}

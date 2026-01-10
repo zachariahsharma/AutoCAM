@@ -134,8 +134,6 @@ export default function FusionServerPage() {
     } else if (response.status === 409) {
       setAlertText("Fusion Server Name Already Exists");
       setAlertOpen(true);
-    } else {
-      console.log(await response.text());
     }
   }
 
@@ -146,12 +144,8 @@ export default function FusionServerPage() {
     const response = await fetch(`/api/keys/${apiKeyId}`, {
       method: "DELETE",
     });
-    if (response.ok) {
-      console.log("deleted successfully");
+    if (response.ok)
       setUpdates(!updates);
-    } else {
-      console.log(await response.json());
-    }
   }
 
   return (

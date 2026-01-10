@@ -15,12 +15,6 @@ export default function NewteamSettingsPage() {
   const { notifyUpdate } = useTabEvents();
   async function handleCreateTeam(e: React.FormEvent) {
     e.preventDefault();
-    console.log(
-      "Creating team:",
-      teamName,
-      "with collaborators:",
-      collaborators
-    );
     const response = await fetch("/api/teams", {
       method: "POST",
       headers: {
@@ -32,7 +26,6 @@ export default function NewteamSettingsPage() {
     });
     if (response.ok) {
       const data = await response.json();
-      console.log("Team created successfully:", data);
 
       // Send invites to all collaborators
       for (const collaborator of collaborators) {
@@ -45,7 +38,6 @@ export default function NewteamSettingsPage() {
               admin: collaborator.role === "Admin",
             }),
           });
-          console.log("Invite sent to:", collaborator.email);
         } catch (err) {
           console.error("Failed to send invite to:", collaborator.email, err);
         }

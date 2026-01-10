@@ -21,17 +21,12 @@ function Sidebar() {
   const tab = useCurrentTab();
   const { updateCount, teams, setTeams } = useTabEvents();
   useEffect(() => {
-    console.log("mounted");
-    return () => console.log("unmounted");
-  }, []);
-  useEffect(() => {
     let mounted = true;
     (async function () {
       try {
         const teamsTemp = await (await fetch("/api/teams")).json();
         if (!mounted) return;
         teamsTemp.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
-        console.log("Fetched teams:", teamsTemp);
         setTeams(teamsTemp);
       } catch (err) {
         if (mounted) console.error("Failed to fetch teams:", err);
@@ -53,7 +48,6 @@ function Sidebar() {
 
     const element = itemsRef.current[key];
     const sidebar = sidebarRef.current;
-    console.log('Animating to tab:', tab, 'using key:', key, 'element:', element);
     if (element && sidebar) {
       const elementRect = element.getBoundingClientRect();
       const sidebarRect = sidebar.getBoundingClientRect();

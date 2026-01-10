@@ -91,7 +91,6 @@ export default function MaterialThickness({
       setSelectedParts(selectedPartsInit);
       setUnassignedParts(selectedPartsInit);
       data.parts = partsData;
-      console.log("Fetched Part Category:", data);
       setPartcategory(data);
       const mappedEpics: { [key: string]: Part[] } = {};
       data.parts.forEach((part: Part) => {

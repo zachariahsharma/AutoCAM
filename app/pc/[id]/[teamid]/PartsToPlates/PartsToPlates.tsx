@@ -369,14 +369,6 @@ function PartsToPlatesCard({
         plate_id: number;
         quantity: number;
       }> = await res.json();
-      console.log(
-        "Assignments for plate",
-        currentPlateId,
-        ":",
-        assignments,
-        "for category",
-        categoryId
-      );
       const newAssignments = assignments
         .map((a) => {
           if (a.plate_id !== currentPlateId) return null;
@@ -397,7 +389,6 @@ function PartsToPlatesCard({
         return;
       }
       const jobsData: PlatesJob[] = await jobRes.json();
-      console.log("Jobs data for plate", currentPlateId, ":", jobsData);
       setJobs(jobsData);
     }
     assignedParts();
@@ -479,7 +470,6 @@ function PartsToPlatesCard({
             id: number;
             name: string;
           }>;
-          console.log("Loaded machines:", machinesData);
           setMachines(machinesData);
           setMachineNames((prev) => {
             const merged = { ...prev };
@@ -790,7 +780,6 @@ function PartsToPlatesCard({
     from?: number;
   }) {
     if (!partsToPlates || !setPartsToPlates) return;
-    console.log("Received data:", data);
     const plateIndex = Number.parseInt(name);
     const currentPlateId = plates[plateIndex]?.id;
     if (currentPlateId == null) return;
@@ -808,7 +797,6 @@ function PartsToPlatesCard({
       const next = { ...prev };
 
       if (data.from != null) {
-        console.log("Removing from plate:", data.from);
         const oldPlate = next[data.from] ?? [];
         next[data.from] = oldPlate
           .map((part) =>
@@ -890,11 +878,6 @@ function PartsToPlatesCard({
               if (plateAssignments.filter((p) => p.quantity > 0).length === 0) {
                 return;
               }
-              console.log("body:", {
-                width: localPlate.width,
-                length: localPlate.length,
-                true_depth: localPlate.true_depth,
-              });
               const databasePlates = await fetch(
                 `/api/pc/${categoryId}/plates`
               );
@@ -915,7 +898,6 @@ function PartsToPlatesCard({
                 (p) => p.id === localPlate.id
               );
               let realPlateId: number;
-              console.log("Matching plate:", matchingPlate);
               if (!matchingPlate) {
                 const createPlateRes = await fetch(
                   `/api/pc/${categoryId}/plates`,
@@ -940,8 +922,6 @@ function PartsToPlatesCard({
                 }
 
                 realPlateId = (await createPlateRes.json()).id;
-                console.log("Created plate with ID:", realPlateId);
-                console.log("Real Plate Id is:", realPlateId);
                 for (const assignment of plateAssignments) {
                   if (assignment.quantity <= 0) continue;
 
@@ -963,15 +943,6 @@ function PartsToPlatesCard({
                       "Failed to assign part:",
                       assignment.partId,
                       await assignRes.text()
-                    );
-                  } else {
-                    console.log(
-                      "Assigned part",
-                      assignment.partId,
-                      "qty",
-                      assignment.quantity,
-                      "to plate",
-                      realPlateId
                     );
                   }
                   const oldPart = await fetch(
@@ -1063,7 +1034,6 @@ function PartsToPlatesCard({
         {buildPlateJobRuns(jobs).map((run, index) => {
           const arrange = run.arrange;
           const cam = run.cam;
-          console.log("Job run:", run);
           const arrangeQueued = arrange.status === "pending";
           const arrangeInProgress = arrange.status === "in progress";
           const arrangeCompleted = arrange.status === "completed";

@@ -29,7 +29,6 @@ export function ConditionalMarquee({
 
     const next = measurer.scrollWidth > container.clientWidth;
     setOverflowing((prev) => (prev === next ? prev : next));
-    console.log("Measured overflowing:", next);
   };
 
   // Measure ASAP after layout

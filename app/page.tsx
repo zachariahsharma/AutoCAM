@@ -92,7 +92,6 @@ export function Header({
     authClient.getSession().then((s) => setSession(s.data != null));
   });
   if (session === null) return;
-  console.log(session);
 
   return (
     <div id={styles.header}>

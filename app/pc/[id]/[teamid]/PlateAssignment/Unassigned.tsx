@@ -17,11 +17,9 @@ export function Unassigned() {
     from?: number;
   }) {
     if (!partsToPlates || !setPartsToPlates) return;
-    console.log("Received data:", data);
     if (data.from == null) return;
 
     const oldPlateId = data.from;
-    console.log("Removing from plate:", oldPlateId);
     setPartsToPlates((prev) => {
       const next = { ...prev };
       const oldPlate = next[oldPlateId] ?? [];
@@ -35,7 +33,6 @@ export function Unassigned() {
       return next;
     });
 
-    console.log("Adding back to unassigned:", data.partId, data.quantity);
     setUnassignedParts((prev) => ({
       ...prev,
       [data.partId]: (prev[data.partId] ?? 0) + data.quantity,

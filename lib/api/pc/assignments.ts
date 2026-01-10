@@ -71,7 +71,6 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     where: eq(PartCategories.id, id),
     with: { assignments: true }
   });
-  console.log(pc);
   if (!pc) return routeResponse(404);
   await checkUserTeam(tx, authType, pc.team_id);
   return routeResponse(200, await parseSchema(pc.assignments, zod.array(Assignment)));

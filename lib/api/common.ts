@@ -220,11 +220,8 @@ export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, conf
       const p = await params;
       const hasId = p !== undefined && "id" in p;
       if (authType.userId) {
-        console.log("USING USER AUTH" + JSON.stringify(config));
-        if (!config.user) {
-          console.log("USING USER AUTH WITHOUT CONFIG");
+        if (!config.user)
           throw routeResponse(403, { message: "Users are not allowed to use this route" });
-        }
         const session = (await auth.api.getSession({ headers: await headers() }))!;
         if ((config.user.emailVerified ?? false) && !session.user.emailVerified)
           throw routeResponse(403, { message: "User email has not been verified" });

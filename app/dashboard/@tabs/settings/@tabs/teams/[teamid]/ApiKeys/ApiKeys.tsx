@@ -84,7 +84,6 @@ export default function ApiKeysPage() {
         const response = await fetch(`/api/teams/${teamDbId}/keys`);
         const data: ApiKey[] = await response.json();
         if (mounted) {
-          console.log("Loaded API keys:", data);
           // Filter out fusion server keys - they're shown in a separate section
           setApiKeys(data.filter((key) => !key.is_fusion_server));
         }
@@ -118,7 +117,6 @@ export default function ApiKeysPage() {
   async function handleModalSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSelectedOpen(false);
-    console.log("selected scopes ", selectedScopes);
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name");
     if (!Number.isFinite(teamDbId)) return;
@@ -138,7 +136,6 @@ export default function ApiKeysPage() {
       }),
     });
     if (response.ok) {
-      console.log("all g");
       setModalOpen(false);
       setUpdates(!updates);
       setGeneratedapikey((await response.json()).token);
@@ -146,8 +143,6 @@ export default function ApiKeysPage() {
     } else if (response.status === 409) {
       setAlertText("API Key Name Already Exists");
       setAlertOpen(true);
-    } else {
-      console.log(await response.text());
     }
   }
   useEffect(() => {
@@ -163,12 +158,8 @@ export default function ApiKeysPage() {
     const response = await fetch(`/api/keys/${apiKeyId}`, {
       method: "DELETE",
     });
-    if (response.ok) {
-      console.log("deleted successfully");
+    if (response.ok)
       setUpdates(!updates);
-    } else {
-      console.log(await response.json());
-    }
   }
 
   return (

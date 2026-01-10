@@ -17,11 +17,8 @@ import { useSelectedLayoutSegment, usePathname } from "next/navigation";
 export function useCurrentTab() {
   const segment = useSelectedLayoutSegment("tabs");
   const path = usePathname();
-  console.log("Current path:", path, "Segment:", segment);
-  if (!segment && path.includes("/dashboard/settings")) {
-    console.log("Defaulting to settings tab");
+  if (!segment && path.includes("/dashboard/settings"))
     return "settings";
-  }
   return segment ?? "default";
 }
 
@@ -411,7 +408,6 @@ function Sidebar() {
   const { isCollapsed, toggleSidebar } = useSidebar();
 
   useEffect(() => {
-    console.log("tab changed to:", tab);
     for (const key in itemsRef.current) {
       if (key === tab) {
         const element = itemsRef.current[key];

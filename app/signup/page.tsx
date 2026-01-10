@@ -109,11 +109,10 @@ function SignupContainer({
       setUserExists(false);
       if (error) {
         setErrorModalOpen(true);
+        console.error(error)
         return;
       }
     }
-
-    console.log(error);
   }
 
   return (

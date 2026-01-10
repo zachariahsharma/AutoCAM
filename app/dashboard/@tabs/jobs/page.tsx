@@ -179,10 +179,8 @@ export default function Jobs() {
     const load = async () => {
       setLoading(true);
       const categories = await fetchPartCategories({ team });
-      if (mounted && categories) {
-        console.log("categories", categories);
+      if (mounted && categories)
         setCategories(categories);
-      }
       setLoading(false);
     };
     if (team) {

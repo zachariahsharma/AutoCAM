@@ -10,7 +10,19 @@ import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import { ConditionalMarquee } from "./ConditionalMarquee";
 import Image from "next/image";
 
-function BoxTubeCard({ boxtube, delay }: { boxtube: BoxTube; delay: number }) {
+type BoxTubeWithStatus = BoxTube & { status?: "pending" | "in progress" | "completed" };
+
+function BoxTubeCard({
+  boxtube,
+  delay,
+  onRequestCam,
+  requesting,
+}: {
+  boxtube: BoxTubeWithStatus;
+  delay: number;
+  onRequestCam: (id: number) => void;
+  requesting: boolean;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -56,8 +68,13 @@ function BoxTubeCard({ boxtube, delay }: { boxtube: BoxTube; delay: number }) {
             <span className={styles.ellipsis3}>.</span>
           </div>
         ) : (
-          <SecondaryButton id={styles.requestcambutton}>
+          <SecondaryButton
+            id={styles.requestcambutton}
+            disabled={requesting}
+            onClick={() => onRequestCam(boxtube.id)}
+          >
             <span className="textGradient">CAM</span>
+            {requesting ? <span className={styles.requestingDots}>...</span> : null}
           </SecondaryButton>
         )}
       </div>
@@ -92,8 +109,12 @@ function NoTeamCard() {
 
 export default function Boxtubes() {
   const { team } = useDashboardEvents();
-  const [boxtubes, setBoxTubes] = useState<BoxTube[]>([]);
+  const [boxtubes, setBoxTubes] = useState<BoxTubeWithStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [machines, setMachines] = useState<Array<{ id: number; name: string }>>([]);
+  const [tools, setTools] = useState<Array<{ id: number; machine_ids?: number[] }>>([]);
+  const [requestingJob, setRequestingJob] = useState<Record<number, boolean>>({});
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     let mounted = true;
@@ -112,31 +133,12 @@ export default function Boxtubes() {
       if (response.ok) {
         const data = await response.json();
         if (mounted) {
-          let statusedData = await Promise.all(
+          const statusedData = (await Promise.all(
             data.map(async (bt: BoxTube) => {
-              const response = await fetch(`/api/boxTubes/${bt.id}/jobs`, {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              });
-              if (response.ok) {
-                const jobs = await response.json();
-                console.log("Jobs for box tube", bt.id, ":", jobs);
-                if (jobs.length === 0) {
-                  bt.status = "pending";
-                  return bt;
-                }
-                const allCompleted = jobs.every(
-                  (job: any) => job.status === "completed"
-                );
-                return {
-                  ...bt,
-                  status: allCompleted ? "completed" : "in progress",
-                };
-              }
+              const status = await fetchJobStatus(bt.id);
+              return { ...bt, status };
             })
-          );
+          )).filter(Boolean) as BoxTubeWithStatus[];
           setBoxTubes(statusedData);
           console.log("Loaded box tubes:", data);
         }
@@ -146,10 +148,97 @@ export default function Boxtubes() {
       }
     };
     loadBoxTubes();
+    const interval = setInterval(() => {
+      loadBoxTubes().catch(() => {});
+    }, 5000);
     return () => {
       mounted = false;
+      clearInterval(interval);
     };
   }, [team]);
+
+  useEffect(() => {
+    const loadMachinesAndTools = async () => {
+      if (!team) return;
+      try {
+        const [mRes, tRes] = await Promise.all([
+          fetch(`/api/teams/${team.id}/machines`),
+          fetch(`/api/teams/${team.id}/tools`),
+        ]);
+        if (mRes.ok) {
+          setMachines((await mRes.json()) as Array<{ id: number; name: string }>);
+        }
+        if (tRes.ok) {
+          setTools((await tRes.json()) as Array<{ id: number; machine_ids?: number[] }>);
+        }
+      } catch (err) {
+        console.error("Failed to load machines/tools", err);
+      }
+    };
+    loadMachinesAndTools();
+  }, [team]);
+
+  async function fetchJobStatus(boxTubeId: number): Promise<"pending" | "in progress" | "completed"> {
+    try {
+      const response = await fetch(`/api/boxTubes/${boxTubeId}/jobs`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) return "pending";
+      const jobs = await response.json();
+      if (!Array.isArray(jobs) || jobs.length === 0) return "pending";
+      const allCompleted = jobs.every((job: { status?: string }) => job.status === "completed");
+      return allCompleted ? "completed" : "in progress";
+    } catch (err) {
+      console.error("Failed to fetch jobs for box tube", boxTubeId, err);
+      return "pending";
+    }
+  }
+
+  function pickMachineAndTool() {
+    if (machines.length === 0 || tools.length === 0) return null;
+    const machineId = machines[0].id;
+    const tool = tools.find((t) => !Array.isArray(t.machine_ids) || t.machine_ids.length === 0 || t.machine_ids.includes(machineId));
+    if (!tool) return null;
+    return { machineId, toolId: tool.id };
+  }
+
+  async function requestCamJob(boxTubeId: number) {
+    if (!team) return;
+    setError(null);
+    const pick = pickMachineAndTool();
+    if (!pick) {
+      setError("No machine/tool configured. Add one in Settings → Fusion Inputs.");
+      return;
+    }
+    setRequestingJob((prev) => ({ ...prev, [boxTubeId]: true }));
+    try {
+      const res = await fetch(`/api/boxTubes/${boxTubeId}/jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ machine_id: pick.machineId, tool_id: pick.toolId }),
+      });
+      if (!res.ok) {
+        setError(await res.text());
+        return;
+      }
+      const nextStatus = await fetchJobStatus(boxTubeId);
+      setBoxTubes((prev) =>
+        prev.map((bt) => (bt.id === boxTubeId ? { ...bt, status: nextStatus } : bt))
+      );
+    } catch (err) {
+      console.error("Failed to request CAM job:", err);
+      setError("Failed to request CAM job.");
+    } finally {
+      setRequestingJob((prev) => {
+        const next = { ...prev };
+        delete next[boxTubeId];
+        return next;
+      });
+    }
+  }
 
   // Show no team card if user has no team
   if (!team && !isLoading) {
@@ -162,6 +251,8 @@ export default function Boxtubes() {
         <div id={styles.loadingContainer}>
           <span id={styles.loadingSpinner} />
         </div>
+      ) : error ? (
+        <div className={styles.jobsError}>{error}</div>
       ) : boxtubes.length === 0 ? (
         <p id={styles.noboxes}>No Box Tubes available.</p>
       ) : (
@@ -171,6 +262,8 @@ export default function Boxtubes() {
               key={index}
               boxtube={boxtube}
               delay={index * 0.2 + 0.3}
+              onRequestCam={requestCamJob}
+              requesting={Boolean(requestingJob[boxtube.id])}
             />
           ))}
         </div>

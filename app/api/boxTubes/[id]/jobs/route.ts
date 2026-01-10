@@ -1,1 +1,1 @@
-export { GET, POST } from "@/lib/api/boxTubes";
+export { GET, POST } from "@/lib/api/boxTubes/jobs";

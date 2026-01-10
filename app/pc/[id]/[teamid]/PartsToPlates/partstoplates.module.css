@@ -91,7 +91,7 @@
   opacity: 0.9;
 }
 .plateDeleteIcon:hover {
-  filter: brightness(50%);
+  filter: 
 }
 .cardHeader {
   display: flex;
@@ -375,6 +375,11 @@
   border-color: #f59e0b;
   color: #f59e0b;
   animation: camPulse 1.4s ease-in-out infinite;
+}
+.stageInProgress {
+  background-color: rgba(230, 221, 94, 0.12);
+  color: var(--yellow-1);
+  border: none;
 }
 
 .stageError {

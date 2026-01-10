@@ -120,6 +120,10 @@ function PartsToPlatesCard({
   const plateIndex = Number.parseInt(name);
   const currentPlateId = plates[plateIndex]?.id;
 
+  function isValidPlateId(id: number | null | undefined): id is number {
+    return Number.isFinite(id) && (id as number) > 0;
+  }
+
   const [camModalOpen, setCamModalOpen] = useState(false);
   const [camModalArrangeJobId, setCamModalArrangeJobId] = useState<
     number | null
@@ -169,14 +173,15 @@ function PartsToPlatesCard({
   const [camErrorModalOpen, setCamErrorModalOpen] = useState(false);
   const [camErrorMessage, setCamErrorMessage] = useState<string | null>(null);
   const [camErrorPlateId, setCamErrorPlateId] = useState<number | null>(null);
-  const [camErrorArrangeJobId, setCamErrorArrangeJobId] = useState<number | null>(
-    null
-  );
+  const [camErrorArrangeJobId, setCamErrorArrangeJobId] = useState<
+    number | null
+  >(null);
   const [camErrorCamJobId, setCamErrorCamJobId] = useState<number | null>(null);
   const [camErrorRetryBusy, setCamErrorRetryBusy] = useState(false);
   const [camErrorMachineName, setCamErrorMachineName] = useState<string | null>(
     null
   );
+  const [camErrorTitle, setCamErrorTitle] = useState("CAM Error");
   const [plateDeleteConfirmOpen, setPlateDeleteConfirmOpen] = useState(false);
   const [plateDeleteBusy, setPlateDeleteBusy] = useState(false);
   const [plateDeleteTargetId, setPlateDeleteTargetId] = useState<number | null>(
@@ -262,8 +267,10 @@ function PartsToPlatesCard({
     plateId: number | null,
     arrangeId: number | null,
     camId: number | null,
-    machineName: string | null
+    machineName: string | null,
+    title?: string
   ) {
+    setCamErrorTitle(title ?? (camId ? "CAM Error" : "Job Error"));
     setCamErrorMessage(message ?? "This CAM job completed with an error.");
     setCamErrorPlateId(plateId);
     setCamErrorArrangeJobId(arrangeId);
@@ -350,7 +357,7 @@ function PartsToPlatesCard({
       if (!plates || !setPartsToPlates) return;
       const plateIndex = Number.parseInt(name);
       const currentPlateId = plates[plateIndex]?.id;
-      if (currentPlateId == null) return;
+      if (!isValidPlateId(currentPlateId)) return;
 
       const res = await fetch(`/api/pc/${categoryId}/assignments`);
       if (!res.ok) {
@@ -401,7 +408,7 @@ function PartsToPlatesCard({
 
   const shouldPollJobs = jobs.some((job) => job.status !== "completed");
   useEffect(() => {
-    if (currentPlateId == null) return;
+    if (!isValidPlateId(currentPlateId)) return;
     if (!shouldPollJobs) return;
 
     let mounted = true;
@@ -586,12 +593,17 @@ function PartsToPlatesCard({
     return () => {
       mounted = false;
     };
-  }, [camDownloadModalOpen, camDownloadJobId, camDownloadArrangeJobId, machineNames]);
+  }, [
+    camDownloadModalOpen,
+    camDownloadJobId,
+    camDownloadArrangeJobId,
+    machineNames,
+  ]);
 
   async function deleteDownloadedCamJob() {
     if (camDownloadJobId == null) return;
     const plateId = camDownloadPlateId ?? currentPlateId;
-    if (plateId == null) return;
+    if (!isValidPlateId(plateId)) return;
     const jobIds = [camDownloadJobId, camDownloadArrangeJobId].filter(
       (id): id is number => typeof id === "number"
     );
@@ -633,8 +645,12 @@ function PartsToPlatesCard({
   }
 
   async function refreshJobs(plateId: number) {
+    if (!isValidPlateId(plateId)) {
+      setJobs([]);
+      return [];
+    }
     const jobRes = await fetch(`/api/plates/${plateId}/jobs`);
-    if (!jobRes.ok) throw new Error(await jobRes.text());
+    if (!jobRes.ok) return [];
     const jobsData: PlatesJob[] = await jobRes.json();
     setJobs(jobsData);
     return jobsData;
@@ -687,7 +703,7 @@ function PartsToPlatesCard({
   }
 
   async function onDeleteRun(run: PlateJobRun) {
-    if (currentPlateId == null) return;
+    if (!isValidPlateId(currentPlateId)) return;
     const jobIds = [run.arrange.id, run.cam?.id].filter(
       (id): id is number => typeof id === "number"
     );
@@ -1055,9 +1071,7 @@ function PartsToPlatesCard({
           const camInProgress = cam?.status === "in progress";
           const camCompleted = cam?.status === "completed";
           const camErrorText =
-            camCompleted && cam
-              ? getJobError(cam as PlatesJobWithMeta)
-              : null;
+            camCompleted && cam ? getJobError(cam as PlatesJobWithMeta) : null;
           const camHasError = camCompleted && Boolean(camErrorText);
           const camMachineLabel = getCamMachineLabel(cam as PlatesJobWithMeta);
 
@@ -1133,10 +1147,17 @@ function PartsToPlatesCard({
                   className={classNames(
                     styles.statusLabel,
                     styles.queued,
+                    camQueued && styles.tooltipTarget,
+                    camQueued && styles.stageQueued,
+                    camQueued && styles.noBorder,
                     cam && styles.stageComplete
                   )}
+                  data-tooltip={
+                    camQueued ? queueTitle(cam.queue_position) ?? "" : ""
+                  }
                 >
                   Queue
+                  {camQueued ? <MotionPath /> : null}
                 </span>
                 <span
                   className={classNames(
@@ -1149,10 +1170,7 @@ function PartsToPlatesCard({
                     styles.statusLabel,
                     styles.largetext,
                     camQueued && styles.tooltipTarget,
-                    camQueued && styles.stageQueued,
-                    camQueued && styles.noBorder,
-                    camInProgress && styles.stageQueued,
-                    camInProgress && styles.noBorder,
+                    camInProgress && styles.stageInProgress,
                     !camHasError && camCompleted && styles.stageComplete,
                     camHasError && styles.stageError,
                     readyForCamDownload && styles.stageAction,
@@ -1162,12 +1180,14 @@ function PartsToPlatesCard({
                     camHasError
                       ? camErrorText ?? "Job completed with an error."
                       : camQueued
-                        ? queueTitle(cam.queue_position) ?? ""
-                        : camMachineLabel
-                          ? `Machine: ${camMachineLabel}`
-                          : ""
+                      ? queueTitle(cam.queue_position) ?? ""
+                      : camMachineLabel
+                      ? `Machine: ${camMachineLabel}`
+                      : ""
                   }
-                  role={readyForCamDownload || camHasError ? "button" : undefined}
+                  role={
+                    readyForCamDownload || camHasError ? "button" : undefined
+                  }
                   tabIndex={readyForCamDownload || camHasError ? 0 : undefined}
                   onClick={() => {
                     if (!cam) return;
@@ -1208,9 +1228,13 @@ function PartsToPlatesCard({
                 >
                   CAM
                   {camMachineLabel && (
-                    <span className={styles.machineHint}>{camMachineLabel}</span>
+                    <span className={styles.machineHint}>
+                      {camMachineLabel}
+                    </span>
                   )}
-                  {camQueued || camCompleted || camInProgress ? <MotionPath /> : null}
+                  {camInProgress && !camHasError ? (
+                    <MotionPath />
+                  ) : null}
                 </span>
               </div>
               <div className={styles.trashContainer}>
@@ -1409,13 +1433,15 @@ function PartsToPlatesCard({
                     alt="Close"
                     width={16}
                     height={16}
-                    style = {{filter: 'invert(1)'}}
+                    style={{ filter: "invert(1)" }}
                   />
                 </button>
               </div>
               <div className={styles.camModalBody}>
                 <div className={styles.camModalControls}>
-                  <label className={styles.camModalLabel}>Arrange Preview</label>
+                  <label className={styles.camModalLabel}>
+                    Arrange Preview
+                  </label>
                   {camDownloadLoading ? (
                     <div className={styles.camModalPlaceholder}>Loading…</div>
                   ) : arrangePreviewUrl ? (
@@ -1533,7 +1559,7 @@ function PartsToPlatesCard({
                     alt="Close"
                     width={16}
                     height={16}
-                    style = {{filter: 'invert(1)'}}
+                    style={{ filter: "invert(1)" }}
                   />
                 </button>
               </div>
@@ -1544,15 +1570,18 @@ function PartsToPlatesCard({
                   </div>
                   <div style={{ color: "var(--muted)", marginBottom: 6 }}>
                     - Delete: removes both the CAM and its arrange job from the
-                    queue/history for this plate. You can still re-run Arrange/CAM
-                    later if needed.
+                    queue/history for this plate. You can still re-run
+                    Arrange/CAM later if needed.
                   </div>
                   <div style={{ color: "var(--muted)" }}>
                     - Keep: leaves the jobs visible so teammates can download
                     again.
                   </div>
                   {camDownloadError ? (
-                    <div className={styles.camModalError} style={{ marginTop: 8 }}>
+                    <div
+                      className={styles.camModalError}
+                      style={{ marginTop: 8 }}
+                    >
                       {camDownloadError}
                     </div>
                   ) : null}
@@ -1598,7 +1627,7 @@ function PartsToPlatesCard({
               onClick={(e) => e.stopPropagation()}
             >
               <div className={styles.camModalHeader}>
-                <span>CAM Error</span>
+                <span>{camErrorTitle}</span>
                 <button
                   type="button"
                   className={styles.camModalClose}
@@ -1609,7 +1638,7 @@ function PartsToPlatesCard({
                     alt="Close"
                     width={16}
                     height={16}
-                    style = {{filter: 'invert(1)'}}
+                    style={{ filter: "invert(1)" }}
                   />
                 </button>
               </div>
@@ -1685,7 +1714,7 @@ function PartsToPlatesCard({
                     alt="Close"
                     width={16}
                     height={16}
-                    style = {{filter: 'invert(1)'}}
+                    style={{ filter: "invert(1)" }}
                   />
                 </button>
               </div>
@@ -1713,7 +1742,8 @@ function PartsToPlatesCard({
                   type="button"
                   className={styles.camModalConfirm}
                   onClick={() => {
-                    if (plateDeleteTargetId != null) deletePlate(plateDeleteTargetId);
+                    if (plateDeleteTargetId != null)
+                      deletePlate(plateDeleteTargetId);
                   }}
                   disabled={plateDeleteBusy}
                 >

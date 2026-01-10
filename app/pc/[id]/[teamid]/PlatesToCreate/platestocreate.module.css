@@ -1,0 +1,111 @@
+.container {
+    background-color:rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.65);
+    padding: 10px;
+    border-radius: 7px;
+    position: relative;
+    scroll-behavior: auto;
+    overflow-y: scroll;
+    width: calc(50% - 5px);
+    height: 100%;
+}
+@media screen and (max-width: 994px) {
+    .container {
+        width: 100%;
+    }
+}
+.title {
+    font-size: 22px;
+    margin-top: 5px;
+    margin-left: 2px;
+    font-weight: 400;
+    font-family: var(--font-roboto);
+}
+.addButton {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    border-radius: 10px;
+    justify-content: center;
+    align-items: center;
+    border: 1px #FFFFFF solid;
+    transition: background-color .2s;
+}
+.addButton:hover {
+    background-color: rgba(255,255,255,.1);
+}
+.addButton:active {
+    background-color: rgba(0,0,0,.1);
+}
+.addIcon {
+    height: 13px;
+    width: 13px;
+}
+.plateItem {
+    display: flex;
+}
+.plateHeader {
+    color: rgba(255,255,255,.8);
+    margin-left: 10px;
+    width: 100px;
+}
+.plateWidth {
+    width: 25%;
+    position: relative;
+}
+.plateHeight {
+    width: 25%;
+}
+.plateTrueDepth {
+    width: 25%;
+}
+.plateWidth > span, .plateHeight > span, .plateTrueDepth> span{
+    position: relative;
+    text-align: right;
+    float: right;
+    color: rgba(255,255,255,.84);
+    font-family: var(--font-roboto);
+    font-weight: 500;
+    letter-spacing: 1px;
+    padding-right: 10px;
+}
+
+.plateWidth > input, .plateHeight > input, .plateTrueDepth> input {
+    width: 90%;
+    float:right;
+    outline: none;
+    border-radius: 10px;
+    background-color:black;
+    border: 1px #757575 solid;
+    height: 33px;
+    color:white;
+    text-align: right;
+    padding-right: 5px;
+}
+.platesList{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.deleteIcon {
+    height: 35px;
+    width: 35px;
+    padding: 10px;
+    position: absolute;
+    right: 10px;
+    background-color: #242424;
+    border-radius: 10px;
+    border: 1px solid #FFFFFF;
+}
+.deletePlate {
+    width: 30px;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 23px;
+    padding-left: 40px;
+}

@@ -1,53 +1,36 @@
-# AutoCAM Web
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A Flask-based web app for managing CAM plate breakdowns with MongoDB backend, authentication, admin, drafts, and a CAM webhook.
+## Getting Started
 
-## Features
-- User auth (login/logout), admin UI to add users
-- MongoDB integration (Jira DB at localhost:27017 by default)
-- Task browser by Material/Thickness
-- Automated plate breakdown via external API
-- Drag-and-drop parts between plates, add/remove plates
-- Drafts (save/resume/delete)
-- User settings for API base URL (default `http://localhost:8000`, option `https://valor6800.com`)
-- CAM request flow; webhook receives CAM completion link per plate
-- Black/Gold theme
+First, run the development server:
 
-## Prerequisites
-- Python 3.11+
-- MongoDB running locally at `mongodb://localhost:27017`
-
-## Setup
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Edit `.env` as needed.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Run
-```bash
-export FLASK_APP=autocam/app.py
-export FLASK_ENV=development
-flask run --port 5000
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Login at `http://localhost:5000`.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Tests
-```bash
-pytest -q
-```
+## Learn More
 
-## Environment
-- `SECRET_KEY` (required)
-- `MONGO_URI` (default `mongodb://localhost:27017`)
-- `MONGO_DB` (default `jira`)
-- `API_BASE_URL` (default `http://localhost:8000`)
-- `ALLOWED_API_BASE_URLS` (default `http://localhost:8000,https://valor6800.com`)
-- `ADMIN_EMAILS` (comma list; first run can seed default admin)
+To learn more about Next.js, take a look at the following resources:
 
-## Webhook
-Expose `POST /webhook/cam_complete` that includes `plateId` and `downloadUrl`. 
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

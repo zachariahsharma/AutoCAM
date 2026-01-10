@@ -40,7 +40,7 @@ function Sidebar() {
     return () => {
       mounted = false;
     };
-  }, [updateCount]);
+  }, [setTeams, updateCount]);
 
   useEffect(() => {
     // Determine which key to look for

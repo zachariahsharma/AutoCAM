@@ -1301,7 +1301,7 @@ function PartsToPlatesCard({
                   ) : camFileUrl ? (
                     camFileType === "image" ? (
                       <div style={{ display: "grid", gap: 8 }}>
-                        <img
+                        <Image
                           src={camFileUrl}
                           alt="Arrangement screenshot"
                           className={styles.camModalImage}
@@ -1447,7 +1447,7 @@ function PartsToPlatesCard({
                   ) : arrangePreviewUrl ? (
                     arrangePreviewType === "image" ? (
                       <div style={{ display: "grid", gap: 8 }}>
-                        <img
+                        <Image
                           src={arrangePreviewUrl}
                           alt="Arrangement screenshot"
                           className={styles.camModalImage}

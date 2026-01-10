@@ -1,7 +1,7 @@
 import { and, asc, eq, getTableColumns, isNull, sql } from "drizzle-orm";
 import { JobKind, Jobs } from "../db/schema/cam";
 import zod, { ZodType } from "zod";
-import { createSelectSchema, Json } from "drizzle-zod";
+import { createSelectSchema } from "drizzle-zod";
 import { client } from "../aws";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { scopeNames as scopes } from "../scopes";

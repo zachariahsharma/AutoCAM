@@ -541,7 +541,7 @@ function Sidebar() {
             />
             {!isCollapsed && <span>Box Tubes</span>}
           </div>
-          <div
+          {/* <div
             className={styles.sidebarItem}
             ref={(el) => {
               itemsRef.current["jobs"] = el;
@@ -559,7 +559,7 @@ function Sidebar() {
               className={styles.sidebaricon}
             />
             {!isCollapsed && <span>Jobs</span>}
-          </div>
+          </div> */}
           <div
             className={styles.sidebarItem}
             ref={(el) => {

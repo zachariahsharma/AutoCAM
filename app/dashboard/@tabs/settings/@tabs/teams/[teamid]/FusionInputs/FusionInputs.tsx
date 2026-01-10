@@ -1,3 +1,5 @@
+"use client";
+
 import { Material, Machine, Tool } from "@/app/types";
 import styles from "./fusioninputs.module.css";
 import Image from "next/image";

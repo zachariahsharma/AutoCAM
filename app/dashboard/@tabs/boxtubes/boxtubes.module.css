@@ -115,7 +115,7 @@
 #downloadboxtubebutton {
   display: flex;
   align-items: center;
-  width: 80%;
+  width: calc(100% - 65px);
   justify-content: center;
 }
 
@@ -192,6 +192,33 @@
               linear-gradient(to bottom, #B57C02, #332405) border-box;
   border: 1.5px solid transparent;
 }
+.errorButton {
+  width: 80%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #ff4d4f;
+  background: linear-gradient(rgb(40, 0, 0), rgb(20, 0, 0));
+  color: #ffb3b5;
+  font-family: var(--font-roboto);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+}
+.errorButton:hover {
+  border-color: #ff6668;
+  color: white;
+}
+.errorDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff4d4f;
+  box-shadow: 0 0 8px rgba(255, 77, 79, 0.7);
+}
 #loadingContainer {
   text-align: center;
   display: flex;
@@ -260,4 +287,55 @@
 }
 .noTeamButtons button {
   min-width: 140px;
+}
+
+.errorModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+}
+.errorModal {
+  background: #0a0a0a;
+  border: 1px solid #3a3a3a;
+  border-radius: 14px;
+  padding: 24px 28px;
+  max-width: 460px;
+  width: calc(100% - 32px);
+  color: white;
+  font-family: var(--font-roboto);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+.errorModal h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.errorModalSubtitle {
+  margin: 0 0 6px 0;
+  color: #c9c9c9;
+  font-size: 14px;
+}
+.errorModalBody {
+  margin: 0 0 18px 0;
+  color: #ffb3b5;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.errorModalClose {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #3a3a3a;
+  background: linear-gradient(rgb(20, 20, 20), rgb(10, 10, 10));
+  color: white;
+  font-family: var(--font-roboto);
+  font-weight: 600;
+  cursor: pointer;
+}
+.errorModalClose:hover {
+  border-color: #545454;
 }

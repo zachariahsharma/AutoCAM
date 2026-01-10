@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./apikeys.module.css";
 import type { ApiKey } from "@/app/types";
 import {

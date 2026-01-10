@@ -35,14 +35,16 @@
   font-family: var(--font-roboto);
   position: absolute;
   z-index: 5;
+  width: 150px;
   top: 30px;
-  right: 120px;
+  right: 170px;
 }
 
 #signupbutton {
   font-family: var(--font-roboto);
   position: absolute;
   z-index: 5;
+  width: 150px;
   top: 30px;
   right: 10px;
 }

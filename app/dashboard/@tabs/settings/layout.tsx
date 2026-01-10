@@ -1,6 +1,6 @@
 "use client";
 import styles from "./layout.module.css";
-import { useAnimate } from "framer-motion";
+import { useAnimate, MotionConfig } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
@@ -20,7 +20,10 @@ function Sidebar() {
   const router = useRouter();
   const tab = useCurrentTab();
   const { updateCount, teams, setTeams } = useTabEvents();
-
+  useEffect(() => {
+    console.log("mounted");
+    return () => console.log("unmounted");
+  }, []);
   useEffect(() => {
     let mounted = true;
     (async function () {
@@ -50,12 +53,12 @@ function Sidebar() {
 
     const element = itemsRef.current[key];
     const sidebar = sidebarRef.current;
-    
+
     if (element && sidebar) {
       const elementRect = element.getBoundingClientRect();
       const sidebarRect = sidebar.getBoundingClientRect();
       const relativeTop = elementRect.top - sidebarRect.top;
-      
+
       animate(
         scope.current,
         {
@@ -71,7 +74,9 @@ function Sidebar() {
     <aside className={styles.sidebar} ref={sidebarRef}>
       <span id={styles.selected} ref={scope} />
       <div
-        ref={(el) => { itemsRef.current["personal"] = el; }}
+        ref={(el) => {
+          itemsRef.current["personal"] = el;
+        }}
         onClick={() => {
           if (tab !== "personal") {
             router.push("/dashboard/settings/personal");
@@ -98,7 +103,9 @@ function Sidebar() {
       {teams.map((team) => (
         <div
           key={team.id}
-          ref={(el) => { itemsRef.current[`team-${team.id}`] = el; }}
+          ref={(el) => {
+            itemsRef.current[`team-${team.id}`] = el;
+          }}
           onClick={() => {
             if (tab !== String(team.id)) {
               router.push("/dashboard/settings/teams/" + team.id);
@@ -126,7 +133,9 @@ function Sidebar() {
       ))}
       <hr />
       <div
-        ref={(el) => { itemsRef.current["newteam"] = el; }}
+        ref={(el) => {
+          itemsRef.current["newteam"] = el;
+        }}
         onClick={() => {
           if (tab !== "newteam") {
             router.push("/dashboard/settings/newteam");
@@ -151,7 +160,9 @@ function Sidebar() {
         <span>New Team</span>
       </div>
       <div
-        ref={(el) => { itemsRef.current["jointeam"] = el; }}
+        ref={(el) => {
+          itemsRef.current["jointeam"] = el;
+        }}
         onClick={() => {
           if (tab !== "jointeam") {
             router.push("/dashboard/settings/jointeam");
@@ -199,17 +210,19 @@ export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
     }
   }, []);
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>Settings</h1>
-        <hr />
-      </div>
-      <TabEventsProvider>
-        <div className={styles.mainContent}>
-          <Sidebar />
-          <main className={styles.main}>{tabs}</main>
+    <MotionConfig reducedMotion="never">
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1>Settings</h1>
+          <hr />
         </div>
-      </TabEventsProvider>
-    </div>
+        <TabEventsProvider>
+          <div className={styles.mainContent}>
+            <Sidebar />
+            <main className={styles.main}>{tabs}</main>
+          </div>
+        </TabEventsProvider>
+      </div>
+    </MotionConfig>
   );
 }

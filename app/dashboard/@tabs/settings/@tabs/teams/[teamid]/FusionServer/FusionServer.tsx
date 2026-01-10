@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./fusionserver.module.css";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -7,7 +9,7 @@ import { Alert } from "@/app/signup/page";
 import type { ApiKey } from "@/app/types";
 
 // Scopes required for Fusion Server
-const FUSION_SERVER_SCOPES = ["jobs:process", "parts:read", "plates:read", "tools:read", "materials:read", "machines:read"];
+const FUSION_SERVER_SCOPES = ["jobs:process", "parts:read", "plates:read", "tools:read", "materials:read", "machines:read", "box_tubes:read"];
 
 export function Modal({
   children,

@@ -40,12 +40,12 @@ function PartCatCard({
       </div>
       <div>
         {partcat.plates && partcat.plates.length > 0 ? (
-          (partcat.plates as any[]).map((plate: any, index: number) => (
+          partcat.plates.map((plate, index) => (
             <div key={index} className={styles.plateJobRow}>
               <span className={styles.plateJobId}>Plate {index + 1}</span>
               {Array.isArray(plate.jobs) &&
-                plate.jobs.map((job: any, index: number) => (
-                  <div key={job.id} className={styles.jobStatusContainer}>
+                plate.jobs.map((job, index: number) => (
+                  <div key={job.id ?? index} className={styles.jobStatusContainer}>
                     <span className={styles.jobId}>Job {index + 1}</span>
                     <div>
                       <div>
@@ -84,33 +84,30 @@ async function fetchPartCategories({
 }: {
   team: Team | null;
 }): Promise<PartCategory[] | undefined> {
-  if (team !== null) {
-    const response = await fetch(`/api/teams/${team.id}/pc`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (response.ok) {
-      const data = await response.json();
-      for (const cat of data) {
-        const platesResponse = await fetch(`/api/pc/${cat.id}/plates`);
-        if (platesResponse.ok) {
-          const platesData = await platesResponse.json();
-          cat.plates = platesData.map((plate: any) => ({ id: plate.id }));
-          for (const plate of cat.plates) {
-            const jobResponse = await fetch(`/api/plates/${plate.id}/jobs`);
-            if (jobResponse.ok) {
-              const jobsData: PlatesJob[] = await jobResponse.json();
-              plate.jobs = jobsData;
-            }
-          }
-        }
+  if (!team) return [];
+  const response = await fetch(`/api/teams/${team.id}/pc`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as PartCategory[];
+  for (const cat of data) {
+    const platesResponse = await fetch(`/api/pc/${cat.id}/plates`);
+    if (!platesResponse.ok) continue;
+    const platesData: Array<{ id: number }> = await platesResponse.json();
+    cat.plates = platesData.map((plate) => ({ id: plate.id, jobs: [] as PlatesJob[] }));
+    for (const plate of cat.plates) {
+      const jobResponse = await fetch(`/api/plates/${plate.id}/jobs`);
+      if (jobResponse.ok) {
+        const jobsData: PlatesJob[] = await jobResponse.json();
+        plate.jobs = jobsData;
       }
-      return data;
     }
-    return [];
   }
+  return data;
 }
 
 function NoTeamCard() {

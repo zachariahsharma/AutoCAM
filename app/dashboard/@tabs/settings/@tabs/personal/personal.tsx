@@ -184,6 +184,9 @@ export default function PersonalSettingsPage() {
           type="email"
           value={email}
           onChange={(val) => setEmail(val.target.value)}
+          autoComplete="off"
+          data-lpignore="true"
+          data-form-type="other"
         />
           <div className={styles.emailStatusRow}>
         <span className={styles.emailStatus}>

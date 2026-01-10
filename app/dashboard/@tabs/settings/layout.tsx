@@ -53,7 +53,7 @@ function Sidebar() {
 
     const element = itemsRef.current[key];
     const sidebar = sidebarRef.current;
-
+    console.log('Animating to tab:', tab, 'using key:', key, 'element:', element);
     if (element && sidebar) {
       const elementRect = element.getBoundingClientRect();
       const sidebarRect = sidebar.getBoundingClientRect();

@@ -367,7 +367,14 @@ export default function CollaboratorsSettingsPage({
                   height={2000}
                   className={styles.searchIcon}
                 />
-                <input type="email" name="email" placeholder="Enter email" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Enter email"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-form-type="other"
+                />
               </div>
               <PrimaryButton type="submit" disabled={isSending}>
                 <span className="textGradient">

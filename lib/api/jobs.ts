@@ -12,12 +12,13 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
 export const Job = createSelectSchema(Jobs).extend({
-  queue_position: zod.number()
-}).omit({ team_id: true }).transform(x => {
+  queue_position: zod.number().nullable()
+}).omit({ team_id: true }).transform(({ queue_position, ...x }) => {
   let status = "pending";
   if (x.claimed_by) status = "in progress";
   if (x.response !== null) status = "completed";
-  return { ...x, status };
+  if (queue_position === null) return { ...x, status };
+  return { ...x, status, queue_position };
 }).openapi("Job");
 
 const SuccessJobResponse = zod.object({
@@ -45,13 +46,17 @@ const JobResponses = {
 } as const satisfies Record<(typeof JobKind.enumValues)[number], ZodType>;
 
 export function queuePositionSubquery(tx: Transaction) {
-  return tx.select({
-    ...getTableColumns(Jobs),
+  const subquery = tx.select({
+    id: Jobs.id,
     queue_position: sql<number>`ROW_NUMBER() OVER (
       PARTITION BY ${Jobs.team_id}
       ORDER BY ${Jobs.created_at} ASC
     )`.mapWith(Number).as("queue_position")
-  }).from(Jobs).as('job');
+  }).from(Jobs).where(isNull(Jobs.claimed_by)).as('queue_position');
+  return tx.select({
+    ...getTableColumns(Jobs),
+    queue_position: subquery.queue_position
+  }).from(Jobs).leftJoin(subquery, eq(Jobs.id, subquery.id)).as("job");
 }
 
 export const SingleGET = routeFactory(async (req, authType, tx, id) => {

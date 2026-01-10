@@ -135,7 +135,7 @@ export default function TeamSettingsPage() {
 
     setTeamName(team.name);
     setTeamDbId(team.id);
-  }, [teamid, teams, router]);
+  }, [routeTeamId, teamid, teams, router]);
 
   const handleDeleteTeam = async () => {
     setIsDeleting(true);

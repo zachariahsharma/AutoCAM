@@ -872,7 +872,7 @@ export default function FusionInputs({ teamId }: { teamId: number }) {
             onClick={() => setSelectedTab("Machines")}
             className={selectedTab === "Machines" ? styles.active : ""}
           >
-            <img
+            <Image
               src="/settings/teams/machines.png"
               width={2000}
               height={2000}

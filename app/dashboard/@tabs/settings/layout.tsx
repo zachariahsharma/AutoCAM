@@ -40,7 +40,7 @@ function Sidebar() {
     return () => {
       mounted = false;
     };
-  }, [updateCount]);
+  }, [setTeams, updateCount]);
 
   useEffect(() => {
     // Determine which key to look for
@@ -193,14 +193,17 @@ function Sidebar() {
 export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
   useEffect(() => {
     try {
-      const perf: any = (globalThis as any).performance;
+      const perf = (globalThis as { performance?: Performance }).performance;
       if (!perf || typeof perf.measure !== "function") return;
       const orig = perf.measure.bind(perf);
-      perf.measure = (...args: any[]) => {
+      perf.measure = (...args: Parameters<typeof orig>) => {
         try {
           return orig(...args);
-        } catch (err: any) {
-          if (err?.message?.includes("cannot have a negative time stamp"))
+        } catch (err) {
+          if (
+            err instanceof Error &&
+            err.message.includes("cannot have a negative time stamp")
+          )
             return;
           throw err;
         }

@@ -9,7 +9,7 @@ import { Job, queuePositionSubquery } from "../jobs";
 
 const CreateSchema = zod.object({
   machine_id: zod.number(),
-  tool_id: zod.number()
+  tool_ids: zod.array(zod.number())
 });
 
 const JobSchema = Job.transform(({ kind, ...rest }) => {
@@ -78,7 +78,6 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
-  console.log("HELOLOLOOLO")
   if (!id) return routeResponse(422);
   const tube = await tx.query.BoxTubes.findFirst({ where: eq(BoxTubes.id, id) });
   await checkUserTeam(tx, authType, tube?.team_id);

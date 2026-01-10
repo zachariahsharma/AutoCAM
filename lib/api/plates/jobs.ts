@@ -79,7 +79,6 @@ registry.registerPath({
 });
 
 export const GET = routeFactory(async (req, authType, tx, id) => {
-  console.log("HELLOLOLO")
   if (!id) return routeResponse(422);
   const plate = await tx.query.Plates.findFirst({
     where: eq(Plates.id, id),

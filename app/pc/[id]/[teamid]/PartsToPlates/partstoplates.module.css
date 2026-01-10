@@ -91,7 +91,7 @@
   opacity: 0.9;
 }
 .plateDeleteIcon:hover {
-  filter: 
+  filter: brightness(50%);
 }
 .cardHeader {
   display: flex;

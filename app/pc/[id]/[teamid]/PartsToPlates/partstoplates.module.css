@@ -73,6 +73,26 @@
   padding-left: 10px !important; 
   padding-top: 10px !important;
 }
+
+.plateDeleteButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  color: #ffffff;
+  border: 0px solid #3d3d3d;
+  border-radius: 6px;
+  /* padding: 4px; */
+  cursor: pointer;
+}
+
+.plateDeleteIcon {
+  /* filter: invert(1); */
+  opacity: 0.9;
+}
+.plateDeleteIcon:hover {
+  filter: brightness(50%);
+}
 .cardHeader {
   display: flex;
   align-items: center;
@@ -357,6 +377,31 @@
   animation: camPulse 1.4s ease-in-out infinite;
 }
 
+.stageError {
+  background-color: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #ef4444;
+  animation: camErrorPulse 1.4s ease-in-out infinite;
+}
+
+.machineHint {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #9aa1a9;
+}
+
+@keyframes camErrorPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
 .camModalOverlay {
   position: fixed;
   inset: 0;
@@ -369,7 +414,7 @@
 }
 
 .camModal {
-  width: min(1100px, 92vw);
+  width: fit-content;
   max-height: 90vh;
   overflow: hidden;
   background: #0f141a;
@@ -406,7 +451,6 @@
 
 .camModalBody {
   display: grid;
-  grid-template-columns: 1fr 280px;
   gap: 16px;
   padding: 16px;
   overflow: hidden;
@@ -517,10 +561,22 @@
 .camModalFooter {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 10px;
   padding: 12px 16px;
   border-top: 1px solid var(--bs-border-color);
+}
+
+.camModalFooterLeft {
+  color: #9aa1a9;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+}
+
+.camModalFooterRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .camModalCancel {
@@ -551,8 +607,3 @@
   opacity: 0.5;
 }
 
-@media screen and (max-width: 994px) {
-  .camModalBody {
-    grid-template-columns: 1fr;
-  }
-}

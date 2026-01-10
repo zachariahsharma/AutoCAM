@@ -248,7 +248,7 @@ export default function Home() {
               </div>
             </div>
             <h3 className={styles.teamName}>Zachariah Sharma</h3>
-            <p className={styles.teamRole}>Lead Developer & Designer</p>
+            <p className={styles.teamRole}>Lead Developer, Designer, and Creator</p>
             <div className={styles.teamDivider} />
             <ul className={styles.teamContributions}>
               <li>

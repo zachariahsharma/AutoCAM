@@ -560,6 +560,25 @@ function Sidebar() {
             />
             {!isCollapsed && <span>Jobs</span>}
           </div>
+          <div
+            className={styles.sidebarItem}
+            ref={(el) => {
+              itemsRef.current["queue"] = el;
+            }}
+            onClick={() => {
+              router.push("/dashboard/queue");
+            }}
+            title="Queue Manager"
+          >
+            <Image
+              src="/dashboard/Sidebar/Queue.svg"
+              width={2000}
+              height={2000}
+              alt="Queue icon"
+              className={styles.sidebaricon}
+            />
+            {!isCollapsed && <span>Queue</span>}
+          </div>
         </div>
         <div>
           <div

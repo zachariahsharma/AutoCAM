@@ -34,7 +34,6 @@ export default function MaterialThickness({
     setParts,
     setPlates,
     plates,
-    selectedParts,
     setSelectedParts,
     setPartsToPlates,
     setUnassignedParts,
@@ -232,19 +231,15 @@ export default function MaterialThickness({
       setIsAddingMaterial(false);
     }
   }
-  const totalSelectedParts = Object.values(selectedParts).reduce(
-    (total, quantity) => total + quantity,
-    0
-  );
-  const sorting = plates.length > 0 && totalSelectedParts > 0;
+  const hasPlates = plates.length > 0;
 
   useEffect(() => {
     animate(
       scope.current,
-      { height: sorting ? "calc(50vh - 180px)" : "calc(100vh - 180px)" },
+      { height: hasPlates ? "calc(50vh - 180px)" : "calc(100vh - 180px)" },
       { duration: 0.5 }
     );
-  }, [animate, scope, sorting]);
+  }, [animate, scope, hasPlates]);
   return (
     <div className={styles.container}>
       <Header
@@ -259,7 +254,7 @@ export default function MaterialThickness({
           categoryId={partcategory !== null ? partcategory.id : 0}
         />
       </div>
-      {sorting ? (
+      {hasPlates ? (
         <div className={styles.contentSorting}>
           <Unassigned />
           <PartsToPlates

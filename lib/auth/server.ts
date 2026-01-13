@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { TeamKeys } from "../db/schema/entities";
 import { openAPI } from "better-auth/plugins";
 import { routeResponse } from "../api/common";
+import { NextRequest } from "next/server";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -36,8 +37,8 @@ export const auth = betterAuth({
   plugins: [openAPI()],
 })
 
-export async function getKeyDigest() {
-  const authHeader = (await headers()).get("authorization");
+export async function getKeyDigest(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
   if (!authHeader) return;
   const token = authHeader.split("Bearer ")[1];
   return crypto.createHmac("sha256", "key").update(token).digest("hex");

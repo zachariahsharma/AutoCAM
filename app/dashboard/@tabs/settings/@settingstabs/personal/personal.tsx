@@ -2,7 +2,6 @@
 
 import styles from "./personal.module.css";
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { authClient } from "@/lib/auth/client";
 import Image from "next/image";
@@ -64,7 +63,7 @@ export default function PersonalSettingsPage() {
 
   async function handleResendVerification() {
     if (resendCooldown > 0 || isSendingVerification) return;
-    
+
     setIsSendingVerification(true);
     try {
       await authClient.sendVerificationEmail({
@@ -160,49 +159,39 @@ export default function PersonalSettingsPage() {
 
   if (isLoading) {
     return (
-      <motion.div
-        className={styles.personalContainer}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-      >
+      <div className={styles.personalContainer}>
         <h1>Personal</h1>
         <hr />
         <p>Loading...</p>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      className={styles.personalContainer}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-    >
+    <div className={styles.personalContainer}>
       <h1>Personal</h1>
       <hr />
       <div className={styles.contentWrapper}>
         <form onSubmit={handleSubmit} className={styles.formSection}>
-        <label>Username</label>
-        <input
-          type="text"
-          value={username}
-          onChange={(val) => setUsername(val.target.value)}
-        />
-        <label>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(val) => setEmail(val.target.value)}
-          autoComplete="off"
-          data-lpignore="true"
-          data-form-type="other"
-        />
+          <label>Username</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(val) => setUsername(val.target.value)}
+          />
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(val) => setEmail(val.target.value)}
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"
+          />
           <div className={styles.emailStatusRow}>
-        <span className={styles.emailStatus}>
-          {emailVerified ? "Email verified" : "Email not verified"}
-        </span>
+            <span className={styles.emailStatus}>
+              {emailVerified ? "Email verified" : "Email not verified"}
+            </span>
             {!emailVerified && (
               <button
                 type="button"
@@ -218,21 +207,21 @@ export default function PersonalSettingsPage() {
               </button>
             )}
           </div>
-        {message && (
-          <p
-            className={
-              message.type === "success" ? styles.success : styles.error
-            }
-          >
-            {message.text}
-          </p>
-        )}
-        <PrimaryButton type="submit" id={styles.submitbutton} disabled={isSaving}>
-          <span className="textGradient">
-            {isSaving ? "Saving..." : "Save"}
-          </span>
-        </PrimaryButton>
-      </form>
+          {message && (
+            <p
+              className={
+                message.type === "success" ? styles.success : styles.error
+              }
+            >
+              {message.text}
+            </p>
+          )}
+          <PrimaryButton type="submit" id={styles.submitbutton} disabled={isSaving}>
+            <span className="textGradient">
+              {isSaving ? "Saving..." : "Save"}
+            </span>
+          </PrimaryButton>
+        </form>
 
         <div className={styles.profileCard}>
           <div className={styles.profileImageWrapper} onClick={handleProfileClick}>
@@ -267,6 +256,7 @@ export default function PersonalSettingsPage() {
       </div>
 
       <button
+        type="button"
         className={styles.deleteAccountButton}
         onClick={() => setShowDeleteModal(true)}
       >
@@ -283,6 +273,7 @@ export default function PersonalSettingsPage() {
             </p>
             <div className={styles.modalButtons}>
               <button
+                type="button"
                 className={styles.cancelButton}
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
@@ -290,6 +281,7 @@ export default function PersonalSettingsPage() {
                 Cancel
               </button>
               <button
+                type="button"
                 className={styles.confirmDeleteButton}
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
@@ -300,6 +292,6 @@ export default function PersonalSettingsPage() {
           </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

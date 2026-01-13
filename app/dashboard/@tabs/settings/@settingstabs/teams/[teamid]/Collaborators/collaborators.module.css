@@ -67,6 +67,12 @@
   white-space: nowrap;
   padding-right: 120px;
 }
+.youBadge {
+  color: #888;
+  font-size: 12px;
+  font-style: italic;
+  margin-left: 6px;
+}
 .removeIcon {
   width: 16px;
   height: 16px;

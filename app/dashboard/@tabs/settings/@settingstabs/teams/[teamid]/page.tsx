@@ -11,6 +11,10 @@ import { useParams, useRouter } from "next/navigation";
 import ApiKeys from "./ApiKeys/ApiKeys";
 import FusionServer from "./FusionServer/FusionServer";
 import { authClient } from "@/lib/auth/client";
+
+const sectionDelayStep = 0.15;
+const sectionEase = [0.25, 0.46, 0.45, 0.94] as const;
+
 export function TeamName({
   oldTeamName,
   rename = true,
@@ -23,20 +27,23 @@ export function TeamName({
   const [teamName, setTeamName] = useState(oldTeamName);
   return (
     <form
+      className={styles.teamNameForm}
       onSubmit={(e) => {
         e.preventDefault();
         handleFormSubmit(teamName);
       }}
     >
-      <label>Team Name</label>
+      <label className={styles.sectionLabel}>Team Name</label>
       <div id={styles.teamNameContainer}>
-        <input
-          type="text"
-          placeholder="Add Team Name"
-          value={teamName}
-          min={3}
-          onChange={(val) => setTeamName(val.target.value)}
-        />
+        <div id={styles.teamNameInputContainer}>
+          <input
+            type="text"
+            placeholder="Add Team Name"
+            value={teamName}
+            min={3}
+            onChange={(val) => setTeamName(val.target.value)}
+          />
+        </div>
         <PrimaryButton id={styles.teamNameButton}>
           <span className="textGradient">{rename ? "Rename" : "Save"}</span>
         </PrimaryButton>
@@ -272,69 +279,108 @@ export default function TeamSettingsPage() {
       setSelectedNewOwner(null);
     }
   };
+
+  let sectionIndex = 0;
+  const getNextSectionMotion = () => {
+    const transition = {
+      delay: sectionIndex * sectionDelayStep,
+      duration: 0.5,
+      ease: sectionEase,
+    };
+    sectionIndex += 1;
+    return {
+      initial: { opacity: 0, y: 20 },
+      animate: { opacity: 1, y: 0 },
+      transition,
+    };
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      className={styles.teamPage}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      transition={{
+        duration: 0.5,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
     >
       <div className={styles.teamContainer}>
-        <h1>{teamName}</h1>
-        <hr />
+        <motion.div {...getNextSectionMotion()}>
+          <h1 className={styles.teamTitle}>{teamName}</h1>
+          <hr className={styles.teamDivider} />
+        </motion.div>
         {isAdmin && emailVerified && teamName ? (
-          <TeamName
-            oldTeamName={teamName}
-            handleFormSubmit={async (newName) => {
-              const response = await fetch("/api/teams/" + teamDbId, {
-                method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ name: newName }),
-              });
-              if (response.ok) {
-                setTeamName(newName);
-                notifyUpdate();
-              } else {
-                console.error("Error renaming team:", await response.text());
-              }
-            }}
-          />
+          <motion.div {...getNextSectionMotion()}>
+            <TeamName
+              oldTeamName={teamName}
+              handleFormSubmit={async (newName) => {
+                const response = await fetch("/api/teams/" + teamDbId, {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ name: newName }),
+                });
+                if (response.ok) {
+                  setTeamName(newName);
+                  notifyUpdate();
+                } else {
+                  console.error("Error renaming team:", await response.text());
+                }
+              }}
+            />
+          </motion.div>
         ) : null}
         <br />
-        <CollaboratorsSettingsPage
-          teamDbId={teamDbId}
-          readOnly={!isAdmin || !emailVerified}
-        />
+        <motion.div {...getNextSectionMotion()}>
+          <CollaboratorsSettingsPage
+            teamDbId={teamDbId}
+            readOnly={!isAdmin || !emailVerified}
+          />
+        </motion.div>
         <br />
         {isAdmin && emailVerified && (
-          <FusionInputs
-            teamId={teamDbId}
-          />
+          <motion.div {...getNextSectionMotion()}>
+            <FusionInputs
+              teamId={teamDbId}
+            />
+          </motion.div>
         )}
       </div>
       {isAdmin && emailVerified && (
         <>
-          <br />
-          <ApiKeys />
-          <br />
-          <FusionServer />
+          <motion.div {...getNextSectionMotion()}>
+            <br />
+            <ApiKeys />
+          </motion.div>
+          <motion.div {...getNextSectionMotion()}>
+            <br />
+            <FusionServer />
+          </motion.div>
         </>
       )}
 
-      <div className={styles.teamActions}>
-        <button className={styles.leaveTeamButton} onClick={handleLeaveClick}>
+      <motion.div className={styles.teamActions} {...getNextSectionMotion()}>
+        <motion.button
+          className={styles.leaveTeamButton}
+          onClick={handleLeaveClick}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
           Leave Team
-        </button>
+        </motion.button>
         {isOwner && (
-          <button
+          <motion.button
             className={styles.deleteTeamButton}
             onClick={() => setShowDeleteModal(true)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             Delete Team
-          </button>
+          </motion.button>
         )}
-      </div>
+      </motion.div>
       {leaveError && <p className={styles.leaveError}>{leaveError}</p>}
 
       {showLeaveModal && (

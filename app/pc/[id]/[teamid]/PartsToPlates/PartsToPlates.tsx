@@ -984,18 +984,15 @@ function PartsToPlatesCard({
                 realPlateId = localPlate.id;
               }
 
-              const response = await fetch(
-                `http://localhost:3000/api/plates/${realPlateId}/jobs`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    type: "arrange",
-                  }),
-                }
-              );
+              const response = await fetch(`/api/plates/${realPlateId}/jobs`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  type: "arrange",
+                }),
+              });
               if (!response.ok) {
                 console.error(
                   "Failed to create arrange job:",
@@ -1004,9 +1001,7 @@ function PartsToPlatesCard({
                 return;
               }
               const { id: jobId } = await response.json();
-              const jobStatus = await fetch(
-                `http://localhost:3000/api/plates/${realPlateId}/jobs`
-              );
+              const jobStatus = await fetch(`/api/plates/${realPlateId}/jobs`);
               const jobsData: PlatesJob[] = await jobStatus.json();
               const arrangeJob = jobsData.find((job) => job.id === jobId);
               if (arrangeJob) {
@@ -1202,9 +1197,7 @@ function PartsToPlatesCard({
                       {camMachineLabel}
                     </span>
                   )}
-                  {camInProgress && !camHasError ? (
-                    <MotionPath />
-                  ) : null}
+                  {camInProgress && !camHasError ? <MotionPath /> : null}
                 </span>
               </div>
               <div className={styles.trashContainer}>

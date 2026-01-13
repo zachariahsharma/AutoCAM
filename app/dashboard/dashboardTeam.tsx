@@ -11,6 +11,8 @@ type TabEvents = {
   userId: string | null;
   userEmail: string | null;
   sessionExpiresAt: string | null;
+  teamsRefreshCount: number;
+  triggerTeamsRefresh: () => void;
 };
 
 const Ctx = createContext<TabEvents | null>(null);
@@ -26,6 +28,7 @@ export function DashboardEventsProvider({
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
+  const [teamsRefreshCount, setTeamsRefreshCount] = useState(0);
 
   useEffect(() => {
     async function checkEmailVerification() {
@@ -64,8 +67,10 @@ export function DashboardEventsProvider({
       userId,
       userEmail,
       sessionExpiresAt,
+      teamsRefreshCount,
+      triggerTeamsRefresh: () => setTeamsRefreshCount((c) => c + 1),
     }),
-    [team, emailVerified, isLoadingAuth, userId, userEmail, sessionExpiresAt]
+    [team, emailVerified, isLoadingAuth, userId, userEmail, sessionExpiresAt, teamsRefreshCount]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

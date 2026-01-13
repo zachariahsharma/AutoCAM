@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import FileUploadModal from "@/components/FileUploadModal/FileUploadModal";
+import ToolLibraryEditorModal from "@/components/ToolLibraryEditor/ToolLibraryEditorModal";
 import { useSearchParams } from "next/navigation";
 
 function Machines({ teamId }: { teamId: number }) {
@@ -325,6 +326,7 @@ function ToolItem({
   onUpdateToolName,
   onToggleToolMaterial,
   onToggleToolMachine,
+  onEditTool,
 }: {
   tool: Tool;
   totalMaterials: Material[];
@@ -333,6 +335,7 @@ function ToolItem({
   onUpdateToolName: (toolId: number, name: string) => void;
   onToggleToolMaterial: (toolId: number, material: Material) => void;
   onToggleToolMachine: (toolId: number, machine: Machine) => void;
+  onEditTool: (toolId: number, toolName: string) => void;
 }) {
   const [dropdownMaterialsEnabled, setDropdownMaterialsEnabled] =
     useState<boolean>(false);
@@ -516,6 +519,14 @@ function ToolItem({
         <span>{tool.file || "Uploaded"}</span>
       </div>
       <Image
+        alt="Edit"
+        src="/settings/teams/Edit.svg"
+        width={2000}
+        height={2000}
+        onClick={() => onEditTool(tool.id, tool.name)}
+        className={styles.editIcon}
+      />
+      <Image
         alt="Trash"
         src="/settings/teams/trash.svg"
         width={2000}
@@ -530,6 +541,9 @@ function ToolItem({
 function Tools({ teamId }: { teamId: number }) {
   const [tools, setTools] = useState<Tool[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editingToolId, setEditingToolId] = useState<number | null>(null);
+  const [editingToolName, setEditingToolName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [pendingUpdates, setPendingUpdates] = useState<
     Record<number, NodeJS.Timeout>
@@ -805,6 +819,18 @@ function Tools({ teamId }: { teamId: number }) {
     }
   }
 
+  function openToolEditor(toolId: number, toolName: string) {
+    setEditingToolId(toolId);
+    setEditingToolName(toolName);
+    setIsEditorOpen(true);
+  }
+
+  function closeToolEditor() {
+    setIsEditorOpen(false);
+    setEditingToolId(null);
+    setEditingToolName("");
+  }
+
   return (
     <main id={styles.toolsContainer}>
       <FileUploadModal
@@ -815,6 +841,14 @@ function Tools({ teamId }: { teamId: number }) {
         acceptedFileType=".json"
         fileTypeLabel="JSON"
       />
+      {editingToolId !== null && (
+        <ToolLibraryEditorModal
+          isOpen={isEditorOpen}
+          onClose={closeToolEditor}
+          toolId={editingToolId}
+          toolName={editingToolName}
+        />
+      )}
       <div id={styles.addMachineContainer} onClick={() => setIsModalOpen(true)}>
         <Image
           src="/settings/teams/Plus.svg"
@@ -841,6 +875,7 @@ function Tools({ teamId }: { teamId: number }) {
             onUpdateToolName={updateToolNameLocal}
             onToggleToolMaterial={toggleToolMaterial}
             onToggleToolMachine={toggleToolMachine}
+            onEditTool={openToolEditor}
           />
         ))
       )}

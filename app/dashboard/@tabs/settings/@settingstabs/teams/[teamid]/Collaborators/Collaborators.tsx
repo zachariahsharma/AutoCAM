@@ -310,11 +310,10 @@ export default function CollaboratorsSettingsPage({
         ? `/api/teams/${teamDbId}/invites`
         : `/api/teams/${teamDbId}/members`;
 
-      const response = await fetch(endpoint, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: collaborator.email }),
-      });
+      const response = await fetch(
+        `${endpoint}?email=${encodeURIComponent(collaborator.email)}`,
+        { method: "DELETE" }
+      );
 
       if (!response.ok) {
         console.error("Failed to remove collaborator:", await response.text());
@@ -398,6 +397,7 @@ export default function CollaboratorsSettingsPage({
               onRoleChange={handleRoleChange}
               onRemove={handleRemove}
               readOnly={readOnly}
+              isCurrentUser={collaborator.email === currentUserEmail}
             />
           ))}
           {collaborators.length === 0 && (
@@ -450,6 +450,7 @@ function CollaboratorCard({
   onRoleChange,
   onRemove,
   readOnly = false,
+  isCurrentUser = false,
 }: {
   collaborator: Collaborator;
   onRoleChange: (
@@ -459,6 +460,7 @@ function CollaboratorCard({
   ) => void;
   onRemove: (collaborator: Collaborator) => void;
   readOnly?: boolean;
+  isCurrentUser?: boolean;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -488,21 +490,25 @@ function CollaboratorCard({
     setDropdownOpen(false);
   }
 
+  // Determine if role dropdown should be shown
+  // Don't show for: pending, Owner, or readOnly mode
+  const showRoleDropdown =
+    !readOnly &&
+    collaborator.role !== "pending" &&
+    collaborator.role !== "Owner";
+
+  // Determine if remove button should be shown
+  // Don't show for: Owner, readOnly
+  const canRemove = !readOnly && collaborator.role !== "Owner";
+
   return (
     <div className={styles.collaboratorCard}>
-      <div className={styles.name}>{collaborator.name}</div>
+      <div className={styles.name}>
+        {collaborator.name}
+        {isCurrentUser && <span className={styles.youBadge}>(You)</span>}
+      </div>
       <div className={styles.role}>
-        {collaborator.role === "pending" ||
-        collaborator.role === "Owner" ||
-        readOnly ? (
-          <span>
-            {collaborator.role === "Owner"
-              ? "Owner"
-              : collaborator.role === "pending"
-              ? "pending"
-              : collaborator.role}
-          </span>
-        ) : (
+        {showRoleDropdown ? (
           <button onClick={() => setDropdownOpen(!dropdownOpen)}>
             {collaborator.role}
             <Image
@@ -513,8 +519,10 @@ function CollaboratorCard({
               className={styles.dropdownIcon}
             />
           </button>
+        ) : (
+          <span>{collaborator.role}</span>
         )}
-        {dropdownOpen && !readOnly && (
+        {dropdownOpen && (
           <div className={styles.roleDropdown} ref={dropdownRef}>
             <div
               className={styles.roleOption}
@@ -531,7 +539,7 @@ function CollaboratorCard({
           </div>
         )}
       </div>
-      {collaborator.role !== "Owner" && !readOnly && (
+      {canRemove && (
         <Image
           alt="remove"
           src="/settings/teams/remove.svg"

@@ -8,8 +8,7 @@ import { authClient } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState } from "react";
-import { ErrorModal } from "../dashboard/@tabs/settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";
-
+import { ErrorModal } from "../dashboard/@tabs/settings/@settingstabs/teams/[teamid]/ApiKeys/ApiKeys";
 
 function parseNameFromEmail(email: string): string {
   const localPart = email.split("@")[0] || email;
@@ -46,6 +45,7 @@ function SignupContainer({
   const [scope3, animate3] = useAnimate();
   const [scope4, animate4] = useAnimate();
   const [userExists, setUserExists] = useState(false);
+  const [invalidEmail, setInvalidEmail] = useState(false);
   const [insecure, setInsecurePassword] = useState(false);
   const [mismatch, setMismatch] = useState(false);
   useEffect(() => {
@@ -70,7 +70,17 @@ function SignupContainer({
       { backgroundColor: strengthCount >= 4 ? "#4ade80" : "rgba(0,0,0,0)" },
       { duration: 0.5 }
     );
-  }, [password, animate1, animate2, animate3, animate4, scope1, scope2, scope3, scope4]);
+  }, [
+    password,
+    animate1,
+    animate2,
+    animate3,
+    animate4,
+    scope1,
+    scope2,
+    scope3,
+    scope4,
+  ]);
   async function signup(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -105,11 +115,19 @@ function SignupContainer({
     );
     if (error?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
       setUserExists(true);
+      setInvalidEmail(false);
+    } else if (error?.message === "Invalid email") {
+      setInvalidEmail(true);
+      setUserExists(false);
+      setTimeout(() => {
+        setInvalidEmail(false);
+      }, 3000);
     } else {
       setUserExists(false);
+      setInvalidEmail(false);
       if (error) {
         setErrorModalOpen(true);
-        console.error(error)
+        console.error(error);
         return;
       }
     }
@@ -142,6 +160,7 @@ function SignupContainer({
             message="User with this email already exists!"
             open={userExists}
           />
+          <Alert message="Invalid email" open={invalidEmail} />
           <label className={styles.inputLabel}>Password</label>
           <br />
           <input

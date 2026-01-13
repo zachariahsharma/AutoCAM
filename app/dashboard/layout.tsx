@@ -14,6 +14,21 @@ import { Team } from "@/app/types";
 import { motion, AnimatePresence, useAnimate } from "framer-motion";
 import { useSelectedLayoutSegment, usePathname } from "next/navigation";
 
+// Patch performance.measure to suppress parallel route timing errors
+if (typeof window !== "undefined" && window.performance?.measure) {
+  const origMeasure = window.performance.measure.bind(window.performance);
+  window.performance.measure = (...args: Parameters<Performance["measure"]>) => {
+    try {
+      return origMeasure(...args);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("cannot have a negative time stamp")) {
+        return undefined as unknown as PerformanceMeasure;
+      }
+      throw err;
+    }
+  };
+}
+
 export function useCurrentTab() {
   const segment = useSelectedLayoutSegment("tabs");
   const path = usePathname();
@@ -24,7 +39,7 @@ export function useCurrentTab() {
 
 function TeamDropdown() {
   const [teamDropdownOpen, setTeamDropdownOpen] = useState(false);
-  const { team, setTeam } = useDashboardEvents();
+  const { team, setTeam, teamsRefreshCount } = useDashboardEvents();
   const [teams, setTeams] = useState<Team[]>([]);
   const dropdownTeamRef = useRef<HTMLDivElement>(null);
   const { isCollapsed } = useSidebar();
@@ -37,7 +52,7 @@ function TeamDropdown() {
         const data: Team[] = await response.json();
         if (mounted) {
           setTeams(data);
-          setTeam(data[0]);
+          if (!team) setTeam(data[0]);
         }
       } catch (err) {
         console.error("Failed to load teams:", err);
@@ -47,7 +62,7 @@ function TeamDropdown() {
     return () => {
       mounted = false;
     };
-  }, [setTeam]);
+  }, [setTeam, teamsRefreshCount, team]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -660,32 +675,7 @@ function Sidebar() {
 
 export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
   useEffect(() => {
-    // Set default sidebar width
     document.documentElement.style.setProperty("--sidebar-width", "220px");
-
-    try {
-      const perf = (
-        globalThis as {
-          performance?: { measure?: (...args: unknown[]) => unknown };
-        }
-      ).performance;
-      if (!perf || typeof perf.measure !== "function") return;
-      const orig = perf.measure.bind(perf);
-      perf.measure = (...args: unknown[]) => {
-        try {
-          return orig(...args);
-        } catch (err) {
-          if (
-            err instanceof Error &&
-            err.message.includes("cannot have a negative time stamp")
-          )
-            return;
-          throw err;
-        }
-      };
-    } catch {
-      /* noop */
-    }
   }, []);
 
   return (

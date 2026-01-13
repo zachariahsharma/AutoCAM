@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState, Dispatch, SetStateAction } from "react";
 import { RobotPic } from "../signup/page";
 import { Alert } from "../signup/page";
-import { ErrorModal } from "../dashboard/@tabs/settings/@tabs/teams/[teamid]/ApiKeys/ApiKeys";
+import { ErrorModal } from "../dashboard/@tabs/settings/@settingstabs/teams/[teamid]/ApiKeys/ApiKeys";
 
 function LoginContainer({
   setErrorModalOpen,
@@ -17,6 +17,7 @@ function LoginContainer({
 }) {
   const router = useRouter();
   const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
+  const [invalidEmailOpen, setInvalidEmailOpen] = useState(false);
   const login = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -33,8 +34,13 @@ function LoginContainer({
       setTimeout(() => {
         setPasswordAlertOpen(false);
       }, 3000);
+    } else if (result.error && result.error.message === "Invalid email") {
+      setInvalidEmailOpen(true);
+      setTimeout(() => {
+        setInvalidEmailOpen(false);
+      }, 3000);
     } else if (result.error) {
-      console.error(result.error)
+      console.error(result.error);
       setErrorModalOpen(true);
     }
   };
@@ -61,7 +67,7 @@ function LoginContainer({
           name="email"
           required
         />
-        <br />
+        <Alert message={"Invalid email"} open={invalidEmailOpen} />
         <label className={styles.inputLabel}>Password</label>
         <br />
         <input

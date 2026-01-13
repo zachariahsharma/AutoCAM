@@ -11,6 +11,15 @@ import type { ApiKey } from "@/app/types";
 // Scopes required for Fusion Server
 const FUSION_SERVER_SCOPES = ["jobs:process", "parts:read", "plates:read", "tools:read", "materials:read", "machines:read", "box_tubes:read"];
 
+// Check if server is active (had activity within the last 30 seconds)
+function isServerActive(lastActivity: string | null): boolean {
+  if (!lastActivity) return false;
+  const lastActivityDate = new Date(lastActivity);
+  const now = new Date();
+  const diffMs = now.getTime() - lastActivityDate.getTime();
+  return diffMs < 30000; // 30 seconds
+}
+
 export function Modal({
   children,
   open,
@@ -89,8 +98,11 @@ export default function FusionServerPage() {
       }
     }
     loadFusionServers();
+    // Poll every 5 seconds to update status
+    const interval = setInterval(loadFusionServers, 5000);
     return () => {
       mounted = false;
+      clearInterval(interval);
     };
   }, [teamDbId, updates]);
 
@@ -172,27 +184,32 @@ export default function FusionServerPage() {
               <span id={styles.noFusionServers}>No Fusion Servers Added</span>
             </div>
           ) : null}
-          {fusionServers.map((server, index) => (
-            <div key={index} className={styles.fusionServerItem}>
-              <span className={styles.fusionServerName}>
-                <span>{server.name}</span>
-              </span>
-              <span className={styles.fusionServerStatus}>
-                <span className={styles.statusInactive}>Inactive</span>
-              </span>
-              <Image
-                src="/settings/teams/apikey/Remove.svg"
-                width={2000}
-                height={2000}
-                alt="remove"
-                className={styles.removeIcon}
-                onClick={(e) => {
-                  e.preventDefault();
-                  deleteFusionServer(server.id);
-                }}
-              />
-            </div>
-          ))}
+          {fusionServers.map((server, index) => {
+            const active = isServerActive(server.last_activity);
+            return (
+              <div key={index} className={styles.fusionServerItem}>
+                <span className={styles.fusionServerName}>
+                  <span>{server.name}</span>
+                </span>
+                <span className={styles.fusionServerStatus}>
+                  <span className={active ? styles.statusActive : styles.statusInactive}>
+                    {active ? "Active" : "Inactive"}
+                  </span>
+                </span>
+                <Image
+                  src="/settings/teams/apikey/Remove.svg"
+                  width={2000}
+                  height={2000}
+                  alt="remove"
+                  className={styles.removeIcon}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    deleteFusionServer(server.id);
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
         <Modal open={modalOpen}>
           <form onSubmit={handleModalSubmit} id={styles.modalContent}>

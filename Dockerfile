@@ -33,7 +33,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # entrypoint (and make /app writable for .env generation if you keep that)
 COPY --chown=nextjs:nodejs docker/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh && chown -R nextjs:nodejs /app
+RUN chmod +x /app/entrypoint.sh
 
 USER nextjs
 EXPOSE 5000

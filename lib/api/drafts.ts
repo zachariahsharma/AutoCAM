@@ -312,7 +312,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
       where: eq(Teams.id, team_id),
       columns: { owner: true }
     });
-    user_id = owner?.owner ?? null;
+    user_id = owner?.owner ?? undefined;
     if (!user_id) {
       return routeResponse(401, { message: "Unable to determine user for draft creation" });
     }

@@ -621,9 +621,12 @@ function Tools({ teamId }: { teamId: number }) {
             name: string;
             material_ids?: number[];
             machine_ids?: number[];
+            default_selected?: boolean;
           }>;
 
-          const materialsById = new Map(materials.map((m) => [m.id, m] as const));
+          const materialsById = new Map(
+            materials.map((m) => [m.id, m] as const)
+          );
           const machinesById = new Map(machines.map((m) => [m.id, m] as const));
 
           setTools(
@@ -708,9 +711,7 @@ function Tools({ teamId }: { teamId: number }) {
   };
 
   function updateToolNameLocal(toolId: number, name: string) {
-    setTools((prev) =>
-      prev.map((t) => (t.id === toolId ? { ...t, name } : t))
-    );
+    setTools((prev) => prev.map((t) => (t.id === toolId ? { ...t, name } : t)));
 
     if (pendingUpdates[toolId]) {
       clearTimeout(pendingUpdates[toolId]);
@@ -719,11 +720,11 @@ function Tools({ teamId }: { teamId: number }) {
     const timeout = setTimeout(() => {
       updateToolNameApi(toolId, name);
       setPendingUpdates((prev) => {
-      const next = { ...prev };
-      delete next[toolId];
-      return next;
-    });
-  }, 500);
+        const next = { ...prev };
+        delete next[toolId];
+        return next;
+      });
+    }, 500);
 
     setPendingUpdates((prev) => ({ ...prev, [toolId]: timeout }));
   }
@@ -780,7 +781,10 @@ function Tools({ teamId }: { teamId: number }) {
       const response = await fetch(`/api/tools/${toolId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ material_ids: materialIds, machine_ids: machineIds }),
+        body: JSON.stringify({
+          material_ids: materialIds,
+          machine_ids: machineIds,
+        }),
       });
       if (!response.ok) {
         console.error(
@@ -804,7 +808,9 @@ function Tools({ teamId }: { teamId: number }) {
     const machineIds = current.machines.map((m) => m.id);
 
     setTools((prev) =>
-      prev.map((t) => (t.id === toolId ? { ...t, materials: nextMaterials } : t))
+      prev.map((t) =>
+        t.id === toolId ? { ...t, materials: nextMaterials } : t
+      )
     );
     scheduleAssignmentsUpdate(
       toolId,
@@ -944,8 +950,8 @@ export default function FusionInputs({ teamId }: { teamId: number }) {
     tabParam === "materials"
       ? "Materials"
       : tabParam === "tools"
-        ? "Tools"
-        : "Machines";
+      ? "Tools"
+      : "Machines";
 
   const [selectedTab, setSelectedTab] = useState<string>(initialTab);
 

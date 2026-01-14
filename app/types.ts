@@ -4,6 +4,7 @@ import {
   PartCategoryAssignments,
   Plates,
   BoxTubes,
+  Drafts,
 } from "@/lib/db/schema/cam";
 import { Teams } from "@/lib/db/schema/entities";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
@@ -63,7 +64,8 @@ export interface Tool {
   name: string;
   materials: Material[];
   machines: Machine[];
-  file: string; 
+  file: string;
+  default_selected: boolean;
 }
 
 export interface Collaborator {
@@ -78,6 +80,7 @@ export interface ApiKey {
   name: string;
   scopes: string[];
   is_fusion_server: boolean;
+  last_activity: string | null;
 }
 
 export interface TeamInvite {
@@ -94,4 +97,19 @@ export interface PlatesJob {
   kind: PlatesJobKind;
   status: PlatesJobStatus;
   queue_position: number;
+  payload?: unknown;
+  response?: unknown;
 }
+
+export type DraftType = "part" | "box_tube";
+
+export interface PendingCategory {
+  material: string;
+  thickness: number;
+}
+
+export type Draft = Omit<InferSelectModel<typeof Drafts>, "pending_category"> & {
+  pending_category: PendingCategory | null;
+  file?: string;
+  category?: PartCategory;
+};

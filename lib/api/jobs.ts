@@ -1,5 +1,6 @@
 import { and, asc, eq, getTableColumns, isNull, sql } from "drizzle-orm";
 import { JobKind, Jobs } from "../db/schema/cam";
+import { TeamKeys } from "../db/schema/entities";
 import zod, { ZodType } from "zod";
 import { createSelectSchema, Json } from "drizzle-zod";
 import { client } from "../aws";
@@ -81,6 +82,8 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
 export const Request = routeFactory(async (req, authType, tx) => {
   if (!authType.keyDigest) return routeResponse(401);
   const teamId = await teamIdFromDigest(tx, authType);
+  // Update last_activity timestamp for this API key
+  await tx.update(TeamKeys).set({ last_activity: new Date() }).where(eq(TeamKeys.digest, authType.keyDigest));
   const result = await tx.update(Jobs).set({ claimed_by: authType.keyDigest })
     .where(eq(Jobs.id, tx.select({ id: Jobs.id })
       .from(Jobs).where(and(eq(Jobs.team_id, teamId), isNull(Jobs.claimed_by)))

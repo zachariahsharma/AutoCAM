@@ -5,11 +5,11 @@ export async function proxy(request: NextRequest) {
   const userId = await getUserId();
   if (["/login", "/signup"].some(p => request.nextUrl.pathname.startsWith(p))) {
     if (userId)
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL("/dashboard", process.env.BASE_URL));
     return NextResponse.next();
   }
   if (userId) return NextResponse.next();
-  return NextResponse.redirect(new URL("/login", request.url));
+  return NextResponse.redirect(new URL("/login", process.env.BASE_URL));
 }
 
 export const config = {

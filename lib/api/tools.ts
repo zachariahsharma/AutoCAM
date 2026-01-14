@@ -12,7 +12,7 @@ import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sd
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const CreateSchema = zod.object({
-  data: createInsertSchema(Tools).omit({ team_id: true }),
+  data: createInsertSchema(Tools).omit({ team_id: true, default_selected: true }),
   file: zod.instanceof(File).openapi({ type: "string", format: "binary" })
 });
 const UpdateSchema = createUpdateSchema(Tools).extend({
@@ -240,4 +240,120 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     Bucket: process.env.AUTOCAM_BUCKET,
     Key: `teams/${tool.team_id}/tools/${id}`
   }));
+}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.tools.write] } });
+
+// Tool Library JSON schemas
+const ToolLibrarySchema = zod.object({
+  data: zod.array(zod.record(zod.string(), zod.unknown())),
+  version: zod.number()
+}).passthrough();
+
+const UpdateLibrarySchema = zod.object({
+  data: zod.array(zod.record(zod.string(), zod.unknown())),
+  version: zod.number()
+});
+
+// OpenAPI registration for library endpoints
+registry.registerPath({
+  method: "get",
+  path: "/api/tools/{id}/library",
+  tags: ["Tools"],
+  summary: "Get Tool Library JSON",
+  description: "Returns the parsed JSON content of the tool library file",
+  security: [
+    { [userSession.name]: [] },
+    { [apiKey.name]: [scopes.tools.read] }
+  ],
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "Tool ID" }) })
+  },
+  responses: {
+    200: {
+      description: "Tool library JSON content",
+      content: {
+        "application/json": {
+          schema: ToolLibrarySchema
+        }
+      }
+    },
+    ...CommonAuthorization,
+    ...ValidationError,
+  }
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/api/tools/{id}/library",
+  tags: ["Tools"],
+  summary: "Update Tool Library JSON",
+  description: "Updates the tool library JSON file. Requires email verification.",
+  security: [
+    { [userSession.name]: [] },
+    { [apiKey.name]: [scopes.tools.write] }
+  ],
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "Tool ID" }) }),
+    body: {
+      content: {
+        "application/json": {
+          schema: UpdateLibrarySchema
+        }
+      }
+    }
+  },
+  responses: {
+    204: {
+      description: "Tool library successfully updated"
+    },
+    ...CommonAuthorization,
+    ...ValidationError,
+  }
+});
+
+// Get parsed tool library JSON
+export const LibraryGET = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const tool = await tx.query.Tools.findFirst({
+    where: eq(Tools.id, id)
+  });
+  if (!tool) return routeResponse(404);
+  await checkUserTeam(tx, authType, tool.team_id);
+
+  // Fetch the JSON file from S3
+  const response = await client.send(new GetObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${tool.team_id}/tools/${id}`
+  }));
+
+  if (!response.Body) {
+    return routeResponse(404, { error: "Tool library file not found" });
+  }
+
+  const bodyString = await response.Body.transformToString();
+  const libraryData = JSON.parse(bodyString);
+
+  return routeResponse(200, libraryData);
+}, { user: {}, apiKey: { scopes: [scopes.tools.read] } });
+
+// Update tool library JSON
+export const LibraryPUT = routeFactory(async (req, authType, tx, id) => {
+  if (!id) return routeResponse(422);
+  const tool = await tx.query.Tools.findFirst({
+    where: eq(Tools.id, id)
+  });
+  if (!tool) return routeResponse(404);
+  await checkUserTeam(tx, authType, tool.team_id, true);
+
+  const body = await parseSchema(await req.json(), UpdateLibrarySchema);
+
+  // Upload the updated JSON to S3
+  await client.send(new PutObjectCommand({
+    Bucket: process.env.AUTOCAM_BUCKET,
+    Key: `teams/${tool.team_id}/tools/${id}`,
+    ACL: "private",
+    Body: JSON.stringify(body, null, 2),
+    ContentType: "application/json"
+  }));
+
+  return routeResponse(204);
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.tools.write] } });

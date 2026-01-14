@@ -1,15 +1,16 @@
 "use client";
 import styles from "./layout.module.css";
-import { useAnimate, MotionConfig } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { useSelectedLayoutSegments } from "next/navigation";
+import { useAnimate } from "framer-motion";
 export function useCurrentTab() {
-  const segments = useSelectedLayoutSegments("tabs");
+  const segments = useSelectedLayoutSegments("settingstabs");
+  console.log('SEGMENTS', segments)
   if (segments.length === 0) return "default";
-  if (segments[0] === "teams") return segments[1] ?? "teams";
-  return segments[0] ?? "default";
+  if (segments[1] === "teams") return segments[2] ?? "teams";
+  return segments[1] ?? "default";
 }
 import { TabEventsProvider, useTabEvents } from "./teamUpdate";
 
@@ -20,6 +21,7 @@ function Sidebar() {
   const router = useRouter();
   const tab = useCurrentTab();
   const { updateCount, teams, setTeams } = useTabEvents();
+
   useEffect(() => {
     let mounted = true;
     (async function () {
@@ -35,10 +37,11 @@ function Sidebar() {
     return () => {
       mounted = false;
     };
-  }, [updateCount]);
-
+  }, [updateCount, setTeams]);
+  console.log(tab)
   useEffect(() => {
     // Determine which key to look for
+    console.log('TAB CHANGE')
     let key = tab;
     if (tab === "default") {
       key = "personal";
@@ -49,15 +52,13 @@ function Sidebar() {
     const element = itemsRef.current[key];
     const sidebar = sidebarRef.current;
     if (element && sidebar) {
-      const elementRect = element.getBoundingClientRect();
+      const rect = element.getBoundingClientRect();
       const sidebarRect = sidebar.getBoundingClientRect();
-      const relativeTop = elementRect.top - sidebarRect.top;
-
       animate(
         scope.current,
         {
-          top: relativeTop + 2,
-          height: elementRect.height - 4,
+          top: rect.top - sidebarRect.top -5,
+          height: rect.height,
         },
         { duration: 0.3, ease: "easeInOut" }
       );
@@ -66,7 +67,10 @@ function Sidebar() {
 
   return (
     <aside className={styles.sidebar} ref={sidebarRef}>
-      <span id={styles.selected} ref={scope} />
+      <div className={styles.sidebarSelected} ref={scope}>
+        <span className={styles.selectedYellow} />
+        <span className={styles.selectedHighlight} />
+      </div>
       <div
         ref={(el) => {
           itemsRef.current["personal"] = el;
@@ -76,14 +80,6 @@ function Sidebar() {
             router.push("/dashboard/settings/personal");
           }
         }}
-        style={
-          tab === "personal"
-            ? {
-                backgroundColor: "rgba(255,255,255,.15)",
-                marginBottom: "2px",
-              }
-            : undefined
-        }
       >
         <Image
           src="/settings/personal.svg"
@@ -105,15 +101,6 @@ function Sidebar() {
               router.push("/dashboard/settings/teams/" + team.id);
             }
           }}
-          style={
-            tab === String(team.id)
-              ? {
-                  backgroundColor: "rgba(255,255,255,.15)",
-                  marginBottom: "2px",
-                  marginTop: "2px",
-                }
-              : undefined
-          }
         >
           <Image
             src="/settings/team.svg"
@@ -135,14 +122,6 @@ function Sidebar() {
             router.push("/dashboard/settings/newteam");
           }
         }}
-        style={
-          tab === "newteam"
-            ? {
-                backgroundColor: "rgba(255,255,255,.15)",
-                marginBottom: "2px",
-              }
-            : undefined
-        }
       >
         <Image
           src="/settings/newteam.svg"
@@ -162,14 +141,6 @@ function Sidebar() {
             router.push("/dashboard/settings/jointeam");
           }
         }}
-        style={
-          tab === "jointeam"
-            ? {
-                backgroundColor: "rgba(255,255,255,.15)",
-                marginTop: "2px",
-              }
-            : undefined
-        }
       >
         <Image
           src="/settings/jointeam.svg"
@@ -184,39 +155,19 @@ function Sidebar() {
   );
 }
 
-export default function SettingsLayout({ tabs }: { tabs: React.ReactNode }) {
-  useEffect(() => {
-    try {
-      const perf: any = (globalThis as any).performance;
-      if (!perf || typeof perf.measure !== "function") return;
-      const orig = perf.measure.bind(perf);
-      perf.measure = (...args: any[]) => {
-        try {
-          return orig(...args);
-        } catch (err: any) {
-          if (err?.message?.includes("cannot have a negative time stamp"))
-            return;
-          throw err;
-        }
-      };
-    } catch {
-      /* noop */
-    }
-  }, []);
+export default function SettingsLayout({ settingstabs }: { settingstabs: React.ReactNode }) {
   return (
-    <MotionConfig reducedMotion="never">
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1>Settings</h1>
-          <hr />
-        </div>
-        <TabEventsProvider>
-          <div className={styles.mainContent}>
-            <Sidebar />
-            <main className={styles.main}>{tabs}</main>
-          </div>
-        </TabEventsProvider>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h1>Settings</h1>
+        <hr />
       </div>
-    </MotionConfig>
+      <TabEventsProvider>
+        <div className={styles.mainContent}>
+          <Sidebar />
+          <main className={styles.main}>{settingstabs}</main>
+        </div>
+      </TabEventsProvider>
+    </div>
   );
 }

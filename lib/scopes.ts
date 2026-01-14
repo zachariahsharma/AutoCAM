@@ -101,6 +101,16 @@ export const scopes = {
       description: "Create, update, or delete team box tubes"
     }
   },
+  drafts: {
+    read: {
+      name: "drafts:read",
+      description: "Read team drafts (incomplete uploads)"
+    },
+    write: {
+      name: "drafts:write",
+      description: "Create, update, or delete team drafts"
+    }
+  },
   jobs: {
     read: {
       name: "jobs:read",

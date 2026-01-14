@@ -37,8 +37,9 @@ export const Accept = routeFactory<string>(async (req, authType, tx, id) => {
     admin: invite.admin
   });
 
-  // If accessed directly (email link), redirect to dashboard
-  return NextResponse.redirect(new URL("/dashboard", req.url));
+  const redirectBase = process.env.BASE_URL ?? req.url;
+  // If accessed directly (email link), redirect to dashboard using configured base URL.
+  return NextResponse.redirect(new URL("/dashboard", redirectBase));
 }, { user: {}, idSchema: zod.uuid() });
 
 export const DELETE = routeFactory<string>(async (req, authType, tx, id) => {

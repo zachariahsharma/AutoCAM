@@ -1,4 +1,4 @@
-import { boolean, char, integer, pgTable, primaryKey, text, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, char, integer, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations } from "drizzle-orm";
 import { Machines, Materials, PartCategories, Tools, BoxTubes } from "./cam";
@@ -34,7 +34,8 @@ export const TeamKeys = pgTable("team_keys", {
   digest: char({ length: 64 }).notNull().unique(),
   name: text().notNull(),
   scopes: text().array().notNull(),
-  is_fusion_server: boolean().notNull().default(false)
+  is_fusion_server: boolean().notNull().default(false),
+  last_activity: timestamp()
 }, table => [
   unique().on(table.team_id, table.name),
 ]);

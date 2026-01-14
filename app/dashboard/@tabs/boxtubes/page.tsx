@@ -154,7 +154,7 @@ export default function Boxtubes() {
     []
   );
   const [tools, setTools] = useState<
-    Array<{ id: number; machine_ids?: number[] }>
+    Array<{ id: number; machine_ids?: number[]; default_selected?: boolean }>
   >([]);
   const [requestingJob, setRequestingJob] = useState<Record<number, boolean>>(
     {}
@@ -224,7 +224,11 @@ export default function Boxtubes() {
         }
         if (tRes.ok) {
           setTools(
-            (await tRes.json()) as Array<{ id: number; machine_ids?: number[] }>
+            (await tRes.json()) as Array<{
+              id: number;
+              machine_ids?: number[];
+              default_selected?: boolean;
+            }>
           );
         }
       } catch (err) {

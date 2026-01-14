@@ -59,7 +59,8 @@ export const Machines = pgTable("machines", {
 export const Tools = pgTable("tools", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
+  default_selected: boolean().notNull().default(false),
 }, table => [
   unique().on(table.name, table.team_id),
 ]);

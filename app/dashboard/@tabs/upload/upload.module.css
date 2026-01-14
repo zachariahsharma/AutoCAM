@@ -273,6 +273,13 @@
   font-size: 12px;
 }
 
+.fileError {
+  color: #ff6b6b;
+  font-family: var(--font-roboto);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 .fileInfo {
   display: flex;
   justify-content: space-between;

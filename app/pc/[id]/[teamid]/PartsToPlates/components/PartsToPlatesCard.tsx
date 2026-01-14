@@ -1,6 +1,6 @@
 import styles from "../partstoplates.module.css";
 import { useMaterialEvents } from "../../materialEvents";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import type { PlatesJob } from "@/app/types";
 import type { PlateJobRun } from "./helpers";
@@ -88,8 +88,15 @@ export function PartsToPlatesCard({
   );
   const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
   const [tools, setTools] = useState<
-    Array<{ id: number; machine_ids?: number[]; material_ids?: number[] }>
+    Array<{
+      id: number;
+      name: string;
+      default_selected?: boolean;
+      machine_ids?: number[];
+      material_ids?: number[];
+    }>
   >([]);
+  const [camSelectedToolIds, setCamSelectedToolIds] = useState<number[]>([]);
   const [selectedMachineId, setSelectedMachineId] = useState<number | null>(
     null
   );
@@ -131,6 +138,28 @@ export function PartsToPlatesCard({
     string | null
   >(null);
   const handledExcessJobs = useRef<Set<number>>(new Set());
+  const availableCamTools = useMemo(
+    () => getEligibleTools(selectedMachineId),
+    [selectedMachineId, tools, materialIdForCategory]
+  );
+
+  useEffect(() => {
+    if (!camModalOpen) return;
+    setCamSelectedToolIds((prev) => {
+      const valid = prev.filter((id) =>
+        availableCamTools.some((tool) => tool.id === id)
+      );
+      if (valid.length > 0) return valid;
+      const defaults = availableCamTools
+        .filter((tool) => tool.default_selected)
+        .map((tool) => tool.id);
+      if (defaults.length > 0) return defaults;
+      if (availableCamTools.length > 0) {
+        return availableCamTools.map((tool) => tool.id);
+      }
+      return [];
+    });
+  }, [camModalOpen, availableCamTools]);
 
   function openCamModal(plateId: number, arrangeJobId: number) {
     setCamModalPlateId(plateId);
@@ -149,6 +178,7 @@ export function PartsToPlatesCard({
     setMachines([]);
     setTools([]);
     setSelectedMachineId(null);
+    setCamSelectedToolIds([]);
   }
 
   function closeCamDownloadModal() {
@@ -633,6 +663,8 @@ export function PartsToPlatesCard({
         if (toolsRes.ok) {
           const toolsData = (await toolsRes.json()) as Array<{
             id: number;
+            name: string;
+            default_selected?: boolean;
             machine_ids?: number[];
             material_ids?: number[];
           }>;
@@ -861,22 +893,29 @@ export function PartsToPlatesCard({
     }
   }
 
-  function getMatchingToolIds(machineId: number | null) {
-    return tools
-      .filter((tool) => {
-        const machineOk =
-          machineId == null ||
-          !Array.isArray(tool.machine_ids) ||
-          tool.machine_ids.length === 0 ||
-          tool.machine_ids.includes(machineId);
-        const materialOk =
-          materialIdForCategory == null ||
-          !Array.isArray(tool.material_ids) ||
-          tool.material_ids.length === 0 ||
-          tool.material_ids.includes(materialIdForCategory);
-        return machineOk && materialOk;
-      })
-      .map((t) => t.id);
+  function getEligibleTools(machineId: number | null) {
+    return tools.filter((tool) => {
+      const machineOk =
+        machineId == null ||
+        !Array.isArray(tool.machine_ids) ||
+        tool.machine_ids.length === 0 ||
+        tool.machine_ids.includes(machineId);
+      const materialOk =
+        materialIdForCategory == null ||
+        !Array.isArray(tool.material_ids) ||
+        tool.material_ids.length === 0 ||
+        tool.material_ids.includes(materialIdForCategory);
+      return machineOk && materialOk;
+    });
+  }
+
+  function toggleCamTool(toolId: number) {
+    setCamSelectedToolIds((prev) =>
+      prev.includes(toolId)
+        ? prev.filter((id) => id !== toolId)
+        : [...prev, toolId]
+    );
+    setCamModalError(null);
   }
 
   async function syncPlateAssignments(
@@ -1123,11 +1162,17 @@ export function PartsToPlatesCard({
       setCamModalError("Select a machine to continue.");
       return;
     }
-    const matchingTools = getMatchingToolIds(selectedMachineId);
-    if (matchingTools.length === 0) {
+    if (availableCamTools.length === 0) {
       setCamModalError(
         "No tool is configured for this machine and material. Add one in Settings → Fusion Inputs."
       );
+      return;
+    }
+    const selectedTools = camSelectedToolIds.filter((id) =>
+      availableCamTools.some((tool) => tool.id === id)
+    );
+    if (selectedTools.length === 0) {
+      setCamModalError("Select at least one tool to continue.");
       return;
     }
     setCamModalLoading(true);
@@ -1139,7 +1184,7 @@ export function PartsToPlatesCard({
         body: JSON.stringify({
           type: "cam",
           machine_id: selectedMachineId,
-          tool_ids: matchingTools,
+          tool_ids: selectedTools,
         }),
       });
       if (!response.ok) {
@@ -1238,7 +1283,9 @@ export function PartsToPlatesCard({
         onClose={closeCamModal}
         onSelectMachine={setSelectedMachineId}
         onSubmit={submitCam}
-        getMatchingToolIds={getMatchingToolIds}
+        availableTools={availableCamTools}
+        selectedToolIds={camSelectedToolIds}
+        onToggleTool={toggleCamTool}
       />
       <CamDownloadModal
         open={camDownloadModalOpen}

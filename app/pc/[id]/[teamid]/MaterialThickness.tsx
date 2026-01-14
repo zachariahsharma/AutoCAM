@@ -140,9 +140,8 @@ export default function MaterialThickness({
         }
 
         if (toolsRes.ok) {
-          setTeamTools(
-            (await toolsRes.json()) as { id: number; name: string }[]
-          );
+          const tools = (await toolsRes.json()) as Array<{ id: number; name: string }>;
+          setTeamTools(tools.map((t) => ({ id: t.id, name: t.name })));
         } else {
           setTeamTools(null);
         }

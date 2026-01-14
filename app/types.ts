@@ -64,7 +64,8 @@ export interface Tool {
   name: string;
   materials: Material[];
   machines: Machine[];
-  file: string; 
+  file: string;
+  default_selected: boolean;
 }
 
 export interface Collaborator {

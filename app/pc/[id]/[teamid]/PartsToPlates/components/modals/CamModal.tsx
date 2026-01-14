@@ -14,7 +14,9 @@ type CamModalProps = {
   onClose: () => void;
   onSelectMachine: (machineId: number) => void;
   onSubmit: () => void;
-  getMatchingToolIds: (machineId: number | null) => number[];
+  availableTools: Array<{ id: number; name: string }>;
+  selectedToolIds: number[];
+  onToggleTool: (toolId: number) => void;
 };
 
 export function CamModal({
@@ -28,7 +30,9 @@ export function CamModal({
   onClose,
   onSelectMachine,
   onSubmit,
-  getMatchingToolIds,
+  availableTools,
+  selectedToolIds,
+  onToggleTool,
 }: CamModalProps) {
   return (
     <AnimatePresence>
@@ -135,17 +139,34 @@ export function CamModal({
                     ))}
                   </div>
                 )}
-
-                {error ? (
-                  <div className={styles.camModalError}>{error}</div>
-                ) : selectedMachineId != null &&
-                  getMatchingToolIds(selectedMachineId).length === 0 ? (
-                  <div className={styles.camModalError}>
-                    No tool is configured for this machine and material. Add one
-                    in Settings → Fusion Inputs.
-                  </div>
-                ) : null}
               </div>
+              <div className={styles.camModalControls}>
+                <label className={styles.camModalLabel}>Tools</label>
+                {availableTools.length === 0 ? (
+                  <div className={styles.camModalPlaceholder}>
+                    No tools match this machine/material. Update your Tool
+                    Library in Settings → Fusion Inputs.
+                  </div>
+                ) : (
+                  <div className={styles.camModalToolList}>
+                    {availableTools.map((tool) => (
+                      <label
+                        key={tool.id}
+                        className={styles.camModalToolOption}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedToolIds.includes(tool.id)}
+                          onChange={() => onToggleTool(tool.id)}
+                          disabled={loading}
+                        />
+                        <span>{tool.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {error ? <div className={styles.camModalError}>{error}</div> : null}
             </div>
             <div className={styles.camModalFooter}>
               <button
@@ -163,7 +184,8 @@ export function CamModal({
                 disabled={
                   loading ||
                   selectedMachineId == null ||
-                  getMatchingToolIds(selectedMachineId).length === 0
+                  availableTools.length === 0 ||
+                  selectedToolIds.length === 0
                 }
               >
                 CAM

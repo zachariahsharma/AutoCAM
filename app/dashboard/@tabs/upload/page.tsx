@@ -11,6 +11,9 @@ import { PartCategory, Material, Draft, PendingCategory } from "@/app/types";
 
 type UploadTab = "part" | "box_tube";
 
+const STEP_FILE_ERROR = "Only STEP (.step, .stp) files are supported";
+const STEP_FILE_REGEX = /\.st(ep|p)$/i;
+
 function NoTeamCard() {
   const router = useRouter();
   return (
@@ -70,6 +73,7 @@ function UploadPageContent() {
   const [quantity, setQuantity] = useState<number | "">("");
   const [file, setFile] = useState<File | null>(null);
   const [existingFileName, setExistingFileName] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   // Part-specific state
   const [categories, setCategories] = useState<PartCategory[]>([]);
@@ -89,6 +93,10 @@ function UploadPageContent() {
 
   // Track initial state for dirty checking
   const [initialState, setInitialState] = useState<string>("");
+
+  const isStepFile = useCallback((selectedFile: File) => {
+    return STEP_FILE_REGEX.test(selectedFile.name);
+  }, []);
 
   // Load categories and materials on team change
   useEffect(() => {
@@ -248,6 +256,7 @@ function UploadPageContent() {
           if (fileRes.ok) {
             setExistingFileName(file.name);
             setFile(null);
+            setFileError(null);
           }
         }
       } else {
@@ -272,6 +281,7 @@ function UploadPageContent() {
         if (file) {
           setExistingFileName(file.name);
           setFile(null);
+          setFileError(null);
         }
         notifyDraftCountChange?.();
       }
@@ -296,7 +306,14 @@ function UploadPageContent() {
     }
 
     if (!file && !existingFileName) {
-      setError("Please upload a file");
+      setError("Please upload a STEP (.step, .stp) file");
+      setFileError(STEP_FILE_ERROR);
+      return;
+    }
+
+    if (existingFileName && !STEP_FILE_REGEX.test(existingFileName) && !file) {
+      setError(STEP_FILE_ERROR);
+      setFileError(STEP_FILE_ERROR);
       return;
     }
 
@@ -352,6 +369,7 @@ function UploadPageContent() {
     setQuantity("");
     setFile(null);
     setExistingFileName(null);
+    setFileError(null);
     setSelectedCategoryId(null);
     setShowNewCategory(false);
     setNewMaterial("");
@@ -378,14 +396,27 @@ function UploadPageContent() {
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      setFile(files[0]);
+      const droppedFile = files[0];
+      if (!isStepFile(droppedFile)) {
+        setFileError(STEP_FILE_ERROR);
+        return;
+      }
+      setFileError(null);
+      setFile(droppedFile);
     }
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (files && files.length > 0) {
-      setFile(files[0]);
+      const selectedFile = files[0];
+      if (!isStepFile(selectedFile)) {
+        setFileError(STEP_FILE_ERROR);
+        e.target.value = "";
+        return;
+      }
+      setFileError(null);
+      setFile(selectedFile);
     }
   }
 
@@ -559,6 +590,7 @@ function UploadPageContent() {
                       e.stopPropagation();
                       setFile(null);
                       setExistingFileName(null);
+                      setFileError(null);
                     }}
                   >
                     Remove
@@ -574,17 +606,20 @@ function UploadPageContent() {
                     className={styles.uploadIcon}
                   />
                   <p>Drag &amp; drop your file here or click to browse</p>
-                  <span className={styles.fileTypes}>DXF, STEP, STP files</span>
+                  <span className={styles.fileTypes}>STEP files only (.step, .stp)</span>
                 </div>
               )}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".dxf,.step,.stp"
+                accept=".step,.stp"
                 onChange={handleFileSelect}
                 hidden
               />
             </div>
+            {fileError && (
+              <span className={styles.fileError}>{fileError}</span>
+            )}
           </div>
 
           <div className={styles.saveStatus}>

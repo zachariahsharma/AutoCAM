@@ -12,7 +12,7 @@ import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sd
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const CreateSchema = zod.object({
-  data: createInsertSchema(Tools).omit({ team_id: true }),
+  data: createInsertSchema(Tools).omit({ team_id: true, default_selected: true }),
   file: zod.instanceof(File).openapi({ type: "string", format: "binary" })
 });
 const UpdateSchema = createUpdateSchema(Tools).extend({

@@ -1,4 +1,5 @@
 import { Drafts, PartCategories, Parts, BoxTubes } from "@/lib/db/schema/cam";
+import { Teams } from "@/lib/db/schema/entities";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
@@ -305,8 +306,16 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, team_id);
 
-  if (!authType.userId) {
-    return routeResponse(401, { message: "User session required to create drafts" });
+  let user_id = authType.userId;
+  if (!user_id) {
+    const owner = await tx.query.Teams.findFirst({
+      where: eq(Teams.id, team_id),
+      columns: { owner: true }
+    });
+    user_id = owner?.owner ?? null;
+    if (!user_id) {
+      return routeResponse(401, { message: "Unable to determine user for draft creation" });
+    }
   }
 
   const formData = await req.formData();
@@ -321,7 +330,7 @@ export const POST = routeFactory(async (req, authType, tx, team_id) => {
 
   const [draft] = await tx.insert(Drafts).values({
     team_id,
-    user_id: authType.userId,
+    user_id,
     type: data.type,
     name: data.name ?? null,
     epic: data.epic ?? null,

@@ -327,6 +327,7 @@ function ToolItem({
   onToggleToolMaterial,
   onToggleToolMachine,
   onEditTool,
+  onToggleToolDefault,
 }: {
   tool: Tool;
   totalMaterials: Material[];
@@ -336,6 +337,7 @@ function ToolItem({
   onToggleToolMaterial: (toolId: number, material: Material) => void;
   onToggleToolMachine: (toolId: number, machine: Machine) => void;
   onEditTool: (toolId: number, toolName: string) => void;
+  onToggleToolDefault: (toolId: number, selected: boolean) => void;
 }) {
   const [dropdownMaterialsEnabled, setDropdownMaterialsEnabled] =
     useState<boolean>(false);
@@ -387,6 +389,25 @@ function ToolItem({
           onUpdateToolName(tool.id, e.target.value);
         }}
       />
+      <div className={styles.toolDefaultColumn}>
+        <label className={styles.checkbox}>
+          <input
+            type="checkbox"
+            checked={tool.default_selected}
+            onChange={(e) => onToggleToolDefault(tool.id, e.target.checked)}
+          />
+          <span className={styles.checkboxBox}>
+            <Image
+              src="/settings/teams/X.svg"
+              width={2000}
+              height={2000}
+              alt="Default tool"
+              className={styles.checkboxIcon}
+            />
+          </span>
+        </label>
+        <span className={styles.toolDefaultLabel}>Default</span>
+      </div>
       <div className={styles.materialDropdown}>
         <div className={styles.materialDropdownHeader}>
           <div className={styles.materialDropdownSelected}>
@@ -616,6 +637,7 @@ function Tools({ teamId }: { teamId: number }) {
                 .map((id) => machinesById.get(id))
                 .filter((m): m is Machine => Boolean(m)),
               file: "",
+              default_selected: Boolean(t.default_selected),
             }))
           );
         } else {
@@ -671,7 +693,14 @@ function Tools({ teamId }: { teamId: number }) {
       const { id } = (await response.json()) as { id: number };
       setTools((prev) => [
         ...prev,
-        { id, name, materials: [], machines: [], file: file.name },
+        {
+          id,
+          name,
+          materials: [],
+          machines: [],
+          file: file.name,
+          default_selected: false,
+        },
       ]);
     } catch (error) {
       console.error("Error adding tool:", error);
@@ -804,6 +833,30 @@ function Tools({ teamId }: { teamId: number }) {
     );
   }
 
+  function toggleDefaultTool(toolId: number, selected: boolean) {
+    setTools((prev) =>
+      prev.map((t) =>
+        t.id === toolId ? { ...t, default_selected: selected } : t
+      )
+    );
+    void updateToolDefault(toolId, selected);
+  }
+
+  async function updateToolDefault(toolId: number, selected: boolean) {
+    try {
+      const response = await fetch(`/api/tools/${toolId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ default_selected: selected }),
+      });
+      if (!response.ok) {
+        console.error("Failed to update tool default:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error updating tool default:", error);
+    }
+  }
+
   async function deleteTool(toolId: number) {
     try {
       const response = await fetch(`/api/tools/${toolId}`, {
@@ -876,6 +929,7 @@ function Tools({ teamId }: { teamId: number }) {
             onToggleToolMaterial={toggleToolMaterial}
             onToggleToolMachine={toggleToolMachine}
             onEditTool={openToolEditor}
+            onToggleToolDefault={toggleDefaultTool}
           />
         ))
       )}

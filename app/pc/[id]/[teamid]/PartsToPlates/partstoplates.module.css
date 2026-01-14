@@ -499,6 +499,29 @@
   gap: 8px;
 }
 
+.camModalToolList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.camModalToolOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  color: white;
+}
+
+.camModalToolOption input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--yellow-1);
+}
+
 .machineOption {
   text-align: left;
   padding: 10px 12px;
@@ -611,4 +634,3 @@
 .camModalConfirm:disabled {
   opacity: 0.5;
 }
-

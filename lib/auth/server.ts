@@ -1,20 +1,20 @@
 import { betterAuth } from "better-auth";
-import db, { Transaction } from "../db";
+import db, { Transaction } from "@/lib/db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from '../db/schema/auth';
 import transporter from "../mailer";
-import { headers } from "next/headers";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "../db/schema/entities";
 import { openAPI } from "better-auth/plugins";
 import { routeResponse } from "../api/common";
 import { NextRequest } from "next/server";
+import { PgliteDatabase } from "drizzle-orm/pglite";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: { ...schema }
+    provider: db instanceof PgliteDatabase ? "sqlite" : "pg",
+    schema
   }),
   emailAndPassword: { enabled: true },
   emailVerification: {

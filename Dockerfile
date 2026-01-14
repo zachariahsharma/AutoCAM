@@ -36,7 +36,7 @@ COPY --chown=nextjs:nodejs docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh && chown -R nextjs:nodejs /app
 
 USER nextjs
-EXPOSE 3000
+EXPOSE 5000
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["bun", "./server.js"]

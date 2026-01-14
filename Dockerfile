@@ -19,7 +19,7 @@ FROM oven/bun:1 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
-    PORT=3000 \
+    PORT=5000 \
     HOSTNAME="0.0.0.0"
 
 # create user

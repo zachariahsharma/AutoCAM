@@ -421,6 +421,7 @@ function Sidebar() {
   const router = useRouter();
   const tab = useCurrentTab();
   const { isCollapsed, toggleSidebar } = useSidebar();
+  const { draftCount } = useDashboardEvents();
 
   useEffect(() => {
     for (const key in itemsRef.current) {
@@ -589,6 +590,54 @@ function Sidebar() {
               className={styles.sidebaricon}
             />
             {!isCollapsed && <span>Queue</span>}
+          </div>
+          <div
+            className={styles.sidebarItem}
+            ref={(el) => {
+              itemsRef.current["upload"] = el;
+            }}
+            onClick={() => {
+              router.push("/dashboard/upload");
+            }}
+            title="Upload"
+          >
+            <Image
+              src="/dashboard/Sidebar/Upload.svg"
+              width={2000}
+              height={2000}
+              alt="Upload icon"
+              className={styles.sidebaricon}
+            />
+            {!isCollapsed && <span>Upload</span>}
+          </div>
+          <div
+            className={styles.sidebarItem}
+            ref={(el) => {
+              itemsRef.current["drafts"] = el;
+            }}
+            onClick={() => {
+              router.push("/dashboard/drafts");
+            }}
+            title="Drafts"
+          >
+            <Image
+              src="/dashboard/Sidebar/Drafts.svg"
+              width={2000}
+              height={2000}
+              alt="Drafts icon"
+              className={styles.sidebaricon}
+            />
+            {!isCollapsed && (
+              <div className={styles.sidebarItemWithBadge}>
+                <span>Drafts</span>
+                {draftCount > 0 && (
+                  <span className={styles.draftBadge}>{draftCount}</span>
+                )}
+              </div>
+            )}
+            {isCollapsed && draftCount > 0 && (
+              <span className={styles.draftBadgeCollapsed}>{draftCount}</span>
+            )}
           </div>
         </div>
         <div>

@@ -1,6 +1,7 @@
 import { and, isNotNull, isNull, relations } from "drizzle-orm";
-import { doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { TeamKeys, Teams } from "./entities";
+import { user } from "./auth";
 
 export const PartCategories = pgTable("part_categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -110,6 +111,30 @@ export const BoxTubeJobs = pgTable("box_tube_jobs", {
   job_id: integer().notNull().primaryKey().references(() => Jobs.id, { onDelete: "cascade" }),
   // No ON DELETE CASCADE here because we need the backend to explicitly delete the jobs entries to avoid orphaning jobs
   box_tube_id: integer().notNull().references(() => BoxTubes.id),
+});
+
+export const DraftType = pgEnum('draft_type', ["part", "box_tube"]);
+
+export const Drafts = pgTable("drafts", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
+  user_id: text().notNull().references(() => user.id, { onDelete: "cascade" }),
+  type: DraftType().notNull(),
+  // Common fields (nullable since draft may be incomplete)
+  name: text(),
+  epic: text(),
+  ticket: text(),
+  quantity: integer(),
+  // Part-specific fields
+  category_id: integer().references(() => PartCategories.id, { onDelete: "set null" }),
+  pending_category: jsonb(), // { material: string, thickness: number }
+  // File info
+  has_file: boolean().notNull().default(false),
+  file_name: text(),
+  file_type: text(),
+  // Metadata
+  created_at: timestamp().notNull().defaultNow(),
+  updated_at: timestamp().notNull().defaultNow(),
 });
 
 export const PartsRelations = relations(Parts, ({ one }) => ({
@@ -227,5 +252,20 @@ export const ToolMaterialsRelations = relations(ToolMaterials, ({ one }) => ({
   material: one(Materials, {
     fields: [ToolMaterials.material_id],
     references: [Materials.id]
+  })
+}))
+
+export const DraftsRelations = relations(Drafts, ({ one }) => ({
+  team: one(Teams, {
+    fields: [Drafts.team_id],
+    references: [Teams.id]
+  }),
+  user: one(user, {
+    fields: [Drafts.user_id],
+    references: [user.id]
+  }),
+  category: one(PartCategories, {
+    fields: [Drafts.category_id],
+    references: [PartCategories.id]
   })
 }))

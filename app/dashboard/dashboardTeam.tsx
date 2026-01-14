@@ -13,6 +13,8 @@ type TabEvents = {
   sessionExpiresAt: string | null;
   teamsRefreshCount: number;
   triggerTeamsRefresh: () => void;
+  draftCount: number;
+  notifyDraftCountChange: () => void;
 };
 
 const Ctx = createContext<TabEvents | null>(null);
@@ -29,6 +31,8 @@ export function DashboardEventsProvider({
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
   const [teamsRefreshCount, setTeamsRefreshCount] = useState(0);
+  const [draftCount, setDraftCount] = useState(0);
+  const [draftCountRefresh, setDraftCountRefresh] = useState(0);
 
   useEffect(() => {
     async function checkEmailVerification() {
@@ -58,6 +62,38 @@ export function DashboardEventsProvider({
     checkEmailVerification();
   }, []);
 
+  // Fetch draft count when team changes or when notified
+  useEffect(() => {
+    if (!team) {
+      setDraftCount(0);
+      return;
+    }
+
+    const teamId = team.id;
+    let mounted = true;
+
+    async function fetchDraftCount() {
+      try {
+        const res = await fetch(`/api/teams/${teamId}/drafts/count`);
+        if (res.ok && mounted) {
+          const data = await res.json();
+          setDraftCount(data.count ?? 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch draft count:", err);
+      }
+    }
+
+    fetchDraftCount();
+
+    // Refresh periodically
+    const interval = setInterval(fetchDraftCount, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [team, draftCountRefresh]);
+
   const value = useMemo(
     () => ({
       team,
@@ -69,8 +105,10 @@ export function DashboardEventsProvider({
       sessionExpiresAt,
       teamsRefreshCount,
       triggerTeamsRefresh: () => setTeamsRefreshCount((c) => c + 1),
+      draftCount,
+      notifyDraftCountChange: () => setDraftCountRefresh((c) => c + 1),
     }),
-    [team, emailVerified, isLoadingAuth, userId, userEmail, sessionExpiresAt, teamsRefreshCount]
+    [team, emailVerified, isLoadingAuth, userId, userEmail, sessionExpiresAt, teamsRefreshCount, draftCount]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

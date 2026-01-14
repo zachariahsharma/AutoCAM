@@ -4,6 +4,7 @@ import {
   PartCategoryAssignments,
   Plates,
   BoxTubes,
+  Drafts,
 } from "@/lib/db/schema/cam";
 import { Teams } from "@/lib/db/schema/entities";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
@@ -98,3 +99,16 @@ export interface PlatesJob {
   payload?: unknown;
   response?: unknown;
 }
+
+export type DraftType = "part" | "box_tube";
+
+export interface PendingCategory {
+  material: string;
+  thickness: number;
+}
+
+export type Draft = Omit<InferSelectModel<typeof Drafts>, "pending_category"> & {
+  pending_category: PendingCategory | null;
+  file?: string;
+  category?: PartCategory;
+};

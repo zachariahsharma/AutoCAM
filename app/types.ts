@@ -95,4 +95,6 @@ export interface PlatesJob {
   kind: PlatesJobKind;
   status: PlatesJobStatus;
   queue_position: number;
+  payload?: unknown;
+  response?: unknown;
 }

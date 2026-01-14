@@ -121,7 +121,6 @@ registry.registerPath({
 
 export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
   team_id ??= await teamIdFromDigest(tx, authType);
-  await checkUserTeam(tx, authType, team_id, true);
 
   const { email } = await parseSchema({
     email: req.nextUrl.searchParams.get("email")
@@ -134,6 +133,17 @@ export const DELETE = routeFactory(async (req, authType, tx, team_id) => {
 
   if (!foundUser) {
     return routeResponse(404, { message: "User not found" });
+  }
+
+  // Check if user is removing themselves (leaving the team)
+  const isRemovingSelf = authType.userId === foundUser.id;
+
+  if (isRemovingSelf) {
+    // User can always leave the team themselves (just need to be a member)
+    await checkUserTeam(tx, authType, team_id, false);
+  } else {
+    // Removing someone else requires admin privileges
+    await checkUserTeam(tx, authType, team_id, true);
   }
 
   await tx

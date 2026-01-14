@@ -1,7 +1,7 @@
 import styles from "./partstoplates.module.css";
 import { useMaterialEvents } from "../materialEvents";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useParams } from "next/navigation";
 import type { PlatesJob } from "@/app/types";
@@ -102,6 +102,10 @@ function PartsToPlatesCard({
     payload?: unknown;
     response?: unknown;
   };
+  type ExcessPart = {
+    part_id: number;
+    quantity: number;
+  };
 
   const {
     partsToPlates,
@@ -158,6 +162,7 @@ function PartsToPlatesCard({
   const [machines, setMachines] = useState<Array<{ id: number; name: string }>>(
     []
   );
+  const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
   const [tools, setTools] = useState<
     Array<{ id: number; machine_ids?: number[]; material_ids?: number[] }>
   >([]);
@@ -182,6 +187,17 @@ function PartsToPlatesCard({
     null
   );
   const [camErrorTitle, setCamErrorTitle] = useState("CAM Error");
+  const [arrangeErrorModalOpen, setArrangeErrorModalOpen] = useState(false);
+  const [arrangeErrorMessage, setArrangeErrorMessage] = useState<string | null>(
+    null
+  );
+  const [arrangeErrorArrangeJobId, setArrangeErrorArrangeJobId] = useState<
+    number | null
+  >(null);
+  const [arrangeErrorPlateId, setArrangeErrorPlateId] = useState<number | null>(
+    null
+  );
+  const [arrangeErrorRetryBusy, setArrangeErrorRetryBusy] = useState(false);
   const [plateDeleteConfirmOpen, setPlateDeleteConfirmOpen] = useState(false);
   const [plateDeleteBusy, setPlateDeleteBusy] = useState(false);
   const [plateDeleteTargetId, setPlateDeleteTargetId] = useState<number | null>(
@@ -190,6 +206,7 @@ function PartsToPlatesCard({
   const [camDownloadMachineName, setCamDownloadMachineName] = useState<
     string | null
   >(null);
+  const handledExcessJobs = useRef<Set<number>>(new Set());
 
   function openCamModal(plateId: number, arrangeJobId: number) {
     setCamModalPlateId(plateId);
@@ -252,6 +269,36 @@ function PartsToPlatesCard({
     return null;
   }
 
+  function getArrangeErrorMessage(job?: PlatesJobWithMeta): string | null {
+    if (!job) return null;
+    const resp = job.response;
+    if (resp === null || resp === undefined) return null;
+    if (typeof resp !== "object") return null;
+    const maybe = resp as { error?: unknown };
+    if (typeof maybe.error === "string") return maybe.error;
+    return null;
+  }
+
+  function getArrangeExcessParts(job?: PlatesJobWithMeta): ExcessPart[] {
+    if (!job) return [];
+    const resp = job.response;
+    if (resp === null || resp === undefined) return [];
+    if (typeof resp !== "object") return [];
+    const maybe = resp as { excess_parts?: unknown };
+    if (!Array.isArray(maybe.excess_parts)) return [];
+    return maybe.excess_parts
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const partId = (item as { part_id?: unknown }).part_id;
+        const quantity = (item as { quantity?: unknown }).quantity;
+        if (typeof partId !== "number") return null;
+        if (typeof quantity !== "number") return null;
+        if (quantity <= 0) return null;
+        return { part_id: partId, quantity };
+      })
+      .filter((item): item is ExcessPart => item !== null);
+  }
+
   function getCamMachineLabel(job?: PlatesJobWithMeta): string | null {
     if (!job) return null;
     const payload = job.payload;
@@ -289,6 +336,26 @@ function PartsToPlatesCard({
     setCamErrorMachineName(null);
   }
 
+  function openArrangeErrorModal(
+    message: string | null,
+    plateId: number | null,
+    arrangeId: number | null
+  ) {
+    if (plateId == null || arrangeId == null) return;
+    setArrangeErrorMessage(message);
+    setArrangeErrorPlateId(plateId);
+    setArrangeErrorArrangeJobId(arrangeId);
+    setArrangeErrorModalOpen(true);
+  }
+
+  function closeArrangeErrorModal() {
+    setArrangeErrorModalOpen(false);
+    setArrangeErrorMessage(null);
+    setArrangeErrorPlateId(null);
+    setArrangeErrorArrangeJobId(null);
+    setArrangeErrorRetryBusy(false);
+  }
+
   function openPlateDeleteConfirm(plateId: number | null) {
     if (plateId == null) return;
     setPlateDeleteTargetId(plateId);
@@ -315,6 +382,98 @@ function PartsToPlatesCard({
       return null;
     }
   }
+
+  const applyExcessParts = useCallback(
+    async (
+      plateId: number,
+      excessParts: ExcessPart[],
+      plateAssignments: { partId: number; quantity: number }[]
+    ) => {
+      if (excessParts.length === 0) return false;
+      if (plateAssignments.length === 0) return false;
+
+      const excessByPart = new Map<number, number>();
+      for (const item of excessParts) {
+        excessByPart.set(
+          item.part_id,
+          (excessByPart.get(item.part_id) ?? 0) + item.quantity
+        );
+      }
+
+      const appliedExcessByPart = new Map<number, number>();
+      setPartsToPlates((prev) => {
+        const next = { ...prev };
+        const currentAssignments = next[plateId] ?? [];
+        const updatedAssignments = currentAssignments
+          .map((part) => {
+            const excessQty = excessByPart.get(part.partId) ?? 0;
+            if (excessQty === 0) return part;
+            const removedQty = Math.min(part.quantity, excessQty);
+            if (removedQty <= 0) return part;
+            appliedExcessByPart.set(
+              part.partId,
+              (appliedExcessByPart.get(part.partId) ?? 0) + removedQty
+            );
+            const quantity = part.quantity - removedQty;
+            if (quantity <= 0) return null;
+            return {
+              ...part,
+              quantity,
+            };
+          })
+          .filter(
+            (
+              part
+            ): part is {
+              partId: number;
+              quantity: number;
+            } => part !== null && part.quantity > 0
+          );
+        next[plateId] = updatedAssignments;
+        return next;
+      });
+
+      setUnassignedParts((prev) => {
+        const next = { ...prev };
+        for (const [partId, quantity] of appliedExcessByPart.entries()) {
+          next[partId] = (next[partId] ?? 0) + quantity;
+        }
+        return next;
+      });
+
+      try {
+        const updates = Array.from(appliedExcessByPart.entries())
+          .map(([partId, quantity]) => {
+            const current = plateAssignments.find((p) => p.partId === partId);
+            if (!current) return null;
+            const newQuantity = Math.max(0, current.quantity - quantity);
+            return fetch(`/api/pc/${categoryId}/assignments`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                plate_id: plateId,
+                part_id: partId,
+                quantity: newQuantity,
+              }),
+            });
+          })
+          .filter((request): request is Promise<Response> => request !== null);
+
+        if (updates.length > 0) {
+          const responses = await Promise.all(updates);
+          const failed = responses.filter((res) => !res.ok);
+          if (failed.length > 0) {
+            console.error("Failed to update assignments for excess parts.");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to update assignments for excess parts:", err);
+      }
+
+      return true;
+    },
+    [categoryId, setPartsToPlates, setUnassignedParts]
+  );
 
   useEffect(() => {
     if (!Number.isFinite(teamDbId)) return;
@@ -355,9 +514,11 @@ function PartsToPlatesCard({
     let mounted = true;
     async function assignedParts() {
       if (!plates || !setPartsToPlates) return;
+      if (!Number.isFinite(categoryId) || categoryId <= 0) return;
       const plateIndex = Number.parseInt(name);
       const currentPlateId = plates[plateIndex]?.id;
       if (!isValidPlateId(currentPlateId)) return;
+      setAssignmentsLoaded(false);
 
       const res = await fetch(`/api/pc/${categoryId}/assignments`);
       if (!res.ok) {
@@ -383,6 +544,7 @@ function PartsToPlatesCard({
         ...prev,
         [currentPlateId]: newAssignments,
       }));
+      setAssignmentsLoaded(true);
       const jobRes = await fetch(`/api/plates/${currentPlateId}/jobs`);
       if (!jobRes.ok) {
         console.error("Failed to fetch plate jobs:", await jobRes.text());
@@ -396,6 +558,45 @@ function PartsToPlatesCard({
       mounted = false;
     };
   }, [categoryId, name, plates, setPartsToPlates]);
+
+  useEffect(() => {
+    if (!assignmentsLoaded) return;
+    if (!isValidPlateId(currentPlateId)) return;
+    const plateAssignments = partsToPlates[currentPlateId] ?? [];
+
+    let cancelled = false;
+
+    const handleExcessParts = async () => {
+      const latestArrange = jobs
+        .filter((job) => job.kind === "arrange")
+        .sort((a, b) => b.id - a.id)[0];
+      if (!latestArrange) return;
+      if (handledExcessJobs.current.has(latestArrange.id)) return;
+      const excessParts = getArrangeExcessParts(
+        latestArrange as PlatesJobWithMeta
+      );
+      if (excessParts.length === 0) return;
+      const applied = await applyExcessParts(
+        currentPlateId,
+        excessParts,
+        plateAssignments
+      );
+      if (!cancelled && applied) {
+        handledExcessJobs.current.add(latestArrange.id);
+      }
+    };
+
+    void handleExcessParts();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    assignmentsLoaded,
+    currentPlateId,
+    jobs,
+    partsToPlates,
+    applyExcessParts,
+  ]);
 
   const shouldPollJobs = jobs.some((job) => job.status !== "completed");
   useEffect(() => {
@@ -634,6 +835,32 @@ function PartsToPlatesCard({
     }
   }
 
+  async function retryArrangeFromError() {
+    if (arrangeErrorPlateId == null || arrangeErrorArrangeJobId == null) return;
+    setArrangeErrorRetryBusy(true);
+    try {
+      await deleteJobs([arrangeErrorArrangeJobId]);
+      const response = await fetch(
+        `/api/plates/${arrangeErrorPlateId}/jobs`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "arrange" }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      await refreshJobs(arrangeErrorPlateId);
+      closeArrangeErrorModal();
+    } catch (err) {
+      console.error("Failed to retry arrange job:", err);
+      setArrangeErrorMessage("Failed to retry arrange job. Please try again.");
+    } finally {
+      setArrangeErrorRetryBusy(false);
+    }
+  }
+
   async function refreshJobs(plateId: number) {
     if (!isValidPlateId(plateId)) {
       setJobs([]);
@@ -690,6 +917,70 @@ function PartsToPlatesCard({
         return machineOk && materialOk;
       })
       .map((t) => t.id);
+  }
+
+  async function syncPlateAssignments(
+    plateId: number,
+    desiredAssignments: { partId: number; quantity: number }[]
+  ) {
+    if (!Number.isFinite(categoryId) || categoryId <= 0) return false;
+    try {
+      const res = await fetch(`/api/pc/${categoryId}/assignments`);
+      if (!res.ok) {
+        console.error(
+          "Failed to fetch assignments before arrange:",
+          await res.text()
+        );
+        return false;
+      }
+      const assignments: Array<{
+        part_id: number;
+        plate_id: number;
+        quantity: number;
+      }> = await res.json();
+      const currentAssignments = assignments.filter(
+        (assignment) => assignment.plate_id === plateId
+      );
+
+      const desiredMap = new Map<number, number>();
+      for (const assignment of desiredAssignments) {
+        if (assignment.quantity <= 0) continue;
+        desiredMap.set(
+          assignment.partId,
+          (desiredMap.get(assignment.partId) ?? 0) + assignment.quantity
+        );
+      }
+
+      const currentMap = new Map<number, number>();
+      for (const assignment of currentAssignments) {
+        currentMap.set(assignment.part_id, assignment.quantity);
+      }
+
+      const partIds = new Set([...desiredMap.keys(), ...currentMap.keys()]);
+      const updates = Array.from(partIds).map((partId) =>
+        fetch(`/api/pc/${categoryId}/assignments`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            plate_id: plateId,
+            part_id: partId,
+            quantity: desiredMap.get(partId) ?? 0,
+          }),
+        })
+      );
+
+      if (updates.length === 0) return true;
+      const responses = await Promise.all(updates);
+      const failed = responses.filter((res) => !res.ok);
+      if (failed.length > 0) {
+        console.error("Failed to sync assignments before arrange.");
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("Failed to sync assignments before arrange:", err);
+      return false;
+    }
   }
 
   async function onDeleteRun(run: PlateJobRun) {
@@ -982,6 +1273,11 @@ function PartsToPlatesCard({
                 setPartsToPlates(newPartsToPlates);
               } else {
                 realPlateId = localPlate.id;
+                const synced = await syncPlateAssignments(
+                  realPlateId,
+                  plateAssignments
+                );
+                if (!synced) return;
               }
 
               const response = await fetch(`/api/plates/${realPlateId}/jobs`, {
@@ -1029,19 +1325,29 @@ function PartsToPlatesCard({
         {buildPlateJobRuns(jobs).map((run, index) => {
           const arrange = run.arrange;
           const cam = run.cam;
+          console.log("Rendering job run:", run);
           const arrangeQueued = arrange.status === "pending";
           const arrangeInProgress = arrange.status === "in progress";
           const arrangeCompleted = arrange.status === "completed";
           const camQueued = cam?.status === "pending";
           const camInProgress = cam?.status === "in progress";
           const camCompleted = cam?.status === "completed";
+          const arrangeErrorText = arrangeCompleted
+            ? getArrangeErrorMessage(arrange as PlatesJobWithMeta)
+            : null;
+          const arrangeExcessParts = arrangeCompleted
+            ? getArrangeExcessParts(arrange as PlatesJobWithMeta)
+            : [];
+          const arrangeHasError =
+            (arrangeCompleted && arrangeExcessParts.length > 0) || (arrangeCompleted && Boolean(arrangeErrorText));
           const camErrorText =
             camCompleted && cam ? getJobError(cam as PlatesJobWithMeta) : null;
           const camHasError = camCompleted && Boolean(camErrorText);
           const camMachineLabel = getCamMachineLabel(cam as PlatesJobWithMeta);
 
-          const readyForCam = arrangeCompleted && !cam;
+          const readyForCam = arrangeCompleted && !arrangeHasError && !cam;
           const readyForCamDownload = camCompleted && !camHasError;
+          const arrangeClickable = readyForCam || arrangeHasError;
 
           const queueTitle = (position: number) =>
             position > 0 ? `Queue position: ${position}` : undefined;
@@ -1057,7 +1363,7 @@ function PartsToPlatesCard({
                     arrangeQueued && styles.tooltipTarget,
                     arrangeQueued && styles.stageQueued,
                     arrangeQueued && styles.noBorder,
-                    arrangeCompleted && styles.stageComplete
+                    arrangeCompleted && !arrangeHasError && styles.stageComplete
                   )}
                   data-tooltip={
                     arrangeQueued
@@ -1071,7 +1377,7 @@ function PartsToPlatesCard({
                 <span
                   className={classNames(
                     styles.statusDot,
-                    arrangeCompleted && styles.dotComplete
+                    arrangeCompleted && !arrangeHasError && styles.dotComplete
                   )}
                 />
                 <span
@@ -1080,21 +1386,39 @@ function PartsToPlatesCard({
                     styles.largetext,
                     arrangeInProgress && styles.stageQueued,
                     arrangeInProgress && styles.noBorder,
-                    arrangeCompleted && styles.stageComplete,
+                    arrangeCompleted && !arrangeHasError && styles.stageComplete,
+                    arrangeHasError && styles.stageError,
                     readyForCam && styles.stageAction,
-                    readyForCam && styles.clickable
+                    arrangeClickable && styles.clickable
                   )}
-                  role={readyForCam ? "button" : undefined}
-                  tabIndex={readyForCam ? 0 : undefined}
+                  role={arrangeClickable ? "button" : undefined}
+                  tabIndex={arrangeClickable ? 0 : undefined}
                   onClick={() => {
+                    if (arrangeHasError) {
+                      openArrangeErrorModal(
+                        arrangeErrorText,
+                        currentPlateId ?? null,
+                        arrange.id
+                      );
+                      return;
+                    }
                     if (!readyForCam) return;
                     if (currentPlateId == null) return;
                     openCamModal(currentPlateId, arrange.id);
                   }}
                   onKeyDown={(e) => {
-                    if (!readyForCam) return;
+                    if (!arrangeClickable) return;
                     if (e.key !== "Enter" && e.key !== " ") return;
                     e.preventDefault();
+                    if (arrangeHasError) {
+                      openArrangeErrorModal(
+                        arrangeErrorText,
+                        currentPlateId ?? null,
+                        arrange.id
+                      );
+                      return;
+                    }
+                    if (!readyForCam) return;
                     if (currentPlateId == null) return;
                     openCamModal(currentPlateId, arrange.id);
                   }}
@@ -1105,7 +1429,7 @@ function PartsToPlatesCard({
                 <span
                   className={classNames(
                     styles.statusDot,
-                    arrangeCompleted && styles.dotComplete
+                    arrangeCompleted && !arrangeHasError && styles.dotComplete
                   )}
                 />
                 <span
@@ -1566,6 +1890,72 @@ function PartsToPlatesCard({
                   disabled={camDeleteBusy}
                 >
                   {camDeleteBusy ? "Deleting…" : "Delete CAM Job"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {arrangeErrorModalOpen && (
+          <motion.div
+            className={styles.camModalOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeArrangeErrorModal}
+          >
+            <motion.div
+              className={styles.camModal}
+              initial={{ opacity: 0, scale: 0.98, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 12 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.camModalHeader}>
+                <span>Too Many Parts</span>
+                <button
+                  type="button"
+                  className={styles.camModalClose}
+                  onClick={closeArrangeErrorModal}
+                >
+                  <Image
+                    src="/settings/teams/X.svg"
+                    alt="Close"
+                    width={16}
+                    height={16}
+                    style={{ filter: "invert(1)" }}
+                  />
+                </button>
+              </div>
+              <div className={styles.camModalBody}>
+                <div className={styles.camModalPlaceholder}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                    Some parts did not fit on this plate.
+                  </div>
+                  <div style={{ color: "var(--muted)" }}>
+                    {arrangeErrorMessage ??
+                      "They were moved to Unassigned. Adjust the plate and retry."}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.camModalFooter}>
+                <button
+                  type="button"
+                  className={styles.camModalCancel}
+                  onClick={closeArrangeErrorModal}
+                  disabled={arrangeErrorRetryBusy}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className={styles.camModalConfirm}
+                  onClick={retryArrangeFromError}
+                  disabled={arrangeErrorRetryBusy}
+                >
+                  {arrangeErrorRetryBusy ? "Retrying…" : "Retry Arrange"}
                 </button>
               </div>
             </motion.div>

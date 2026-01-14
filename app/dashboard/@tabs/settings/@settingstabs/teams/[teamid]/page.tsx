@@ -193,13 +193,10 @@ export default function TeamSettingsPage() {
     if (!currentUserEmail) return;
     setIsLeaving(true);
     try {
-      const response = await fetch(`/api/teams/${teamDbId}/members`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: currentUserEmail }),
-      });
+      const response = await fetch(
+        `/api/teams/${teamDbId}/members?email=${encodeURIComponent(currentUserEmail)}`,
+        { method: "DELETE" }
+      );
       if (response.ok) {
         notifyUpdate();
         router.push("/dashboard/settings/personal");
@@ -260,11 +257,10 @@ export default function TeamSettingsPage() {
       }
 
       // Now leave the team
-      const leaveResponse = await fetch(`/api/teams/${teamDbId}/members`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: currentUserEmail }),
-      });
+      const leaveResponse = await fetch(
+        `/api/teams/${teamDbId}/members?email=${encodeURIComponent(currentUserEmail)}`,
+        { method: "DELETE" }
+      );
       if (leaveResponse.ok) {
         notifyUpdate();
         router.push("/dashboard/settings/personal");

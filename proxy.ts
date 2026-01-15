@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "./lib/api/common";
 
 export async function proxy(request: NextRequest) {
-  const userId = await getUserId();
+  const userId = await getUserId(request);
   if (["/login", "/signup"].some(p => request.nextUrl.pathname.startsWith(p))) {
     if (userId)
       return NextResponse.redirect(new URL("/dashboard", process.env.BASE_URL));

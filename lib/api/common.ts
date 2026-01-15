@@ -99,31 +99,19 @@ export function registerTeamEndpoint(scopes: string[], config: RouteConfig, user
 /**
  * Get authenticated user ID only (for operations that require email verification)
  */
-export async function getUserId(): Promise<string | undefined> {
-  const session = await auth.api.getSession({ headers: await headers() });
+export async function getUserId(req: NextRequest): Promise<string | undefined> {
+  const session = await auth.api.getSession({ headers: req.headers });
   return session?.user.id;
 }
 
 /**
  * Get authentication context with both userId and keyDigest
  */
-export async function getAuthType(): Promise<AuthType> {
+export async function getAuthType(req: NextRequest): Promise<AuthType> {
   return {
-    userId: await getUserId(),
-    keyDigest: await getKeyDigest()
+    userId: await getUserId(req),
+    keyDigest: await getKeyDigest(req)
   };
-}
-
-export async function validateAuthType(authType: AuthType, emailVerifiedNeeded = false) {
-  if (!(authType.userId || authType.keyDigest))
-    throw routeResponse(401, { message: "No valid authorization found" });
-  if (emailVerifiedNeeded && authType.userId) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session)
-      throw routeResponse(401, { message: "User session not found" });
-    if (!session.user.emailVerified)
-      throw routeResponse(403, { message: "User email has not been verified" });
-  }
 }
 
 /**
@@ -215,14 +203,14 @@ export type RouteFactoryCallback<T> = (req: NextRequest, authType: AuthType, tx:
 export function routeFactory<T = number>(callback: RouteFactoryCallback<T>, config: RouteFactoryConfig<T>) {
   return async (req: NextRequest, { params }: { params: Promise<object | undefined> }) => {
     try {
-      const authType = await getAuthType();
+      const authType = await getAuthType(req);
       let id: T | null = null;
       const p = await params;
       const hasId = p !== undefined && "id" in p;
       if (authType.userId) {
         if (!config.user)
           throw routeResponse(403, { message: "Users are not allowed to use this route" });
-        const session = (await auth.api.getSession({ headers: await headers() }))!;
+        const session = (await auth.api.getSession({ headers: req.headers }))!;
         if ((config.user.emailVerified ?? false) && !session.user.emailVerified)
           throw routeResponse(403, { message: "User email has not been verified" });
         if (config.user.idPolicy === IDPolicy.Forbidden && hasId)

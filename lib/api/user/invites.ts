@@ -11,7 +11,7 @@ import { routeFactory, routeResponse, parseSchema } from "../common";
 const Invite = createSelectSchema(TeamInvites).extend({ team: zod.string() });
 
 export const GET = routeFactory(async (req, authType, tx) => {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return routeResponse(401);
   return routeResponse(200, await parseSchema((await tx.query.TeamInvites.findMany({
     with: { team: true },
@@ -21,7 +21,7 @@ export const GET = routeFactory(async (req, authType, tx) => {
 
 export const Accept = routeFactory<string>(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return routeResponse(401, { message: "User session not found" });
   
   const invite = await tx.query.TeamInvites.findFirst({
@@ -47,7 +47,7 @@ export const DELETE = routeFactory<string>(async (req, authType, tx, id) => {
   const invite = await tx.query.TeamInvites.findFirst({
     where: eq(TeamInvites.id, id)
   });
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return routeResponse(401, { message: "User session not found" });
 
   if (invite?.email !== session.user.email)

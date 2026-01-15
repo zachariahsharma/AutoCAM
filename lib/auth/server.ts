@@ -1,23 +1,26 @@
 import { betterAuth } from "better-auth";
-import db, { Transaction } from "../db";
+import db, { Transaction } from "@/lib/db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from '../db/schema/auth';
 import transporter from "../mailer";
-import { headers } from "next/headers";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "../db/schema/entities";
 import { openAPI } from "better-auth/plugins";
 import { routeResponse } from "../api/common";
+import { NextRequest } from "next/server";
+import { PgliteDatabase } from "drizzle-orm/pglite";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: { ...schema }
+    provider: db instanceof PgliteDatabase ? "sqlite" : "pg",
+    schema
   }),
   emailAndPassword: { enabled: true },
   emailVerification: {
     async sendVerificationEmail({ user, url }) {
+      // Skip if the user is used by test cases
+      if (user.email === "test@test.test") return;
       await transporter.sendMail({
         from: `"AutoCAM" <${process.env.SMTP_SENDER}>`,
         to: user.email,
@@ -36,8 +39,8 @@ export const auth = betterAuth({
   plugins: [openAPI()],
 })
 
-export async function getKeyDigest() {
-  const authHeader = (await headers()).get("authorization");
+export async function getKeyDigest(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
   if (!authHeader) return;
   const token = authHeader.split("Bearer ")[1];
   return crypto.createHmac("sha256", "key").update(token).digest("hex");

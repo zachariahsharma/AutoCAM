@@ -1,4 +1,4 @@
-import "./teams";
+import teams from "./teams";
 import "./machines";
 import "./materials";
 import "./parts";
@@ -9,3 +9,8 @@ import "./user";
 import "./auth";
 import "./tools";
 import "./jobs";
+import { router } from "./trpc";
+
+export default router({
+  teams
+});

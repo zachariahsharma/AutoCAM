@@ -14,6 +14,7 @@ import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { protectedProcedure, publicProcedure, router } from "../trpc";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });
 const UpdateSchema = zod.object({
@@ -216,3 +217,9 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   tx.delete(Teams).where(eq(Teams.id, id));
   await s3DeleteWithPrefix(`teams/${id}/`);
 }, { user: { emailVerified: true } });
+
+export default router({
+  get: protectedProcedure.query(async opts => {
+    return "Hello World";
+  })
+});

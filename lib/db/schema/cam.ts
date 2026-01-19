@@ -111,7 +111,7 @@ export const PlateJobs = pgTable("plate_jobs", {
 export const BoxTubeJobs = pgTable("box_tube_jobs", {
   job_id: integer().notNull().primaryKey().references(() => Jobs.id, { onDelete: "cascade" }),
   // No ON DELETE CASCADE here because we need the backend to explicitly delete the jobs entries to avoid orphaning jobs
-  box_tube_id: integer().notNull().references(() => BoxTubes.id),
+  box_tube_id: integer().notNull().references(() => BoxTubes.id, { onDelete: "cascade" }),
 });
 
 export const DraftType = pgEnum('draft_type', ["part", "box_tube"]);

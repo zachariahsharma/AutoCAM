@@ -6,16 +6,18 @@ import { classNames } from "./components/helpers";
 export function PartsToPlates({
   categoryId,
   platesLoading = false,
+  sectionId,
 }: {
   categoryId: number;
   platesLoading?: boolean;
+  sectionId?: string;
 }) {
   const { plates } = useMaterialEvents();
   const showSkeleton = platesLoading && plates.length === 0;
   const skeletonCards = Array.from({ length: 2 });
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} id={sectionId}>
       <div className={styles.cardsContainer}>
         {showSkeleton
           ? skeletonCards.map((_, index) => (

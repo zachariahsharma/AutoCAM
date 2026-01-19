@@ -435,15 +435,17 @@
 }
 
 .camModalMaterialOverrideButton {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: var(--yellow-1);
   font-family: var(--font-roboto);
-  font-size: 12px;
-  letter-spacing: 0.5px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  padding: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
   cursor: pointer;
+  min-width: 0;
 }
 
 .camModalMaterialOverrideButton:disabled {

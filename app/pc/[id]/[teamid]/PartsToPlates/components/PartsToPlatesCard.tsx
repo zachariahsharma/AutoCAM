@@ -325,6 +325,26 @@ export function PartsToPlatesCard({
       .filter((item): item is ExcessPart => item !== null);
   }
 
+  function getArrangeOversizedParts(job?: PlatesJobWithMeta): ExcessPart[] {
+    if (!job) return [];
+    const resp = job.response;
+    if (resp === null || resp === undefined) return [];
+    if (typeof resp !== "object") return [];
+    const maybe = resp as { oversized_parts?: unknown };
+    if (!Array.isArray(maybe.oversized_parts)) return [];
+    return maybe.oversized_parts
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const partId = (item as { part_id?: unknown }).part_id;
+        const quantity = (item as { quantity?: unknown }).quantity;
+        if (typeof partId !== "number") return null;
+        if (typeof quantity !== "number") return null;
+        if (quantity <= 0) return null;
+        return { part_id: partId, quantity };
+      })
+      .filter((item): item is ExcessPart => item !== null);
+  }
+
   function getCamMachineLabel(job?: PlatesJobWithMeta): string | null {
     if (!job) return null;
     const payload = job.payload;
@@ -416,7 +436,6 @@ export function PartsToPlatesCard({
       plateAssignments: { partId: number; quantity: number }[]
     ) => {
       if (excessParts.length === 0) return false;
-      if (plateAssignments.length === 0) return false;
 
       const excessByPart = new Map<number, number>();
       for (const item of excessParts) {
@@ -426,60 +445,55 @@ export function PartsToPlatesCard({
         );
       }
 
-      const appliedExcessByPart = new Map<number, number>();
-      setPartsToPlates((prev) => {
-        const currentAssignments = prev[plateId] ?? [];
-        const removedByPart = new Map<number, number>();
-        const updatedAssignments = currentAssignments
-          .map((part) => {
-            const totalExcess = excessByPart.get(part.partId) ?? 0;
-            if (totalExcess === 0) return part;
-            const alreadyRemoved = removedByPart.get(part.partId) ?? 0;
-            const remainingToRemove = Math.max(
-              0,
-              totalExcess - alreadyRemoved
-            );
-            if (remainingToRemove === 0) return part;
-            const removedQty = Math.min(part.quantity, remainingToRemove);
-            if (removedQty <= 0) return part;
-            removedByPart.set(
-              part.partId,
-              (removedByPart.get(part.partId) ?? 0) + removedQty
-            );
-            const quantity = part.quantity - removedQty;
-            if (quantity <= 0) return null;
-            return {
-              ...part,
-              quantity,
-            };
-          })
-          .filter(
-            (
-              part
-            ): part is {
-              partId: number;
-              quantity: number;
-            } => part !== null && part.quantity > 0
+      if (plateAssignments.length === 0) {
+        return false;
+      }
+
+      const removedByPart = new Map<number, number>();
+      const updatedAssignments = plateAssignments
+        .map((part) => {
+          const totalExcess = excessByPart.get(part.partId) ?? 0;
+          if (totalExcess === 0) return part;
+          const alreadyRemoved = removedByPart.get(part.partId) ?? 0;
+          const remainingToRemove = Math.max(0, totalExcess - alreadyRemoved);
+          if (remainingToRemove === 0) return part;
+          const removedQty = Math.min(part.quantity, remainingToRemove);
+          if (removedQty <= 0) return part;
+          removedByPart.set(
+            part.partId,
+            (removedByPart.get(part.partId) ?? 0) + removedQty
           );
-        if (removedByPart.size === 0) {
-          return prev;
-        }
-        appliedExcessByPart.clear();
-        for (const [partId, quantity] of removedByPart.entries()) {
-          appliedExcessByPart.set(partId, quantity);
-        }
-        return {
-          ...prev,
-          [plateId]: updatedAssignments,
-        };
-      });
+          const quantity = part.quantity - removedQty;
+          if (quantity <= 0) return null;
+          return {
+            ...part,
+            quantity,
+          };
+        })
+        .filter(
+          (
+            part
+          ): part is {
+            partId: number;
+            quantity: number;
+          } => part !== null && part.quantity > 0
+        );
 
-      if (appliedExcessByPart.size === 0) return false;
+      if (removedByPart.size === 0) {
+        return false;
+      }
 
+      setPartsToPlates((prev) => ({
+        ...prev,
+        [plateId]: updatedAssignments,
+      }));
+
+      const appliedExcessByPart = removedByPart;
       setUnassignedParts((prev) => {
         const next = { ...prev };
         for (const [partId, quantity] of appliedExcessByPart.entries()) {
-          next[partId] = (next[partId] ?? 0) + quantity;
+          const before = next[partId] ?? 0;
+          next[partId] = before + quantity;
         }
         return next;
       });
@@ -612,8 +626,6 @@ export function PartsToPlatesCard({
     if (!isValidPlateId(currentPlateId)) return;
     const plateAssignments = partsToPlates[currentPlateId] ?? [];
 
-    let cancelled = false;
-
     const handleExcessParts = async () => {
       const latestArrange = jobs
         .filter((job) => job.kind === "arrange")
@@ -624,29 +636,27 @@ export function PartsToPlatesCard({
       const excessParts = getArrangeExcessParts(
         latestArrange as PlatesJobWithMeta
       );
-      if (excessParts.length === 0) return;
+      const oversizedParts = getArrangeOversizedParts(
+        latestArrange as PlatesJobWithMeta
+      );
+      // Combine excess and oversized parts - both need to move back to unassigned
+      const allPartsToMove = [...excessParts, ...oversizedParts];
+      if (allPartsToMove.length === 0) return;
       handledExcessJobs.current.add(jobId);
-      let handled = false;
       try {
-        const applied = await applyExcessParts(
+        await applyExcessParts(
           currentPlateId,
-          excessParts,
+          allPartsToMove,
           plateAssignments
         );
-        handled = !cancelled && applied;
       } catch (err) {
-        console.error("Failed to apply excess parts for plate:", err);
-      } finally {
-        if (!handled) {
-          handledExcessJobs.current.delete(jobId);
-        }
+        console.error("Failed to apply excess/oversized parts for plate:", err);
+        handledExcessJobs.current.delete(jobId);
       }
     };
 
     void handleExcessParts();
-    return () => {
-      cancelled = true;
-    };
+    return () => {};
   }, [
     assignmentsLoaded,
     currentPlateId,
@@ -1439,21 +1449,43 @@ export function PartsToPlatesCard({
     quantity: number;
     from?: number;
   }) {
-    if (!partsToPlates || !setPartsToPlates) return;
+    if (!partsToPlates || !setPartsToPlates) {
+      console.warn("onReceive: partsToPlates or setPartsToPlates is not available");
+      return;
+    }
     const plateIndex = Number.parseInt(name);
-    const currentPlateId = plates[plateIndex]?.id;
-    if (currentPlateId == null) return;
+    const plate = plates[plateIndex];
+    const currentPlateId = plate?.id;
+    if (currentPlateId == null) {
+      console.warn("onReceive: plate or plate.id is null/undefined", { plateIndex, plate, platesLength: plates.length });
+      return;
+    }
     if (data.from != null && data.from === currentPlateId) return;
 
     if (data.from == null) {
+      console.log("onReceive: Moving from unassigned to plate", {
+        partId: data.partId,
+        quantity: data.quantity,
+        targetPlateId: currentPlateId
+      });
       setUnassignedParts((prev) => {
         const currentQuantity = prev[data.partId] || 0;
         const newQuantity = Math.max(0, currentQuantity - data.quantity);
+        console.log("onReceive: Reducing unassigned", {
+          partId: data.partId,
+          before: currentQuantity,
+          after: newQuantity
+        });
         return { ...prev, [data.partId]: newQuantity };
       });
     }
 
     setPartsToPlates((prev) => {
+      console.log("onReceive: Adding to plate", {
+        targetPlateId: currentPlateId,
+        partId: data.partId,
+        existingAssignments: prev[currentPlateId]
+      });
       const next = { ...prev };
 
       if (data.from != null) {
@@ -1509,6 +1541,7 @@ export function PartsToPlatesCard({
         onOpenCamDownload={openCamDownloadModal}
         getArrangeErrorMessage={getArrangeErrorMessage}
         getArrangeExcessParts={getArrangeExcessParts}
+        getArrangeOversizedParts={getArrangeOversizedParts}
         getJobError={getJobError}
         getCamMachineLabel={getCamMachineLabel}
       />

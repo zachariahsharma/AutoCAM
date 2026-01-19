@@ -1,16 +1,19 @@
 .container {
-    background-color:rgba(255,255,255,.16);
-    border: 1px solid rgba(255,255,255,.65);
+    background: linear-gradient(180deg, #0c0b0a 0%, #0f0e0c 100%);
+    border: 1px solid #23211f;
     padding: 10px 20px;
-    border-radius: 7px;
-    position: relative;
+    border-radius: 14px;
+    /* position: relative; */
     scroll-behavior: auto;
     width: calc(50% - 5px);
+    box-shadow: 0 24px 40px -34px rgba(0, 0, 0, 0.8);
+    animation: panelRise 0.45s ease both;
 }
 
 .cardWrapper {
-  background-color: #191919;
-  border: 1px solid #D9D9D9;
+  background-color: #14120f;
+  border: 1px solid #2b2621;
+  border-radius: 10px;
 }
 
 .cardsContainer {
@@ -35,15 +38,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 1px #FFFFFF solid;
+  border: 1px solid #2b2621;
   padding: 5px 10px;
-  border-radius: 7px;
-  background-color: #242424;
+  border-radius: 10px;
+  background-color: #14120f;
   font-family: var(--font-roboto);
   font-size: 14px;
   font-weight: 400;
   transition: background-color .2s;
-  color: white;
+  color: #e6edf3;
 }
 .arrangeButton:disabled {
   opacity: 0.6;
@@ -95,12 +98,12 @@
 .emptyPlatePlaceholder {
   margin: 12px 10px 0;
   padding: 16px 12px;
-  border: 1.5px dashed #4a4a4a;
-  border-radius: 8px;
-  color: #7f7f7f;
+  border: 1.5px dashed rgba(205, 180, 37, 0.25);
+  border-radius: 10px;
+  color: rgba(205, 195, 175, 0.7);
   text-align: center;
   font-size: 13px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(0, 0, 0, 0.2);
 }
 @media screen and (max-width: 994px) {
     .container {
@@ -108,9 +111,9 @@
     }
 }
 .card {
-  color:#979797;
-  background-color: #191919;
-  border-radius: 2px;
+  color:#cfc8bd;
+  background-color: #14120f;
+  border-radius: 10px;
   font-family: var(--font-roboto);
   font-size: 15px;
   font-weight: 500;
@@ -128,19 +131,19 @@
   padding: 6px 10px 4px;
   font-family: var(--font-roboto);
   font-size: 12px;
-  color: #c9d1d9;
+  color: #cfc8bd;
 }
 
 .plateMetaLabel {
-  color: #9aa1a9;
+  color: rgba(205, 195, 175, 0.7);
   letter-spacing: 0.3px;
 }
 
 .plateMetaInput {
   width: 80px;
   padding: 4px 6px;
-  background: #0b0f14;
-  border: 1px solid #222b35;
+  background: #0b0a09;
+  border: 1px solid #2b2621;
   border-radius: 6px;
   color: white;
   font-family: var(--font-roboto);
@@ -149,7 +152,7 @@
 
 .plateMetaStatus {
   font-size: 11px;
-  color: #9aa1a9;
+  color: rgba(205, 195, 175, 0.7);
 }
 
 .plateMetaStatusSaved {
@@ -184,9 +187,9 @@
   align-items: center;
   flex-direction: row;
   height: 40px;
-  background-color: #191919;
-  border-bottom: 1px solid #676767;
-  color:white;
+  background-color: #171513;
+  border-bottom: 1px solid #3a3228;
+  color:#f0ede7;
   padding: 0px 10px;
   font-family: var(--font-roboto);
   font-size: 15px;
@@ -206,8 +209,8 @@
   right: 40px;
   height: 22px;
   width: 22px;
-  background-color: #D9D9D9;
-  color:#191919;
+  background-color: #e8dfcc;
+  color:#1a1612;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -218,12 +221,12 @@
 .cardBody {
   display: flex;
   flex-direction: column;
-  background-color: #191919;
+  background-color: #171513;
   border-top: 0px;
 }
 .cardBody > div { 
   height: 40px;
-  color:white;
+  color:#f0ede7;
   display: flex;
   align-items: center;
   font-family: var(--font-roboto);
@@ -231,16 +234,16 @@
   font-weight: 300;
   letter-spacing: 1px;
   padding-left: 30px;
-  box-shadow: 0px 1px 0px #676767;
+  box-shadow: 0px 1px 0px #3a3228;
 }
 .cardBodyQuantity {
   position: absolute;
   right: 10px;
   height: 22px;
   width: 22px;
-  background-color: #191919;
-  border: 1px solid #D9D9D9;
-  color:#D9D9D9;
+  background-color: #171513;
+  border: 1px solid #3a3228;
+  color:#e8dfcc;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -254,7 +257,7 @@
   
 }
 .jobCard {
-  box-shadow: 0px -1px 0px #D9D9D9;
+  box-shadow: 0px -1px 0px #3a3228;
   height: 50px;
   display: flex;
   align-items: center;
@@ -282,8 +285,8 @@
 .skeletonBlock {
   position: relative;
   overflow: hidden;
-  background: #1f1f1f;
-  border: 1px solid #2b2b2b;
+  background: #1b1916;
+  border: 1px solid #2b2621;
   border-radius: 10px;
 }
 .skeletonBlock::after {
@@ -334,15 +337,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: black;
+  background-color: #0b0a09;
   font-family: var(--font-roboto);
-  border: 1px dashed #B3B3B3;
+  border: 1px dashed #4a4136;
   position: relative;
 }
 .statusDot {
   width: 30px;
   height: 100%;
-  border: 1px dashed #B3B3B3;
+  border: 1px dashed #4a4136;
 }
 .queued {
   font-size: 12px;
@@ -356,18 +359,18 @@
   height: 15px;
   cursor: pointer;
   transition: all .2s;
-  background-color: #292929;
+  background-color: #1b1916;
 }
 .trashContainer {
   padding: 5px;
   position: absolute;
-  right: 30px;
+  right: 60px;
   display: flex;
   align-items: center;
   justify-content:center;
-  background-color: #242424;
+  background-color: #1b1916;
   border-radius: 5px;
-  border: 1px solid white;
+  border: 1px solid rgba(205, 180, 37, 0.35);
 }
 .trashButton {
   border: 0;
@@ -389,7 +392,7 @@
   padding: 8px 12px;
   margin: 10px 15px 0px 15px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 200, 120, 0.25);
   background: rgba(255, 0, 0, 0.08);
   color: rgba(255, 255, 255, 0.9);
   font-family: var(--font-roboto);
@@ -564,7 +567,7 @@
 .camModal {
   width: max-content;
   overflow: visible;
-  background: #0f141a;
+  background: #0f0d0b;
   border: 1px solid var(--bs-border-color);
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -607,8 +610,8 @@
 }
 
 .camModalScreenshot {
-  background: #0b0f14;
-  border: 1px solid #222b35;
+  background: #0b0a09;
+  border: 1px solid #2b2621;
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -627,14 +630,14 @@
 
 .camModalPlaceholder {
   padding: 18px;
-  color: #9aa1a9;
+  color: rgba(205, 195, 175, 0.7);
   font-family: var(--font-roboto);
   font-size: 14px;
 }
 
 .camModalMetaCard {
-  background: #0b0f14;
-  border: 1px solid #222b35;
+  background: #0b0a09;
+  border: 1px solid #2b2621;
   border-radius: 10px;
   padding: 10px 12px;
   display: flex;
@@ -649,11 +652,11 @@
   gap: 10px;
   font-family: var(--font-roboto);
   font-size: 13px;
-  color: #e2e7ed;
+  color: #f0ede7;
 }
 
 .camModalMetaLabel {
-  color: #9aa1a9;
+  color: rgba(205, 195, 175, 0.7);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -674,8 +677,8 @@
 .camModalDepthInput {
   width: 90px;
   padding: 6px 8px;
-  background: #0f141a;
-  border: 1px solid #2a3542;
+  background: #0f0d0b;
+  border: 1px solid #2b2621;
   border-radius: 8px;
   color: white;
   font-family: var(--font-roboto);
@@ -684,7 +687,7 @@
 
 .camModalDepthStatus {
   font-size: 12px;
-  color: #9aa1a9;
+  color: rgba(205, 195, 175, 0.7);
 }
 
 .camModalDepthStatusSaved {
@@ -717,8 +720,8 @@
 }
 
 .camModalToolGroup {
-  background: #0b0f14;
-  border: 1px solid #222b35;
+  background: #0b0a09;
+  border: 1px solid #2b2621;
   border-radius: 10px;
   padding: 10px;
   display: flex;
@@ -738,13 +741,13 @@
   flex-direction: column;
   gap: 2px;
   font-family: var(--font-roboto);
-  color: #e2e7ed;
+  color: #f0ede7;
   font-size: 14px;
 }
 
 .camModalToolGroupCount {
   font-size: 12px;
-  color: #9aa1a9;
+  color: rgba(205, 195, 175, 0.7);
 }
 
 .camModalToolGroupToggle {
@@ -753,7 +756,7 @@
   gap: 6px;
   font-family: var(--font-roboto);
   font-size: 12px;
-  color: #c1c7cf;
+  color: #cfc8bd;
   cursor: pointer;
   user-select: none;
 }
@@ -780,7 +783,7 @@
 }
 
 .camModalToolMeta {
-  color: #9aa1a9;
+  color: rgba(205, 195, 175, 0.7);
   font-size: 12px;
 }
 
@@ -807,8 +810,8 @@
 .machineOption {
   text-align: left;
   padding: 10px 12px;
-  background-color: #0b0f14;
-  border: 1px solid #222b35;
+  background-color: #0b0a09;
+  border: 1px solid #2b2621;
   border-radius: 10px;
   color: white;
   font-family: var(--font-roboto);
@@ -820,8 +823,8 @@
 }
 
 .machineOption:hover:enabled {
-  background-color: #111923;
-  border-color: #3b4754;
+  background-color: #171412;
+  border-color: #3a3228;
 }
 
 .machineOption:active:enabled {
@@ -840,7 +843,7 @@
 }
 
 .camModalLabel {
-  color: #a1a1a1;
+  color: rgba(205, 195, 175, 0.7);
   font-family: var(--font-roboto);
   font-size: 13px;
   font-weight: 500;
@@ -848,8 +851,8 @@
 
 .camModalSelect {
   padding: 10px 12px;
-  background-color: #0b0f14;
-  border: 1px solid #222b35;
+  background-color: #0b0a09;
+  border: 1px solid #2b2621;
   border-radius: 8px;
   color: white;
   font-family: var(--font-roboto);
@@ -858,7 +861,7 @@
 
 .camModalSelect:focus {
   outline: none;
-  border-color: #3b4754;
+  border-color: #3a3228;
 }
 
 .camModalError {
@@ -872,7 +875,7 @@
 .camModalFooter {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
   padding: 12px 16px;
   border-top: 1px solid var(--bs-border-color);
@@ -882,7 +885,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  color: #9aa1a9;
+  color: rgba(205, 195, 175, 0.7);
   font-family: var(--font-roboto);
   font-size: 13px;
 }
@@ -896,9 +899,9 @@
 .camModalCancel {
   padding: 10px 14px;
   background: none;
-  border: 1px solid #3b4754;
+  border: 1px solid #3a3228;
   border-radius: 8px;
-  color: #c9d1d9;
+  color: #cfc8bd;
   font-family: var(--font-roboto);
   font-size: 14px;
 }
@@ -924,5 +927,14 @@
 @media screen and (min-width: 1050px) {
   .camModalBody {
     grid-template-columns: auto minmax(280px, 340px);
+  }
+}
+
+@keyframes panelRise {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

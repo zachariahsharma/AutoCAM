@@ -249,7 +249,7 @@ export default function MaterialThickness({
   useEffect(() => {
     animate(
       scope.current,
-      { height: hasPlates ? "calc(50vh - 180px)" : "calc(100vh - 180px)" },
+      { height: hasPlates ? "calc(50vh - 120px)" : "calc(100vh - 120px)" },
       { duration: 0.5 }
     );
   }, [animate, scope, hasPlates]);
@@ -260,19 +260,21 @@ export default function MaterialThickness({
         thickness={partcategory?.thickness}
       />
       <div className={styles.contentData} ref={scope}>
-        <AvailableParts epicsMap={epicsMap} />
+        <AvailableParts epicsMap={epicsMap} sectionId="mt-parts" />
         <PlatesToCreate
           plates={plates}
           setPlates={setPlates}
           categoryId={partcategory !== null ? partcategory.id : 0}
+          sectionId="mt-plates"
         />
       </div>
       {showPlateSection ? (
         <div className={styles.contentSorting}>
-          <Unassigned loading={unassignedLoading} />
+          <Unassigned loading={unassignedLoading} sectionId="mt-unassigned" />
           <PartsToPlates
             categoryId={partcategory !== null ? partcategory.id : 0}
             platesLoading={platesLoading}
+            sectionId="mt-arrange"
           />
         </div>
       ) : null}

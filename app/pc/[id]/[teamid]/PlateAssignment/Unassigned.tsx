@@ -4,7 +4,13 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function Unassigned({ loading = false }: { loading?: boolean }) {
+export function Unassigned({
+  loading = false,
+  sectionId,
+}: {
+  loading?: boolean;
+  sectionId?: string;
+}) {
   const {
     unassignedParts,
     setUnassignedParts,
@@ -46,6 +52,7 @@ export function Unassigned({ loading = false }: { loading?: boolean }) {
   return (
     <div
       className={styles.container}
+      id={sectionId}
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";

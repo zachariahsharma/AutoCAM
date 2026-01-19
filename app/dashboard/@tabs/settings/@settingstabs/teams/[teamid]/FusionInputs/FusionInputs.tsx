@@ -845,8 +845,12 @@ function Tools({ teamId }: { teamId: number }) {
 
           setTools(
             tools.map((t) => {
-              const materialIds = uniqueNumericIds(t.material_ids);
-              const machineIds = uniqueNumericIds(t.machine_ids);
+              const materialIds = uniqueNumericIds(
+                Array.from(new Set(t.material_ids ?? []))
+              );
+              const machineIds = uniqueNumericIds(
+                Array.from(new Set(t.machine_ids ?? []))
+              );
               return {
                 id: t.id,
                 name: t.name,

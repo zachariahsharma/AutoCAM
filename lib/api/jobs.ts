@@ -40,15 +40,18 @@ const ErrorJobResponse = zod.object({
   })
 });
 
+const PartQuantitySchema = zod.object({
+  part_id: zod.number(),
+  quantity: zod.number()
+});
+
 const JobResponses = {
   "box_tube": zod.union([CamSuccessJobResponse, ErrorJobResponse]),
   "plate:cam": zod.union([CamSuccessJobResponse, ErrorJobResponse]),
   "plate:arrange": zod.union([SuccessJobResponse, ErrorJobResponse.extend({
     data: ErrorJobResponse.shape.data.extend({
-      excess_parts: zod.array(zod.object({
-        part_id: zod.number(),
-        quantity: zod.number()
-      }))
+      excess_parts: zod.array(PartQuantitySchema),
+      oversized_parts: zod.array(PartQuantitySchema).optional()
     })
   })])
 } as const satisfies Record<(typeof JobKind.enumValues)[number], ZodType>;

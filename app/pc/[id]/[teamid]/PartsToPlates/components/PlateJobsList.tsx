@@ -39,6 +39,9 @@ type PlateJobsListProps = {
   getArrangeExcessParts: (
     job?: PlatesJobWithMeta
   ) => { part_id: number; quantity: number }[];
+  getArrangeOversizedParts: (
+    job?: PlatesJobWithMeta
+  ) => { part_id: number; quantity: number }[];
   getJobError: (job?: PlatesJobWithMeta) => string | null;
   getCamMachineLabel: (job?: PlatesJobWithMeta) => string | null;
 };
@@ -57,6 +60,7 @@ export function PlateJobsList({
   onOpenCamDownload,
   getArrangeErrorMessage,
   getArrangeExcessParts,
+  getArrangeOversizedParts,
   getJobError,
   getCamMachineLabel,
 }: PlateJobsListProps) {
@@ -119,8 +123,12 @@ export function PlateJobsList({
         const arrangeExcessParts = arrangeCompleted
           ? getArrangeExcessParts(arrange as PlatesJobWithMeta)
           : [];
+        const arrangeOversizedParts = arrangeCompleted
+          ? getArrangeOversizedParts(arrange as PlatesJobWithMeta)
+          : [];
         const hasArrangeError =
           (arrangeCompleted && arrangeExcessParts.length > 0) ||
+          (arrangeCompleted && arrangeOversizedParts.length > 0) ||
           (arrangeCompleted && Boolean(arrangeErrorText));
         const camErrorText =
           camCompleted && cam ? getJobError(cam as PlatesJobWithMeta) : null;

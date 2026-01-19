@@ -1,5 +1,9 @@
+'use client';
+
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import styles from "./boxtubes.module.css";
 import type { Material } from "@/app/types";
 
@@ -107,10 +111,29 @@ export function BoxTubeCamModal({
   const selectedMaterial = materials.find(
     (material) => material.id === selectedMaterialId
   );
+  const overrideMaterialName = selectedMaterial?.name ?? fallbackMaterialName;
+  const materialDisplayName = materialOverride
+    ? overrideMaterialName
+    : `${fallbackMaterialName} (default)`;
   const formatOrientationLabel = (value?: string) =>
     value ? value.charAt(0).toUpperCase() + value.slice(1) : "Vertical";
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null
+  );
 
-  return (
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    setPortalContainer(container);
+    return () => {
+      document.body.removeChild(container);
+    };
+  }, []);
+
+  if (!portalContainer) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open ? (
         <motion.div
@@ -248,7 +271,7 @@ export function BoxTubeCamModal({
                   <label className={styles.camModalLabel}>Material</label>
                   <div className={styles.camModalMaterialRow}>
                     <span className={styles.camModalMaterialValue}>
-                      {selectedMaterial?.name ?? fallbackMaterialName}
+                      {materialDisplayName}
                     </span>
                     {materials.length > 0 && (
                       <button
@@ -385,6 +408,7 @@ export function BoxTubeCamModal({
           </motion.div>
         </motion.div>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    portalContainer
   );
 }

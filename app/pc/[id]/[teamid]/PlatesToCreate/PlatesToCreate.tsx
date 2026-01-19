@@ -57,7 +57,7 @@ export default function PlatesToCreate({
                 <input
                   type="number"
                   min="0"
-                  defaultValue={24}
+                  value={Number.isFinite(plate.width) ? plate.width : ""}
                   onChange={(e) => {
                     const newPlates = [...plates];
                     newPlates[index].width = Number(e.target.value);
@@ -70,7 +70,7 @@ export default function PlatesToCreate({
                 <input
                   type="number"
                   min="0"
-                  defaultValue={48}
+                  value={Number.isFinite(plate.length) ? plate.length : ""}
                   onChange={(e) => {
                     const newPlates = [...plates];
                     newPlates[index].length = Number(e.target.value);
@@ -83,7 +83,9 @@ export default function PlatesToCreate({
                 <input
                   type="number"
                   min="0"
-                  defaultValue={0.25}
+                  value={
+                    Number.isFinite(plate.true_depth) ? plate.true_depth : ""
+                  }
                   onChange={(e) => {
                     const newPlates = [...plates];
                     newPlates[index].true_depth = Number(e.target.value);

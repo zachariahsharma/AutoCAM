@@ -3,6 +3,7 @@ import Marquee from "react-fast-marquee";
 
 type ConditionalMarqueeProps = {
   text: string;
+  id?: string;
   className?: string;
   speed?: number;
   pauseOnHover?: boolean;
@@ -12,6 +13,7 @@ type ConditionalMarqueeProps = {
 
 export function ConditionalMarquee({
   text,
+  id,
   className,
   speed = 40,
   pauseOnHover = true,
@@ -53,9 +55,10 @@ export function ConditionalMarquee({
 
   return (
     <div
+      id={id}
       ref={containerRef}
       className={className}
-      style={{ overflow: "hidden", position: "relative" }}
+      style={{ overflowX: "hidden", overflowY: "visible", position: "relative" }}
     >
       <span
         ref={measureRef}

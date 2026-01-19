@@ -21,12 +21,17 @@
     font-family: var(--font-roboto);
 }
 .cardsContainer {
-  width: calc(100% - 20px);
   position: absolute;
   top: 50px;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 38px 10px 10px;
+  z-index: 1;
+  overflow-y: auto;
 }
 .cardHeader {
   display: flex;
@@ -97,4 +102,72 @@
   border-radius: 3px;
   font-size: 12px;
   font-weight: 500;
+}
+
+.dropZoneOutline {
+  position: absolute;
+  top: 50px;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dropZoneLabel {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  /* background-color: rgba(25, 25, 25, 0.7); */
+  /* border: 1px solid rgba(255, 255, 255, 0.2); */
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--font-roboto);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.skeletonCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  background-color: #191919;
+  border: 1px solid #676767;
+  padding: 0 10px;
+  overflow: hidden;
+}
+
+.skeletonBlock {
+  flex: 1;
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #2a2a2a 0%, #3a3a3a 50%, #2a2a2a 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.2s ease-in-out infinite;
+}
+
+.skeletonBlockShort {
+  width: 26px;
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #2a2a2a 0%, #3a3a3a 50%, #2a2a2a 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

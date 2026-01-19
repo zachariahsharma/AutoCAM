@@ -18,6 +18,8 @@ type PlateJobsListProps = {
   jobs: PlatesJob[];
   jobsDeleteError: string | null;
   jobsDeleteBusy: Record<number, boolean>;
+  loading: boolean;
+  arrangeLoading: boolean;
   onDeleteRun: (run: PlateJobRun) => void;
   onOpenArrangeError: (
     message: string | null,
@@ -46,6 +48,8 @@ export function PlateJobsList({
   jobs,
   jobsDeleteError,
   jobsDeleteBusy,
+  loading,
+  arrangeLoading,
   onDeleteRun,
   onOpenArrangeError,
   onOpenCamModal,
@@ -59,10 +63,46 @@ export function PlateJobsList({
   const queueTitle = (position: number) =>
     position > 0 ? `Queue position: ${position}` : undefined;
 
+  const showSkeleton = loading || arrangeLoading;
+
   return (
-    <div className={styles.jobsContainer}>
+    <div className={styles.jobsContainer} aria-busy={showSkeleton}>
       {jobsDeleteError ? (
         <div className={styles.jobsError}>{jobsDeleteError}</div>
+      ) : null}
+      {showSkeleton ? (
+        <div className={classNames(styles.jobCard, styles.jobCardSkeleton)}>
+          <span className={classNames(styles.skeletonBlock, styles.skeletonId)} />
+          <div className={classNames(styles.jobStatus, styles.jobStatusSkeleton)}>
+            <span
+              className={classNames(styles.skeletonBlock, styles.skeletonLabel)}
+            />
+            <span
+              className={classNames(styles.skeletonBlock, styles.skeletonDot)}
+            />
+            <span
+              className={classNames(
+                styles.skeletonBlock,
+                styles.skeletonLabelWide
+              )}
+            />
+            <span
+              className={classNames(styles.skeletonBlock, styles.skeletonDot)}
+            />
+            <span
+              className={classNames(styles.skeletonBlock, styles.skeletonLabel)}
+            />
+            <span
+              className={classNames(styles.skeletonBlock, styles.skeletonDot)}
+            />
+            <span
+              className={classNames(
+                styles.skeletonBlock,
+                styles.skeletonLabelWide
+              )}
+            />
+          </div>
+        </div>
       ) : null}
       {buildPlateJobRuns(jobs).map((run, index) => {
         const arrange = run.arrange;

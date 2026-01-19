@@ -56,6 +56,12 @@ function formatRelativeTime(date: Date): string {
   return `${diffHr}h ago`;
 }
 
+function generateTicketId(): string {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `AUTO-${timestamp}-${random}`;
+}
+
 function UploadPageContent() {
   const { team, notifyDraftCountChange } = useDashboardEvents();
   const router = useRouter();
@@ -97,6 +103,67 @@ function UploadPageContent() {
   const isStepFile = useCallback((selectedFile: File) => {
     return STEP_FILE_REGEX.test(selectedFile.name);
   }, []);
+
+  const ensureTicket = useCallback(() => {
+    if (ticket) return ticket;
+    const generated = generateTicketId();
+    setTicket(generated);
+    return generated;
+  }, [ticket]);
+
+  type DraftOverrides = Partial<{
+    name: string | null;
+    epic: string | null;
+    ticket: string | null;
+    quantity: number | "" | null;
+    category_id: number | null;
+    pending_category: PendingCategory | null;
+    type: UploadTab;
+  }>;
+
+  const getDraftState = useCallback((overrides: DraftOverrides = {}) => {
+    const resolvedName =
+      "name" in overrides ? overrides.name : name;
+    const resolvedEpic =
+      "epic" in overrides ? overrides.epic : epic;
+    const resolvedTicket =
+      "ticket" in overrides ? overrides.ticket : ticket;
+    const resolvedQuantity =
+      "quantity" in overrides ? overrides.quantity : quantity;
+    const resolvedCategoryId =
+      "category_id" in overrides ? overrides.category_id : selectedCategoryId;
+    const resolvedType =
+      "type" in overrides ? overrides.type : activeTab;
+    const resolvedPendingCategory =
+      "pending_category" in overrides
+        ? overrides.pending_category
+        : showNewCategory && newMaterial && newThickness
+          ? { material: newMaterial, thickness: Number(newThickness) }
+          : null;
+
+    return {
+      name: resolvedName || null,
+      epic: resolvedEpic || null,
+      ticket: resolvedTicket || null,
+      quantity:
+        resolvedQuantity === "" || resolvedQuantity === null || resolvedQuantity === undefined
+          ? null
+          : Number(resolvedQuantity),
+      category_id: resolvedCategoryId ?? null,
+      pending_category: resolvedPendingCategory,
+      type: resolvedType,
+    };
+  }, [
+    name,
+    epic,
+    ticket,
+    quantity,
+    selectedCategoryId,
+    showNewCategory,
+    newMaterial,
+    newThickness,
+    activeTab,
+  ]);
 
   // Load categories and materials on team change
   useEffect(() => {
@@ -170,19 +237,10 @@ function UploadPageContent() {
     loadDraft();
   }, [draftIdParam, team]);
 
-  const getCurrentState = useCallback(() => {
-    return JSON.stringify({
-      name: name || null,
-      epic: epic || null,
-      ticket: ticket || null,
-      quantity: quantity || null,
-      category_id: selectedCategoryId,
-      pending_category: showNewCategory && newMaterial && newThickness
-        ? { material: newMaterial, thickness: Number(newThickness) }
-        : null,
-      type: activeTab
-    });
-  }, [name, epic, ticket, quantity, selectedCategoryId, showNewCategory, newMaterial, newThickness, activeTab]);
+  const getCurrentState = useCallback(
+    () => JSON.stringify(getDraftState()),
+    [getDraftState]
+  );
 
   const hasUnsavedChanges = useCallback(() => {
     if (!currentDraftId && !name && !epic && !ticket && !quantity && !file) return false;
@@ -212,23 +270,22 @@ function UploadPageContent() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  async function saveDraft() {
+  async function saveDraft(overrides: DraftOverrides = {}) {
     if (!team) return;
     const teamId = team.id;
     setIsSaving(true);
     setError(null);
 
     try {
+      const draftState = getDraftState(overrides);
       const draftData = {
-        type: activeTab,
-        name: name || undefined,
-        epic: epic || undefined,
-        ticket: ticket || undefined,
-        quantity: quantity || undefined,
-        category_id: selectedCategoryId || undefined,
-        pending_category: showNewCategory && newMaterial && newThickness
-          ? { material: newMaterial, thickness: Number(newThickness) }
-          : undefined
+        type: draftState.type,
+        name: draftState.name ?? undefined,
+        epic: draftState.epic ?? undefined,
+        ticket: draftState.ticket ?? undefined,
+        quantity: draftState.quantity ?? undefined,
+        category_id: draftState.category_id ?? undefined,
+        pending_category: draftState.pending_category ?? undefined
       };
 
       if (currentDraftId) {
@@ -287,7 +344,7 @@ function UploadPageContent() {
       }
 
       setLastSaved(new Date());
-      setInitialState(getCurrentState());
+      setInitialState(JSON.stringify(draftState));
     } catch (err) {
       console.error("Failed to save draft:", err);
       setError("Failed to save draft");
@@ -298,9 +355,10 @@ function UploadPageContent() {
 
   async function handleSubmit() {
     setError(null);
+    const ensuredTicket = ensureTicket();
 
     // Validate required fields
-    if (!name || !epic || !ticket || !quantity) {
+    if (!name || !epic || !quantity) {
       setError("Please fill in all required fields");
       return;
     }
@@ -327,7 +385,7 @@ function UploadPageContent() {
     try {
       // Save draft first if needed
       if (!currentDraftId || hasUnsavedChanges()) {
-        await saveDraft();
+        await saveDraft({ ticket: ensuredTicket });
       }
 
       // Wait a moment for the draft to be saved
@@ -402,6 +460,7 @@ function UploadPageContent() {
         return;
       }
       setFileError(null);
+      ensureTicket();
       setFile(droppedFile);
     }
   }
@@ -416,6 +475,7 @@ function UploadPageContent() {
         return;
       }
       setFileError(null);
+      ensureTicket();
       setFile(selectedFile);
     }
   }
@@ -485,15 +545,6 @@ function UploadPageContent() {
                 value={epic}
                 onChange={e => setEpic(e.target.value)}
                 placeholder="Enter epic"
-              />
-            </div>
-            <div className={styles.inputGroup}>
-              <label>Ticket <span className={styles.required}>*</span></label>
-              <input
-                type="text"
-                value={ticket}
-                onChange={e => setTicket(e.target.value)}
-                placeholder="Enter ticket"
               />
             </div>
           </div>

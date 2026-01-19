@@ -57,6 +57,9 @@ export interface Machine {
   id: number;
   name: string;
   file: string;
+  can_run_box_tubes?: boolean;
+  can_run_plates?: boolean;
+  box_tube_default_orientation?: "vertical" | "horizontal";
 }
 
 export interface Tool {

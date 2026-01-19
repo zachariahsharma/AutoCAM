@@ -7,7 +7,10 @@ export const Teams = pgTable("teams", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   owner: text().notNull().references(() => user.id),
-  logo: text()
+  logo: text(),
+  box_tube_material_id: integer().references(() => Materials.id, {
+    onDelete: "set null",
+  }),
 });
 
 export const TeamInvites = pgTable("team_invites", {

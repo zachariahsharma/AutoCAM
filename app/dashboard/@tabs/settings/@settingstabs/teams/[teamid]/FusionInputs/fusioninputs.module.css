@@ -109,8 +109,140 @@
   border-radius: 10px;
 }
 #machineInput {
-  width: calc(100% - 40px) !important;
+  width: auto !important;
+  flex: 1;
   border-radius: 10px;
+}
+
+.machineFlags {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  margin-right: 36px;
+  padding-right: 6px;
+}
+
+.machineCheckbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
+  font-family: var(--font-roboto);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+.machineCheckbox:has(input:checked) {
+  border-color: rgba(230, 221, 94, 0.6);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(230, 221, 94, 0.08);
+}
+
+.machineCheckbox input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--yellow-1);
+}
+
+.boxTubeMaterialCard {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 12, 16, 0.6);
+  margin: 10px 5px 18px;
+}
+
+.boxTubeMaterialHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.boxTubeMaterialTitle {
+  font-size: 13px;
+  font-family: var(--font-roboto);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.boxTubeMaterialSubtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--font-roboto);
+}
+
+.boxTubeMaterialSelect {
+  min-width: 220px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #0b0f14;
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+}
+
+.boxTubeMaterialSelect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.machineOrientation {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.machineOrientationLabel {
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-roboto);
+  white-space: nowrap;
+}
+
+.machineOrientationToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.machineOrientationButton {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-roboto);
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.machineOrientationButton:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.machineOrientationButtonActive {
+  background: rgba(230, 221, 94, 0.18);
+  color: var(--yellow-1);
 }
 #toolInput {
   width: 23% !important;
@@ -217,7 +349,7 @@
   color:black;
 }
 .fileName {
-  width: 18%;
+  width: 31%;
   height: 100%;
   display: flex;
   align-items: center;

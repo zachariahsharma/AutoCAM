@@ -11,6 +11,19 @@ interface BasicInfoSectionProps {
 export default function BasicInfoSection({ tool, onChange }: BasicInfoSectionProps) {
   return (
     <div>
+      <div className={styles.defaultToolRow}>
+        <label htmlFor={`default-tool-${tool.guid}`}>
+          <input
+            id={`default-tool-${tool.guid}`}
+            type="checkbox"
+            checked={Boolean(tool.default_selected)}
+            onChange={(e) => onChange({ default_selected: e.target.checked })}
+          />
+          <span>Default tool</span>
+        </label>
+        <span className={styles.defaultToolHint}>Preselected in CAM</span>
+      </div>
+
       <h3 className={styles.sectionTitle}>Basic Information</h3>
 
       <div className={styles.inputGroup}>

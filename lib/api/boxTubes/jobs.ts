@@ -9,7 +9,21 @@ import { Job, queuePositionSubquery } from "../jobs";
 
 const CreateSchema = zod.object({
   machine_id: zod.number(),
-  tool_ids: zod.array(zod.number())
+  tool_ids: zod.array(zod.number()),
+  tool_items: zod
+    .array(
+      zod.object({
+        tool_id: zod.number(),
+        tool_guid: zod.string()
+      })
+    )
+    .optional(),
+  orientation: zod
+    .string()
+    .transform((value) => value.trim().toLowerCase())
+    .pipe(zod.enum(["vertical", "horizontal"]))
+    .optional(),
+  material_id: zod.number().optional(),
 });
 
 const JobSchema = Job.transform(({ kind, ...rest }) => {

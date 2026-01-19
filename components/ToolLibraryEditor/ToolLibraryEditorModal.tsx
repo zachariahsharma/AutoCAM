@@ -132,6 +132,31 @@ export default function ToolLibraryEditorModal({
     setHasUnsavedChanges(true);
   }, [library, selectedToolIndex]);
 
+  const handleDuplicateTool = useCallback(() => {
+    if (!library || selectedToolIndex === null) return;
+
+    const toolToDuplicate = library.data[selectedToolIndex];
+    const duplicatedTool = structuredClone(toolToDuplicate) as ToolItem;
+    duplicatedTool.guid = crypto.randomUUID();
+    duplicatedTool.last_modified = Date.now();
+    if (duplicatedTool["start-values"]?.presets) {
+      duplicatedTool["start-values"].presets = duplicatedTool["start-values"].presets.map(preset => ({
+        ...preset,
+        guid: crypto.randomUUID(),
+      }));
+    }
+
+    setLibrary(prev => {
+      if (!prev) return prev;
+      const newData = [...prev.data];
+      newData.splice(selectedToolIndex + 1, 0, duplicatedTool);
+      return { ...prev, data: newData };
+    });
+    setSelectedToolIndex(selectedToolIndex + 1);
+    setActiveTab("basic");
+    setHasUnsavedChanges(true);
+  }, [library, selectedToolIndex]);
+
   const handleSave = useCallback(async () => {
     if (!library) return;
 
@@ -340,6 +365,16 @@ export default function ToolLibraryEditorModal({
             {/* Footer */}
             <div className={styles.footer}>
               <div className={styles.footerLeft}>
+                {selectedTool && (
+                  <button
+                    type="button"
+                    className={styles.duplicateButton}
+                    onClick={handleDuplicateTool}
+                    disabled={isLoading || isSaving}
+                  >
+                    Duplicate Tool
+                  </button>
+                )}
                 {selectedTool && (
                   <button
                     type="button"

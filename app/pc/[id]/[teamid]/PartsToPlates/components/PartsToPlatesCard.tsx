@@ -16,6 +16,23 @@ import { ArrangeErrorModal } from "./modals/ArrangeErrorModal";
 import { CamErrorModal } from "./modals/CamErrorModal";
 import { PlateDeleteConfirmModal } from "./modals/PlateDeleteConfirmModal";
 
+function formatMachiningTime(seconds: number): string {
+  const totalSeconds = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+}
+
+function getMachiningTimeSeconds(response: unknown): number | null {
+  if (!response || typeof response !== "object") return null;
+  const value = (response as { total_machining_time?: unknown })
+    .total_machining_time;
+  return typeof value === "number" && value >= 0 ? value : null;
+}
+
 export function PartsToPlatesCard({
   name,
   categoryId,
@@ -26,6 +43,17 @@ export function PartsToPlatesCard({
   type ExcessPart = {
     part_id: number;
     quantity: number;
+  };
+  type TrueDepthStatus = "idle" | "saving" | "saved" | "error";
+  type LibraryToolItem = {
+    id: string;
+    name: string;
+    guid: string;
+    libraryId: number;
+    libraryName: string;
+    default_selected?: boolean;
+    machine_ids?: number[];
+    material_ids?: number[];
   };
 
   const {
@@ -40,10 +68,12 @@ export function PartsToPlatesCard({
     {}
   );
   const [jobsDeleteError, setJobsDeleteError] = useState<string | null>(null);
+  const [arrangeLoading, setArrangeLoading] = useState(false);
   const { teamid } = useParams();
   const teamDbId = Number(Array.isArray(teamid) ? teamid[0] : teamid);
   const plateIndex = Number.parseInt(name);
-  const currentPlateId = plates[plateIndex]?.id;
+  const currentPlate = plates[plateIndex];
+  const currentPlateId = currentPlate?.id;
   const plateAssignments = isValidPlateId(currentPlateId)
     ? partsToPlates[currentPlateId] ?? []
     : [];
@@ -77,26 +107,21 @@ export function PartsToPlatesCard({
   const [camDownloadLoading, setCamDownloadLoading] = useState(false);
   const [camDownloadError, setCamDownloadError] = useState<string | null>(null);
   const [camBundleUrl, setCamBundleUrl] = useState<string | null>(null);
+  const [camDownloadMachiningTime, setCamDownloadMachiningTime] = useState<
+    string | null
+  >(null);
   const [arrangePreviewUrl, setArrangePreviewUrl] = useState<string | null>(
     null
   );
   const [arrangePreviewType, setArrangePreviewType] = useState<
     "image" | "pdf" | "other" | null
   >(null);
-  const [machines, setMachines] = useState<Array<{ id: number; name: string }>>(
-    []
-  );
-  const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
-  const [tools, setTools] = useState<
-    Array<{
-      id: number;
-      name: string;
-      default_selected?: boolean;
-      machine_ids?: number[];
-      material_ids?: number[];
-    }>
+  const [machines, setMachines] = useState<
+    Array<{ id: number; name: string; can_run_plates?: boolean }>
   >([]);
-  const [camSelectedToolIds, setCamSelectedToolIds] = useState<number[]>([]);
+  const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
+  const [tools, setTools] = useState<LibraryToolItem[]>([]);
+  const [camSelectedToolIds, setCamSelectedToolIds] = useState<string[]>([]);
   const [selectedMachineId, setSelectedMachineId] = useState<number | null>(
     null
   );
@@ -118,6 +143,11 @@ export function PartsToPlatesCard({
     null
   );
   const [camErrorTitle, setCamErrorTitle] = useState("CAM Error");
+  const [trueDepthInput, setTrueDepthInput] = useState<string>("");
+  const [trueDepthStatus, setTrueDepthStatus] =
+    useState<TrueDepthStatus>("idle");
+  const trueDepthSaveTimeout = useRef<number | null>(null);
+  const trueDepthStatusTimeout = useRef<number | null>(null);
   const [arrangeErrorModalOpen, setArrangeErrorModalOpen] = useState(false);
   const [arrangeErrorMessage, setArrangeErrorMessage] = useState<string | null>(
     null
@@ -138,6 +168,12 @@ export function PartsToPlatesCard({
     string | null
   >(null);
   const handledExcessJobs = useRef<Set<number>>(new Set());
+  const camModalPlate =
+    camModalPlateId != null
+      ? plates.find((plate) => plate.id === camModalPlateId) ?? null
+      : null;
+  const arrangeDimensions = camModalPlate ?? currentPlate;
+  const isCardLoading = !assignmentsLoaded;
   const availableCamTools = useMemo(
     () => getEligibleTools(selectedMachineId),
     [selectedMachineId, tools, materialIdForCategory]
@@ -160,6 +196,42 @@ export function PartsToPlatesCard({
       return [];
     });
   }, [camModalOpen, availableCamTools]);
+
+  useEffect(() => {
+    if (!currentPlate) {
+      setTrueDepthInput("");
+      setTrueDepthStatus("idle");
+      return;
+    }
+    setTrueDepthInput(
+      Number.isFinite(currentPlate.true_depth)
+        ? String(currentPlate.true_depth)
+        : ""
+    );
+  }, [currentPlate?.id, currentPlate?.true_depth]);
+
+  useEffect(() => {
+    return () => {
+      if (trueDepthSaveTimeout.current) {
+        window.clearTimeout(trueDepthSaveTimeout.current);
+      }
+      if (trueDepthStatusTimeout.current) {
+        window.clearTimeout(trueDepthStatusTimeout.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (trueDepthSaveTimeout.current) {
+      window.clearTimeout(trueDepthSaveTimeout.current);
+      trueDepthSaveTimeout.current = null;
+    }
+    if (trueDepthStatusTimeout.current) {
+      window.clearTimeout(trueDepthStatusTimeout.current);
+      trueDepthStatusTimeout.current = null;
+    }
+    setTrueDepthStatus("idle");
+  }, [currentPlate?.id]);
 
   function openCamModal(plateId: number, arrangeJobId: number) {
     setCamModalPlateId(plateId);
@@ -484,51 +556,56 @@ export function PartsToPlatesCard({
   useEffect(() => {
     let mounted = true;
     async function assignedParts() {
-      if (!plates || !setPartsToPlates) return;
       if (!Number.isFinite(categoryId) || categoryId <= 0) return;
-      const plateIndex = Number.parseInt(name);
-      const currentPlateId = plates[plateIndex]?.id;
-      if (!isValidPlateId(currentPlateId)) return;
+      if (!isValidPlateId(currentPlateId)) {
+        setAssignmentsLoaded(true);
+        return;
+      }
       setAssignmentsLoaded(false);
 
-      const res = await fetch(`/api/pc/${categoryId}/assignments`);
-      if (!res.ok) {
-        console.error("Failed to fetch assigned parts:", await res.text());
-        return;
+      try {
+        const res = await fetch(`/api/pc/${categoryId}/assignments`);
+        if (!res.ok) {
+          console.error("Failed to fetch assigned parts:", await res.text());
+          return;
+        }
+        const assignments: Array<{
+          part_id: number;
+          plate_id: number;
+          quantity: number;
+        }> = await res.json();
+        const newAssignments = assignments
+          .map((a) => {
+            if (a.plate_id !== currentPlateId) return null;
+            return {
+              partId: a.part_id,
+              quantity: a.quantity,
+            };
+          })
+          .filter((a): a is { partId: number; quantity: number } => a !== null);
+        if (!mounted) return;
+        setPartsToPlates((prev) => ({
+          ...prev,
+          [currentPlateId]: newAssignments,
+        }));
+        const jobRes = await fetch(`/api/plates/${currentPlateId}/jobs`);
+        if (!jobRes.ok) {
+          console.error("Failed to fetch plate jobs:", await jobRes.text());
+          return;
+        }
+        const jobsData: PlatesJob[] = await jobRes.json();
+        setJobs(jobsData);
+      } finally {
+        if (mounted) {
+          setAssignmentsLoaded(true);
+        }
       }
-      const assignments: Array<{
-        part_id: number;
-        plate_id: number;
-        quantity: number;
-      }> = await res.json();
-      const newAssignments = assignments
-        .map((a) => {
-          if (a.plate_id !== currentPlateId) return null;
-          return {
-            partId: a.part_id,
-            quantity: a.quantity,
-          };
-        })
-        .filter((a): a is { partId: number; quantity: number } => a !== null);
-      if (!mounted) return;
-      setPartsToPlates((prev) => ({
-        ...prev,
-        [currentPlateId]: newAssignments,
-      }));
-      setAssignmentsLoaded(true);
-      const jobRes = await fetch(`/api/plates/${currentPlateId}/jobs`);
-      if (!jobRes.ok) {
-        console.error("Failed to fetch plate jobs:", await jobRes.text());
-        return;
-      }
-      const jobsData: PlatesJob[] = await jobRes.json();
-      setJobs(jobsData);
     }
     assignedParts();
     return () => {
       mounted = false;
     };
-  }, [categoryId, name, plates, setPartsToPlates]);
+  }, [categoryId, currentPlateId, setPartsToPlates]);
 
   useEffect(() => {
     if (!assignmentsLoaded) return;
@@ -650,25 +727,86 @@ export function PartsToPlatesCard({
           const machinesData = (await machinesRes.json()) as Array<{
             id: number;
             name: string;
+            can_run_plates?: boolean;
           }>;
-          setMachines(machinesData);
+          const eligibleMachines = machinesData.filter(
+            (machine) => machine.can_run_plates !== false
+          );
+          setMachines(eligibleMachines);
           setMachineNames((prev) => {
             const merged = { ...prev };
             for (const m of machinesData) merged[m.id] = m.name;
             return merged;
           });
-          setSelectedMachineId((prev) => prev ?? machinesData[0]?.id ?? null);
+          setSelectedMachineId((prev) => {
+            if (
+              prev != null &&
+              eligibleMachines.some((machine) => machine.id === prev)
+            ) {
+              return prev;
+            }
+            return eligibleMachines[0]?.id ?? null;
+          });
         }
 
         if (toolsRes.ok) {
           const toolsData = (await toolsRes.json()) as Array<{
             id: number;
             name: string;
-            default_selected?: boolean;
             machine_ids?: number[];
             material_ids?: number[];
           }>;
-          setTools(toolsData);
+          const libraryTools = await Promise.all(
+            toolsData.map(async (toolLibrary) => {
+              try {
+                const libraryRes = await fetch(
+                  `/api/tools/${toolLibrary.id}/library`
+                );
+                if (!libraryRes.ok) {
+                  console.error(
+                    "Failed to load tool library",
+                    toolLibrary.id,
+                    await libraryRes.text()
+                  );
+                  return [];
+                }
+                const libraryData = (await libraryRes.json()) as {
+                  data?: Array<{
+                    guid?: string;
+                    description?: string;
+                    type?: string;
+                    default_selected?: boolean;
+                  }>;
+                };
+                if (!Array.isArray(libraryData.data)) return [];
+                return libraryData.data.map((toolItem, index) => {
+                  const guid = toolItem.guid ?? `tool-${index + 1}`;
+                  const name =
+                    toolItem.description || `Tool ${index + 1}`;
+                  return {
+                    id: `${toolLibrary.id}:${guid}`,
+                    name,
+                    guid,
+                    libraryId: toolLibrary.id,
+                    libraryName: toolLibrary.name,
+                    default_selected: Boolean(toolItem.default_selected),
+                    machine_ids: toolLibrary.machine_ids,
+                    material_ids: toolLibrary.material_ids,
+                  };
+                });
+              } catch (err) {
+                console.error(
+                  "Error loading tool library",
+                  toolLibrary.id,
+                  err
+                );
+                return [];
+              }
+            })
+          );
+          if (mounted) {
+            setTools(libraryTools.flat());
+          }
         }
 
         if (materialsRes.ok) {
@@ -709,6 +847,7 @@ export function PartsToPlatesCard({
     setCamBundleUrl(null);
     setArrangePreviewUrl(null);
     setArrangePreviewType(null);
+    setCamDownloadMachiningTime(null);
 
     async function load() {
       try {
@@ -723,6 +862,7 @@ export function PartsToPlatesCard({
           const camData: {
             file?: string | null;
             payload?: { machine_id?: number | null };
+            response?: unknown;
           } = await camRes.json();
           setCamBundleUrl(camData.file ?? null);
           const machineId = camData.payload?.machine_id ?? null;
@@ -733,6 +873,10 @@ export function PartsToPlatesCard({
           } else {
             setCamDownloadMachineName(null);
           }
+          const timeSeconds = getMachiningTimeSeconds(camData.response);
+          setCamDownloadMachiningTime(
+            timeSeconds != null ? formatMachiningTime(timeSeconds) : null
+          );
         } else {
           setCamDownloadError((await camRes.text()) || "Failed to load CAM.");
         }
@@ -909,13 +1053,92 @@ export function PartsToPlatesCard({
     });
   }
 
-  function toggleCamTool(toolId: number) {
+  function toggleCamTool(toolId: string) {
     setCamSelectedToolIds((prev) =>
       prev.includes(toolId)
         ? prev.filter((id) => id !== toolId)
         : [...prev, toolId]
     );
     setCamModalError(null);
+  }
+
+  function toggleCamToolLibrary(toolIds: string[]) {
+    if (toolIds.length === 0) return;
+    setCamSelectedToolIds((prev) => {
+      const allSelected = toolIds.every((id) => prev.includes(id));
+      if (allSelected) {
+        return prev.filter((id) => !toolIds.includes(id));
+      }
+      const next = new Set(prev);
+      for (const id of toolIds) {
+        next.add(id);
+      }
+      return Array.from(next);
+    });
+    setCamModalError(null);
+  }
+
+  function handleTrueDepthChange(value: string) {
+    setTrueDepthInput(value);
+    if (trueDepthSaveTimeout.current) {
+      window.clearTimeout(trueDepthSaveTimeout.current);
+      trueDepthSaveTimeout.current = null;
+    }
+    if (trueDepthStatusTimeout.current) {
+      window.clearTimeout(trueDepthStatusTimeout.current);
+      trueDepthStatusTimeout.current = null;
+    }
+
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      setTrueDepthStatus("idle");
+      return;
+    }
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) {
+      setTrueDepthStatus("idle");
+      return;
+    }
+
+    if (currentPlateId != null) {
+      setPlates((prev) =>
+        prev.map((plate) =>
+          plate.id === currentPlateId
+            ? { ...plate, true_depth: parsed }
+            : plate
+        )
+      );
+    }
+
+    const plateId = currentPlateId;
+    if (!Number.isFinite(plateId) || !Number.isInteger(plateId)) {
+      setTrueDepthStatus("saved");
+      trueDepthStatusTimeout.current = window.setTimeout(() => {
+        setTrueDepthStatus("idle");
+      }, 2000);
+      return;
+    }
+
+    setTrueDepthStatus("saving");
+    trueDepthSaveTimeout.current = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/plates/${plateId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ true_depth: parsed }),
+        });
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
+        setTrueDepthStatus("saved");
+        trueDepthStatusTimeout.current = window.setTimeout(() => {
+          setTrueDepthStatus("idle");
+        }, 2000);
+      } catch (err) {
+        console.error("Failed to save true depth:", err);
+        setTrueDepthStatus("error");
+      }
+    }, 400);
   }
 
   async function syncPlateAssignments(
@@ -984,6 +1207,7 @@ export function PartsToPlatesCard({
 
   async function handleArrange() {
     if (categoryId === 0) return;
+    if (arrangeLoading) return;
     try {
       const localPlate = plates[plateIndex];
       if (!localPlate) return;
@@ -992,6 +1216,7 @@ export function PartsToPlatesCard({
         return;
       }
 
+      setArrangeLoading(true);
       const databasePlates = await fetch(`/api/pc/${categoryId}/plates`);
       if (!databasePlates.ok) {
         console.error(
@@ -1101,15 +1326,12 @@ export function PartsToPlatesCard({
         console.error("Failed to create arrange job:", await response.text());
         return;
       }
-      const { id: jobId } = await response.json();
-      const jobStatus = await fetch(`/api/plates/${realPlateId}/jobs`);
-      const jobsData: PlatesJob[] = await jobStatus.json();
-      const arrangeJob = jobsData.find((job) => job.id === jobId);
-      if (arrangeJob) {
-        setJobs((prev) => [...prev, arrangeJob]);
-      }
+      await response.json();
+      await refreshJobs(realPlateId);
     } catch (err) {
       console.error("Error during arrange:", err);
+    } finally {
+      setArrangeLoading(false);
     }
   }
 
@@ -1171,10 +1393,20 @@ export function PartsToPlatesCard({
     const selectedTools = camSelectedToolIds.filter((id) =>
       availableCamTools.some((tool) => tool.id === id)
     );
-    if (selectedTools.length === 0) {
+    const selectedToolItems = availableCamTools.filter((tool) =>
+      selectedTools.includes(tool.id)
+    );
+    if (selectedToolItems.length === 0) {
       setCamModalError("Select at least one tool to continue.");
       return;
     }
+    const toolLibraryIds = Array.from(
+      new Set(selectedToolItems.map((tool) => tool.libraryId))
+    );
+    const toolItems = selectedToolItems.map((tool) => ({
+      tool_id: tool.libraryId,
+      tool_guid: tool.guid,
+    }));
     setCamModalLoading(true);
     setCamModalError(null);
     try {
@@ -1184,7 +1416,8 @@ export function PartsToPlatesCard({
         body: JSON.stringify({
           type: "cam",
           machine_id: selectedMachineId,
-          tool_ids: selectedTools,
+          tool_ids: toolLibraryIds,
+          tool_items: toolItems,
         }),
       });
       if (!response.ok) {
@@ -1256,12 +1489,19 @@ export function PartsToPlatesCard({
         onDeletePlate={openPlateDeleteConfirm}
         onArrange={handleArrange}
         onReceive={onReceive}
+        arrangeLoading={arrangeLoading}
+        loading={isCardLoading}
+        trueDepthValue={trueDepthInput}
+        trueDepthStatus={trueDepthStatus}
+        onTrueDepthChange={handleTrueDepthChange}
       />
       <PlateJobsList
         currentPlateId={currentPlateId ?? null}
         jobs={jobs}
         jobsDeleteError={jobsDeleteError}
         jobsDeleteBusy={jobsDeleteBusy}
+        loading={isCardLoading}
+        arrangeLoading={arrangeLoading}
         onDeleteRun={onDeleteRun}
         onOpenArrangeError={openArrangeErrorModal}
         onOpenCamModal={openCamModal}
@@ -1286,6 +1526,18 @@ export function PartsToPlatesCard({
         availableTools={availableCamTools}
         selectedToolIds={camSelectedToolIds}
         onToggleTool={toggleCamTool}
+        onToggleToolLibrary={toggleCamToolLibrary}
+        arrangeDimensions={
+          arrangeDimensions
+            ? {
+                width: arrangeDimensions.width,
+                length: arrangeDimensions.length,
+              }
+            : null
+        }
+        trueDepthValue={trueDepthInput}
+        trueDepthStatus={trueDepthStatus}
+        onTrueDepthChange={handleTrueDepthChange}
       />
       <CamDownloadModal
         open={camDownloadModalOpen}
@@ -1295,6 +1547,7 @@ export function PartsToPlatesCard({
         arrangePreviewType={arrangePreviewType}
         camBundleUrl={camBundleUrl}
         machineName={camDownloadMachineName}
+        machiningTime={camDownloadMachiningTime}
         onClose={closeCamDownloadModal}
         onOpenDeleteConfirm={openCamDeleteConfirm}
       />

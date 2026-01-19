@@ -12,6 +12,12 @@ import "./jobs";
 const CreateSchema = createInsertSchema(Plates).omit({ category_id: true });
 const UpdateSchema = createUpdateSchema(Plates).omit({ category_id: true });
 const Plate = createSelectSchema(Plates).omit({ category_id: true }).openapi("Plate");
+const PlateWithCategory = createSelectSchema(Plates).omit({ category_id: true }).extend({
+  category: zod.object({
+    thickness: zod.number(),
+    material: zod.string()
+  })
+}).openapi("PlateWithCategory");
 
 registry.registerPath({
   method: "get",
@@ -71,6 +77,33 @@ registry.registerPath({
     ...CommonAuthorization,
     ...ValidationError,
     ...Conflict
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/plates/{id}",
+  tags: ["Plates"],
+  summary: "Get Plate",
+  security: [
+    { [userSession.name]: [] },
+    { [apiKey.name]: [scopes.plates.read] }
+  ],
+  request: {
+    params: zod.object({ id: zod.number().openapi({ description: "ID of the plate" }) })
+  },
+  responses: {
+    200: {
+      description: "Returns the plate with category information",
+      content: {
+        "application/json": {
+          schema: PlateWithCategory
+        }
+      }
+    },
+    ...CommonAuthorization,
+    ...ValidationError,
+    ...NotFound
   }
 });
 
@@ -142,8 +175,9 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
     where: eq(Plates.id, id),
     with: { category: true }
   });
-  await checkUserTeam(tx, authType, plate?.category.team_id);
-  return routeResponse(200, await parseSchema(plate, Plate));
+  if (!plate) return routeResponse(404);
+  await checkUserTeam(tx, authType, plate.category.team_id);
+  return routeResponse(200, await parseSchema(plate, PlateWithCategory));
 }, { user: {}, apiKey: { scopes: [scopes.plates.read] } });
 
 export const POST = routeFactory(async (req, authType, tx, category_id) => {

@@ -10,6 +10,7 @@ type CamDownloadModalProps = {
   arrangePreviewType: "image" | "pdf" | "other" | null;
   camBundleUrl: string | null;
   machineName: string | null;
+  machiningTime: string | null;
   onClose: () => void;
   onOpenDeleteConfirm: () => void;
 };
@@ -22,6 +23,7 @@ export function CamDownloadModal({
   arrangePreviewType,
   camBundleUrl,
   machineName,
+  machiningTime,
   onClose,
   onOpenDeleteConfirm,
 }: CamDownloadModalProps) {
@@ -109,7 +111,10 @@ export function CamDownloadModal({
             </div>
             <div className={styles.camModalFooter}>
               <div className={styles.camModalFooterLeft}>
-                {machineName ? `Machine: ${machineName}` : ""}
+                {machineName ? <div>{`Machine: ${machineName}`}</div> : null}
+                {machiningTime ? (
+                  <div>{`Machining time: ${machiningTime}`}</div>
+                ) : null}
               </div>
               <div className={styles.camModalFooterRight}>
                 <button

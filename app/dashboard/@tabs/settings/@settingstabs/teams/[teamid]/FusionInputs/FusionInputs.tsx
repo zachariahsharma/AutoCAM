@@ -9,6 +9,31 @@ import FileUploadModal from "@/components/FileUploadModal/FileUploadModal";
 import ToolLibraryEditorModal from "@/components/ToolLibraryEditor/ToolLibraryEditorModal";
 import { useSearchParams } from "next/navigation";
 
+function uniqueNumericIds(ids?: Array<number | string>): number[] {
+  return Array.from(
+    new Set(
+      (ids ?? [])
+        .map((id) => Number(id))
+        .filter((numericId) => !Number.isNaN(numericId))
+    )
+  );
+}
+
+function uniqById<T extends { id: number | string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const normalized = Number(item.id);
+    const key = Number.isNaN(normalized)
+      ? `str:${item.id}`
+      : `num:${normalized}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
 function Machines({ teamId }: { teamId: number }) {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,9 +51,22 @@ function Machines({ teamId }: { teamId: number }) {
       try {
         const response = await fetch(`/api/teams/${teamId}/machines`);
         if (response.ok) {
-          const data = await response.json();
+          const data = (await response.json()) as Machine[];
           if (mounted) {
-            setMachines(data);
+            setMachines(
+              data.map((machine) => ({
+                ...machine,
+                can_run_box_tubes: Boolean(machine.can_run_box_tubes),
+                can_run_plates:
+                  machine.can_run_plates === undefined
+                    ? true
+                    : Boolean(machine.can_run_plates),
+                box_tube_default_orientation:
+                  machine.box_tube_default_orientation === "horizontal"
+                    ? "horizontal"
+                    : "vertical",
+              }))
+            );
           }
         }
       } catch (error) {
@@ -66,7 +104,17 @@ function Machines({ teamId }: { teamId: number }) {
 
       if (response.ok) {
         const { id } = await response.json();
-        setMachines((prev) => [...prev, { id, name, file: file.name }]);
+        setMachines((prev) => [
+          ...prev,
+          {
+            id,
+            name,
+            file: file.name,
+            can_run_box_tubes: false,
+            can_run_plates: true,
+            box_tube_default_orientation: "vertical",
+          },
+        ]);
       }
     } catch (error) {
       console.error("Error adding machine:", error);
@@ -84,7 +132,7 @@ function Machines({ teamId }: { teamId: number }) {
     }
 
     const timeout = setTimeout(() => {
-      updateMachineApi(machineId, name);
+      updateMachineApi(machineId, { name });
       setPendingUpdates((prev) => {
         const next = { ...prev };
         delete next[machineId];
@@ -95,16 +143,62 @@ function Machines({ teamId }: { teamId: number }) {
     setPendingUpdates((prev) => ({ ...prev, [machineId]: timeout }));
   }
 
-  async function updateMachineApi(machineId: number, name: string) {
+  async function updateMachineApi(
+    machineId: number,
+    body: Partial<
+      Pick<
+        Machine,
+        | "name"
+        | "can_run_box_tubes"
+        | "can_run_plates"
+        | "box_tube_default_orientation"
+      >
+    >
+  ) {
     try {
       await fetch(`/api/machines/${machineId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(body),
       });
     } catch (error) {
       console.error("Error updating machine:", error);
     }
+  }
+
+  function updateMachineFlag(
+    machineId: number,
+    key: "can_run_box_tubes" | "can_run_plates",
+    value: boolean
+  ) {
+    setMachines((prev) =>
+      prev.map((m) => (m.id === machineId ? { ...m, [key]: value } : m))
+    );
+    updateMachineApi(machineId, {
+      [key]: value,
+    } as Partial<
+      Pick<
+        Machine,
+        | "name"
+        | "can_run_box_tubes"
+        | "can_run_plates"
+        | "box_tube_default_orientation"
+      >
+    >);
+  }
+
+  function updateMachineOrientation(
+    machineId: number,
+    value: "vertical" | "horizontal"
+  ) {
+    setMachines((prev) =>
+      prev.map((m) =>
+        m.id === machineId
+          ? { ...m, box_tube_default_orientation: value }
+          : m
+      )
+    );
+    updateMachineApi(machineId, { box_tube_default_orientation: value });
   }
 
   async function deleteMachine(machineId: number) {
@@ -155,6 +249,65 @@ function Machines({ teamId }: { teamId: number }) {
               id={styles.machineInput}
               onChange={(e) => updateMachineLocal(machine.id, e.target.value)}
             />
+            <div className={styles.machineFlags}>
+              <label className={styles.machineCheckbox}>
+                <input
+                  type="checkbox"
+                  checked={
+                    machine.can_run_plates === undefined
+                      ? true
+                      : Boolean(machine.can_run_plates)
+                  }
+                  onChange={(e) =>
+                    updateMachineFlag(
+                      machine.id,
+                      "can_run_plates",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Plates</span>
+              </label>
+              <label className={styles.machineCheckbox}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(machine.can_run_box_tubes)}
+                  onChange={(e) =>
+                    updateMachineFlag(
+                      machine.id,
+                      "can_run_box_tubes",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Box tubes</span>
+              </label>
+              {machine.can_run_box_tubes && (
+                <div className={styles.machineOrientation}>
+                  <span className={styles.machineOrientationLabel}>
+                    Tube default
+                  </span>
+                  <div className={styles.machineOrientationToggle}>
+                    {(["vertical", "horizontal"] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`${styles.machineOrientationButton} ${
+                          machine.box_tube_default_orientation === value
+                            ? styles.machineOrientationButtonActive
+                            : ""
+                        }`}
+                        onClick={() =>
+                          updateMachineOrientation(machine.id, value)
+                        }
+                      >
+                        {value === "vertical" ? "Vertical" : "Horizontal"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <Image
               alt="Trash"
               src="/settings/teams/trash.svg"
@@ -173,6 +326,10 @@ function Machines({ teamId }: { teamId: number }) {
 function Materials({ teamId }: { teamId: number }) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [boxTubeMaterialId, setBoxTubeMaterialId] = useState<number | null>(
+    null
+  );
+  const [isDefaultLoading, setIsDefaultLoading] = useState(true);
   const [pendingUpdates, setPendingUpdates] = useState<
     Record<number, NodeJS.Timeout>
   >({});
@@ -200,6 +357,33 @@ function Materials({ teamId }: { teamId: number }) {
       }
     }
     loadMaterials();
+    return () => {
+      mounted = false;
+    };
+  }, [teamId]);
+
+  useEffect(() => {
+    if (!teamId) return;
+    let mounted = true;
+    setIsDefaultLoading(true);
+    async function loadTeamDefaults() {
+      try {
+        const response = await fetch("/api/teams");
+        if (!response.ok) return;
+        const teams = (await response.json()) as Array<{
+          id: number;
+          box_tube_material_id?: number | null;
+        }>;
+        if (!mounted) return;
+        const team = teams.find((t) => t.id === teamId);
+        setBoxTubeMaterialId(team?.box_tube_material_id ?? null);
+      } catch (error) {
+        console.error("Error loading team defaults:", error);
+      } finally {
+        if (mounted) setIsDefaultLoading(false);
+      }
+    }
+    loadTeamDefaults();
     return () => {
       mounted = false;
     };
@@ -276,8 +460,58 @@ function Materials({ teamId }: { teamId: number }) {
     }
   }
 
+  async function updateBoxTubeMaterial(nextId: number | null) {
+    if (!teamId) return;
+    setBoxTubeMaterialId(nextId);
+    try {
+      const formData = new FormData();
+      formData.append(
+        "data",
+        JSON.stringify({ box_tube_material_id: nextId })
+      );
+      const response = await fetch(`/api/teams/${teamId}`, {
+        method: "PATCH",
+        body: formData,
+      });
+      if (!response.ok) {
+        console.error(
+          "Failed to update box tube material:",
+          await response.text()
+        );
+      }
+    } catch (error) {
+      console.error("Error updating box tube material:", error);
+    }
+  }
+
   return (
     <main id={styles.materialsContainer}>
+      <div className={styles.boxTubeMaterialCard}>
+        <div className={styles.boxTubeMaterialHeader}>
+          <span className={styles.boxTubeMaterialTitle}>
+            Box tube default material
+          </span>
+          <span className={styles.boxTubeMaterialSubtitle}>
+            Used when opening the box tube CAM modal.
+          </span>
+        </div>
+        <select
+          className={styles.boxTubeMaterialSelect}
+          value={boxTubeMaterialId ?? ""}
+          onChange={(event) => {
+            const value = event.target.value;
+            updateBoxTubeMaterial(value ? Number(value) : null);
+          }}
+          disabled={isDefaultLoading || materials.length === 0}
+        >
+          <option value="">Auto (first aluminum)</option>
+          {materials.map((material) => (
+            <option key={material.id} value={material.id}>
+              {material.name || "Untitled material"}
+            </option>
+          ))}
+        </select>
+      </div>
       <div id={styles.addMachineContainer} onClick={addMaterial}>
         <Image
           src="/settings/teams/Plus.svg"
@@ -327,7 +561,6 @@ function ToolItem({
   onToggleToolMaterial,
   onToggleToolMachine,
   onEditTool,
-  onToggleToolDefault,
 }: {
   tool: Tool;
   totalMaterials: Material[];
@@ -337,13 +570,13 @@ function ToolItem({
   onToggleToolMaterial: (toolId: number, material: Material) => void;
   onToggleToolMachine: (toolId: number, machine: Machine) => void;
   onEditTool: (toolId: number, toolName: string) => void;
-  onToggleToolDefault: (toolId: number, selected: boolean) => void;
 }) {
   const [dropdownMaterialsEnabled, setDropdownMaterialsEnabled] =
     useState<boolean>(false);
   const [dropdownMachinesEnabled, setDropdownMachinesEnabled] =
     useState<boolean>(false);
   const materials = tool.materials;
+  console.log("tool materials:", materials);
   const machines = tool.machines;
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -389,25 +622,6 @@ function ToolItem({
           onUpdateToolName(tool.id, e.target.value);
         }}
       />
-      <div className={styles.toolDefaultColumn}>
-        <label className={styles.checkbox}>
-          <input
-            type="checkbox"
-            checked={tool.default_selected}
-            onChange={(e) => onToggleToolDefault(tool.id, e.target.checked)}
-          />
-          <span className={styles.checkboxBox}>
-            <Image
-              src="/settings/teams/X.svg"
-              width={2000}
-              height={2000}
-              alt="Default tool"
-              className={styles.checkboxIcon}
-            />
-          </span>
-        </label>
-        <span className={styles.toolDefaultLabel}>Default</span>
-      </div>
       <div className={styles.materialDropdown}>
         <div className={styles.materialDropdownHeader}>
           <div className={styles.materialDropdownSelected}>
@@ -630,18 +844,22 @@ function Tools({ teamId }: { teamId: number }) {
           const machinesById = new Map(machines.map((m) => [m.id, m] as const));
 
           setTools(
-            tools.map((t) => ({
-              id: t.id,
-              name: t.name,
-              materials: (t.material_ids ?? [])
-                .map((id) => materialsById.get(id))
-                .filter((m): m is Material => Boolean(m)),
-              machines: (t.machine_ids ?? [])
-                .map((id) => machinesById.get(id))
-                .filter((m): m is Machine => Boolean(m)),
-              file: "",
-              default_selected: Boolean(t.default_selected),
-            }))
+            tools.map((t) => {
+              const materialIds = uniqueNumericIds(t.material_ids);
+              const machineIds = uniqueNumericIds(t.machine_ids);
+              return {
+                id: t.id,
+                name: t.name,
+                materials: materialIds
+                  .map((id) => materialsById.get(id))
+                  .filter((m): m is Material => Boolean(m)),
+                machines: machineIds
+                  .map((id) => machinesById.get(id))
+                  .filter((m): m is Machine => Boolean(m)),
+                file: "",
+                default_selected: Boolean(t.default_selected),
+              };
+            })
           );
         } else {
           setTools([]);
@@ -798,69 +1016,67 @@ function Tools({ teamId }: { teamId: number }) {
   }
 
   function toggleToolMaterial(toolId: number, material: Material) {
-    const current = toolsRef.current.find((t) => t.id === toolId);
-    if (!current) return;
-
-    const exists = current.materials.some((m) => m.id === material.id);
-    const nextMaterials = exists
-      ? current.materials.filter((m) => m.id !== material.id)
-      : [...current.materials, material];
-    const machineIds = current.machines.map((m) => m.id);
-
     setTools((prev) =>
-      prev.map((t) =>
-        t.id === toolId ? { ...t, materials: nextMaterials } : t
-      )
-    );
-    scheduleAssignmentsUpdate(
-      toolId,
-      nextMaterials.map((m) => m.id),
-      machineIds
+      prev.map((t) => {
+        if (t.id !== toolId) return t;
+
+        const normalizedMaterialId = Number(material.id);
+        const exists = t.materials.some(
+          (m) => Number(m.id) === normalizedMaterialId
+        );
+        const updatedMaterials = uniqById(
+          exists
+            ? t.materials.filter(
+                (m) => Number(m.id) !== normalizedMaterialId
+              )
+            : [...t.materials, material]
+        );
+
+        scheduleAssignmentsUpdate(
+          toolId,
+          updatedMaterials
+            .map((m) => Number(m.id))
+            .filter((id) => !Number.isNaN(id)),
+          uniqById(t.machines)
+            .map((m) => Number(m.id))
+            .filter((id) => !Number.isNaN(id))
+        );
+
+        return { ...t, materials: updatedMaterials };
+      })
     );
   }
 
   function toggleToolMachine(toolId: number, machine: Machine) {
-    const current = toolsRef.current.find((t) => t.id === toolId);
-    if (!current) return;
-
-    const exists = current.machines.some((m) => m.id === machine.id);
-    const nextMachines = exists
-      ? current.machines.filter((m) => m.id !== machine.id)
-      : [...current.machines, machine];
-    const materialIds = current.materials.map((m) => m.id);
-
     setTools((prev) =>
-      prev.map((t) => (t.id === toolId ? { ...t, machines: nextMachines } : t))
-    );
-    scheduleAssignmentsUpdate(
-      toolId,
-      materialIds,
-      nextMachines.map((m) => m.id)
-    );
-  }
+      prev.map((t) => {
+        if (t.id !== toolId) return t;
 
-  function toggleDefaultTool(toolId: number, selected: boolean) {
-    setTools((prev) =>
-      prev.map((t) =>
-        t.id === toolId ? { ...t, default_selected: selected } : t
-      )
-    );
-    void updateToolDefault(toolId, selected);
-  }
+        const normalizedMachineId = Number(machine.id);
+        const exists = t.machines.some(
+          (m) => Number(m.id) === normalizedMachineId
+        );
+        const updatedMachines = uniqById(
+          exists
+            ? t.machines.filter(
+                (m) => Number(m.id) !== normalizedMachineId
+              )
+            : [...t.machines, machine]
+        );
 
-  async function updateToolDefault(toolId: number, selected: boolean) {
-    try {
-      const response = await fetch(`/api/tools/${toolId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ default_selected: selected }),
-      });
-      if (!response.ok) {
-        console.error("Failed to update tool default:", await response.text());
-      }
-    } catch (error) {
-      console.error("Error updating tool default:", error);
-    }
+        scheduleAssignmentsUpdate(
+          toolId,
+          uniqById(t.materials)
+            .map((m) => Number(m.id))
+            .filter((id) => !Number.isNaN(id)),
+          updatedMachines
+            .map((m) => Number(m.id))
+            .filter((id) => !Number.isNaN(id))
+        );
+
+        return { ...t, machines: updatedMachines };
+      })
+    );
   }
 
   async function deleteTool(toolId: number) {
@@ -935,7 +1151,6 @@ function Tools({ teamId }: { teamId: number }) {
             onToggleToolMaterial={toggleToolMaterial}
             onToggleToolMachine={toggleToolMachine}
             onEditTool={openToolEditor}
-            onToggleToolDefault={toggleDefaultTool}
           />
         ))
       )}

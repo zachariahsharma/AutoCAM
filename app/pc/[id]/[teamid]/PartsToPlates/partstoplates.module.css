@@ -45,6 +45,10 @@
   transition: background-color .2s;
   color: white;
 }
+.arrangeButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .cardPlate {
   color:#979797;
@@ -55,6 +59,48 @@
   font-weight: 500;
   position: relative;
   padding-bottom: 55px;
+}
+.plateSkeletonTitle {
+  height: 16px;
+  width: 120px;
+  margin: 10px 0 8px 10px;
+  border-radius: 6px;
+}
+.plateSkeletonMeta {
+  height: 18px;
+  width: 210px;
+  margin: 0 0 12px 10px;
+  border-radius: 6px;
+}
+.partsSkeletonList {
+  margin: 12px 10px 0;
+  display: grid;
+  gap: 8px;
+}
+.partSkeletonRow {
+  height: 28px;
+  border-radius: 6px;
+}
+.partSkeletonRowShort {
+  width: 70%;
+}
+.arrangeSkeletonButton {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  height: 30px;
+  width: 110px;
+  border-radius: 7px;
+}
+.emptyPlatePlaceholder {
+  margin: 12px 10px 0;
+  padding: 16px 12px;
+  border: 1.5px dashed #4a4a4a;
+  border-radius: 8px;
+  color: #7f7f7f;
+  text-align: center;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
 }
 @media screen and (max-width: 994px) {
     .container {
@@ -72,6 +118,46 @@
 #plateName {
   padding-left: 10px !important; 
   padding-top: 10px !important;
+}
+
+.plateMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px 4px;
+  font-family: var(--font-roboto);
+  font-size: 12px;
+  color: #c9d1d9;
+}
+
+.plateMetaLabel {
+  color: #9aa1a9;
+  letter-spacing: 0.3px;
+}
+
+.plateMetaInput {
+  width: 80px;
+  padding: 4px 6px;
+  background: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 6px;
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 12px;
+}
+
+.plateMetaStatus {
+  font-size: 11px;
+  color: #9aa1a9;
+}
+
+.plateMetaStatusSaved {
+  color: var(--yellow-1);
+}
+
+.plateMetaStatusError {
+  color: #f87171;
 }
 
 .plateDeleteButton {
@@ -173,6 +259,9 @@
   display: flex;
   align-items: center;
 }
+.jobCardSkeleton {
+  opacity: 0.9;
+}
 .jobId {
   color:white;
   font-family: var(--font-roboto);
@@ -186,6 +275,58 @@
   color:white;
   font-family: var(--font-roboto);
   font-weight: 400;
+}
+.jobStatusSkeleton {
+  gap: 10px;
+}
+.skeletonBlock {
+  position: relative;
+  overflow: hidden;
+  background: #1f1f1f;
+  border: 1px solid #2b2b2b;
+  border-radius: 10px;
+}
+.skeletonBlock::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+.skeletonId {
+  width: 60px;
+  height: 14px;
+  margin-left: 15px;
+  border-radius: 6px;
+}
+.skeletonLabel {
+  width: 70px;
+  height: 22px;
+  border-radius: 10px;
+}
+.skeletonLabelWide {
+  width: 92px;
+  height: 22px;
+  border-radius: 10px;
+}
+.skeletonDot {
+  width: 24px;
+  height: 22px;
+  border-radius: 6px;
+}
+@keyframes skeletonShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 .statusLabel {
   border-radius: 10px;
@@ -412,22 +553,24 @@
   inset: 0;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
+  overflow: auto;
+  padding: 28px 16px;
 }
 
 .camModal {
-  width: fit-content;
-  max-height: 90vh;
-  overflow: hidden;
+  width: max-content;
+  overflow: visible;
   background: #0f141a;
   border: 1px solid var(--bs-border-color);
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
+  flex: 0 0 auto;
 }
 
 .camModalHeader {
@@ -458,7 +601,9 @@
   display: grid;
   gap: 16px;
   padding: 16px;
-  overflow: hidden;
+  overflow: visible;
+  align-items: start;
+  grid-template-columns: auto;
 }
 
 .camModalScreenshot {
@@ -473,7 +618,7 @@
 
 .camModalImage {
   max-width: 100%;
-  max-height: 70vh;
+  max-height: none;
   height: auto;
   width: auto;
   object-fit: contain;
@@ -485,6 +630,69 @@
   color: #9aa1a9;
   font-family: var(--font-roboto);
   font-size: 14px;
+}
+
+.camModalMetaCard {
+  background: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.camModalMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+  color: #e2e7ed;
+}
+
+.camModalMetaLabel {
+  color: #9aa1a9;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.camModalMetaValue {
+  color: white;
+  font-weight: 500;
+}
+
+.camModalDepthControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.camModalDepthInput {
+  width: 90px;
+  padding: 6px 8px;
+  background: #0f141a;
+  border: 1px solid #2a3542;
+  border-radius: 8px;
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+}
+
+.camModalDepthStatus {
+  font-size: 12px;
+  color: #9aa1a9;
+}
+
+.camModalDepthStatusSaved {
+  color: var(--yellow-1);
+}
+
+.camModalDepthStatusError {
+  color: #f87171;
 }
 
 .camModalControls {
@@ -502,9 +710,64 @@
 .camModalToolList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 200px;
+  gap: 12px;
+  max-height: 45vh;
   overflow-y: auto;
+  padding-right: 4px;
+}
+
+.camModalToolGroup {
+  background: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.camModalToolGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.camModalToolGroupTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-roboto);
+  color: #e2e7ed;
+  font-size: 14px;
+}
+
+.camModalToolGroupCount {
+  font-size: 12px;
+  color: #9aa1a9;
+}
+
+.camModalToolGroupToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-roboto);
+  font-size: 12px;
+  color: #c1c7cf;
+  cursor: pointer;
+  user-select: none;
+}
+
+.camModalToolGroupToggle input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--yellow-1);
+}
+
+.camModalToolGroupList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .camModalToolOption {
@@ -516,10 +779,29 @@
   color: white;
 }
 
+.camModalToolMeta {
+  color: #9aa1a9;
+  font-size: 12px;
+}
+
 .camModalToolOption input {
   width: 16px;
   height: 16px;
   accent-color: var(--yellow-1);
+}
+
+.camModalMain {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.camModalSide {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 
 .machineOption {
@@ -581,6 +863,7 @@
 
 .camModalError {
   margin-top: 6px;
+  padding: 0 16px 12px;
   color: #f87171;
   font-family: var(--font-roboto);
   font-size: 13px;
@@ -596,6 +879,9 @@
 }
 
 .camModalFooterLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   color: #9aa1a9;
   font-family: var(--font-roboto);
   font-size: 13px;
@@ -633,4 +919,10 @@
 
 .camModalConfirm:disabled {
   opacity: 0.5;
+}
+
+@media screen and (min-width: 1050px) {
+  .camModalBody {
+    grid-template-columns: auto minmax(280px, 340px);
+  }
 }

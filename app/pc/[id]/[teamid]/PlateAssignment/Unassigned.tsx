@@ -1,16 +1,27 @@
 import styles from "./plateassignment.module.css";
 import { useMaterialEvents } from "../materialEvents";
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function Unassigned() {
+export function Unassigned({
+  loading = false,
+  sectionId,
+}: {
+  loading?: boolean;
+  sectionId?: string;
+}) {
   const {
     unassignedParts,
     setUnassignedParts,
     partsToPlates,
     setPartsToPlates,
   } = useMaterialEvents();
+  const unassignedEntries = useMemo(
+    () =>
+      Object.entries(unassignedParts).filter(([, quantity]) => quantity > 0),
+    [unassignedParts]
+  );
   function onReceive(data: {
     partId: number;
     quantity: number;
@@ -41,6 +52,7 @@ export function Unassigned() {
   return (
     <div
       className={styles.container}
+      id={sectionId}
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
@@ -55,12 +67,21 @@ export function Unassigned() {
       }}
     >
       <h1 className={styles.title}>Unassigned</h1>
+      <div className={styles.dropZoneOutline} aria-hidden="true" />
+      <div className={styles.dropZoneLabel} aria-hidden="true">
+        Drag parts here
+      </div>
       <div className={styles.cardsContainer}>
-        {Object.entries(unassignedParts)
-          .filter(([, quantity]) => quantity > 0)
-          .map(([partId]) => (
-            <UnassignedCard key={partId} partId={Number(partId)} />
-          ))}
+        {loading
+          ? Array.from({ length: 3 }).map((_, index) => (
+              <div className={styles.skeletonCard} key={`skeleton-${index}`}>
+                <div className={styles.skeletonBlock} />
+                <div className={styles.skeletonBlockShort} />
+              </div>
+            ))
+          : unassignedEntries.map(([partId]) => (
+              <UnassignedCard key={partId} partId={Number(partId)} />
+            ))}
       </div>
     </div>
   );

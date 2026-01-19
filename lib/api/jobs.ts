@@ -11,7 +11,7 @@ import { Transaction } from "../db";
 import { routeFactory, routeResponse, parseSchema, checkUserTeam, parseFormData } from "./common";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const RequestSchema = createSelectSchema(Jobs).pick({ kind: true, payload: true });
+const RequestSchema = createSelectSchema(Jobs).pick({ id: true, kind: true, payload: true });
 export const Job = createSelectSchema(Jobs).extend({
   queue_position: zod.number().nullable()
 }).omit({ team_id: true }).transform(({ queue_position, ...x }) => {
@@ -27,21 +27,31 @@ const SuccessJobResponse = zod.object({
   data: zod.strictObject({})
 })
 
+const CamSuccessJobResponse = zod.object({
+  file: zod.instanceof(File),
+  data: zod.strictObject({
+    total_machining_time: zod.number().nonnegative().optional()
+  })
+})
+
 const ErrorJobResponse = zod.object({
   data: zod.object({
     error: zod.string()
   })
 });
 
+const PartQuantitySchema = zod.object({
+  part_id: zod.number(),
+  quantity: zod.number()
+});
+
 const JobResponses = {
-  "box_tube": zod.union([SuccessJobResponse, ErrorJobResponse]),
-  "plate:cam": zod.union([SuccessJobResponse, ErrorJobResponse]),
+  "box_tube": zod.union([CamSuccessJobResponse, ErrorJobResponse]),
+  "plate:cam": zod.union([CamSuccessJobResponse, ErrorJobResponse]),
   "plate:arrange": zod.union([SuccessJobResponse, ErrorJobResponse.extend({
     data: ErrorJobResponse.shape.data.extend({
-      excess_parts: zod.array(zod.object({
-        part_id: zod.number(),
-        quantity: zod.number()
-      }))
+      excess_parts: zod.array(PartQuantitySchema),
+      oversized_parts: zod.array(PartQuantitySchema).optional()
     })
   })])
 } as const satisfies Record<(typeof JobKind.enumValues)[number], ZodType>;

@@ -25,6 +25,8 @@ export default function MaterialThickness({
   const [teamTools, setTeamTools] = useState<
     { id: number; name: string }[] | null
   >(null);
+  const [platesLoading, setPlatesLoading] = useState(true);
+  const [unassignedLoading, setUnassignedLoading] = useState(true);
   const [isAdminOrOwner, setIsAdminOrOwner] = useState(false);
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [addMaterialError, setAddMaterialError] = useState<string | null>(null);
@@ -57,49 +59,56 @@ export default function MaterialThickness({
   useEffect(() => {
     let mounted = true;
     async function fetchData() {
-      const res = await fetch(`/api/teams/${teamid}/pc/`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      let data = await res.json();
-      let found = false;
-      for (const pc of data) {
-        if (pc.id.toString() === pcid) {
-          data = pc;
-          found = true;
-          break;
+      setUnassignedLoading(true);
+      try {
+        const res = await fetch(`/api/teams/${teamid}/pc/`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        let data = await res.json();
+        let found = false;
+        for (const pc of data) {
+          if (pc.id.toString() === pcid) {
+            data = pc;
+            found = true;
+            break;
+          }
+        }
+        if (found === false) {
+          router.push("/404");
+        }
+        const response = await fetch(`/api/pc/${data.id}/parts`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const partsData = await response.json();
+        if (!mounted) return;
+        setParts(partsData);
+        const selectedPartsInit: { [key: string]: number } = {};
+        for (const part of partsData) {
+          selectedPartsInit[part.id] = 0;
+        }
+        setSelectedParts(selectedPartsInit);
+        setUnassignedParts(selectedPartsInit);
+        data.parts = partsData;
+        setPartcategory(data);
+        const mappedEpics: { [key: string]: Part[] } = {};
+        data.parts.forEach((part: Part) => {
+          if (!mappedEpics[part.epic]) {
+            mappedEpics[part.epic] = [];
+          }
+          mappedEpics[part.epic].push(part);
+        });
+        setEpicsMap(mappedEpics);
+      } finally {
+        if (mounted) {
+          setUnassignedLoading(false);
         }
       }
-      if (found === false) {
-        router.push("/404");
-      }
-      const response = await fetch(`/api/pc/${data.id}/parts`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const partsData = await response.json();
-      if (!mounted) return;
-      setParts(partsData);
-      const selectedPartsInit: { [key: string]: number } = {};
-      for (const part of partsData) {
-        selectedPartsInit[part.id] = 0;
-      }
-      setSelectedParts(selectedPartsInit);
-      setUnassignedParts(selectedPartsInit);
-      data.parts = partsData;
-      setPartcategory(data);
-      const mappedEpics: { [key: string]: Part[] } = {};
-      data.parts.forEach((part: Part) => {
-        if (!mappedEpics[part.epic]) {
-          mappedEpics[part.epic] = [];
-        }
-        mappedEpics[part.epic].push(part);
-      });
-      setEpicsMap(mappedEpics);
     }
 
     fetchData();
@@ -113,6 +122,7 @@ export default function MaterialThickness({
     let mounted = true;
 
     async function loadTeamSettingsData() {
+      setPlatesLoading(true);
       try {
         const { data } = await authClient.getSession();
         const currentUserEmail = data?.user?.email ?? null;
@@ -163,6 +173,10 @@ export default function MaterialThickness({
         setTeamMaterials(null);
         setTeamTools(null);
         setIsAdminOrOwner(false);
+      } finally {
+        if (mounted) {
+          setPlatesLoading(false);
+        }
       }
     }
 
@@ -230,11 +244,12 @@ export default function MaterialThickness({
     }
   }
   const hasPlates = plates.length > 0;
+  const showPlateSection = hasPlates || platesLoading;
 
   useEffect(() => {
     animate(
       scope.current,
-      { height: hasPlates ? "calc(50vh - 180px)" : "calc(100vh - 180px)" },
+      { height: hasPlates ? "calc(50vh - 120px)" : "calc(100vh - 120px)" },
       { duration: 0.5 }
     );
   }, [animate, scope, hasPlates]);
@@ -245,18 +260,21 @@ export default function MaterialThickness({
         thickness={partcategory?.thickness}
       />
       <div className={styles.contentData} ref={scope}>
-        <AvailableParts epicsMap={epicsMap} />
+        <AvailableParts epicsMap={epicsMap} sectionId="mt-parts" />
         <PlatesToCreate
           plates={plates}
           setPlates={setPlates}
           categoryId={partcategory !== null ? partcategory.id : 0}
+          sectionId="mt-plates"
         />
       </div>
-      {hasPlates ? (
+      {showPlateSection ? (
         <div className={styles.contentSorting}>
-          <Unassigned />
+          <Unassigned loading={unassignedLoading} sectionId="mt-unassigned" />
           <PartsToPlates
             categoryId={partcategory !== null ? partcategory.id : 0}
+            platesLoading={platesLoading}
+            sectionId="mt-arrange"
           />
         </div>
       ) : null}

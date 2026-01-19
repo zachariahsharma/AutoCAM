@@ -68,15 +68,17 @@
 
 #boxtubecardepic {
   text-align: center;
-  height: 15px;
+  /* height: 15px; */
   text-wrap: nowrap;
 }
 #boxtubecardquantity {
   text-align: center;
   height: 15px;
 }
-#boxtubecardinfo > p {
-  margin-bottom:10px;
+.boxtubeMachiningTime {
+  text-align: center;
+  height: 15px;
+  margin: 2px 0 0;
 }
 
 #horizontalrule {
@@ -338,4 +340,441 @@
 }
 .errorModalClose:hover {
   border-color: #545454;
+}
+
+.camModalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 30;
+  backdrop-filter: blur(4px);
+  overflow: auto;
+  padding: 28px 16px;
+}
+
+.camModal {
+  width: max-content;
+  overflow: visible;
+  background: #0f141a;
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+.camModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #2b2b2b;
+  font-family: var(--font-roboto);
+  color: white;
+}
+
+.camModalClose {
+  background: none;
+  border: none;
+  padding: 4px;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camModalClose:hover {
+  opacity: 1;
+}
+
+.camModalBody {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  overflow: visible;
+  align-items: start;
+  grid-template-columns: auto;
+}
+
+.camModalMain,
+.camModalSide {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.camModalControls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.camModalLabel {
+  color: #a1a1a1;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.camModalMaterialRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.camModalMaterialValue {
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.camModalMaterialOverrideButton {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--yellow-1);
+  font-family: var(--font-roboto);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.camModalMaterialOverrideButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.camModalMaterialSelect {
+  max-width: 220px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #222b35;
+  background-color: #0d0e12;
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+}
+
+.camModalPlaceholder {
+  padding: 14px;
+  color: #9aa1a9;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+  background: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 10px;
+}
+
+.machineGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orientationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.orientationOption {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.orientationOptionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orientationOptionTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.orientationOptionHint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-roboto);
+}
+
+.orientationGraphic {
+  position: relative;
+  height: 78px;
+  border-radius: 12px;
+  border: 1px dashed #2a3440;
+  background: linear-gradient(135deg, #0a0d12 0%, #0f141b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --axis-x-length: 28px;
+  --axis-y-length: 46px;
+  --tube-width: 32px;
+  --tube-height: 56px;
+}
+
+.orientationGraphicHorizontal {
+  --axis-x-length: 46px;
+  --axis-y-length: 28px;
+  --tube-width: 56px;
+  --tube-height: 32px;
+}
+
+.orientationAxes {
+  position: absolute;
+  width: var(--tube-width);
+  height: var(--tube-height);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.orientationTubeOuter {
+  position: relative;
+  display: block;
+  width: var(--tube-width);
+  height: var(--tube-height);
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.orientationTubeInner {
+  position: absolute;
+  inset: 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.orientationAxisX,
+.orientationAxisY {
+  position: absolute;
+  background: #f0e68a;
+  border-radius: 999px;
+}
+
+.orientationAxisX {
+  height: 2px;
+  width: var(--axis-x-length);
+  left: 0;
+  bottom: 0;
+}
+
+.orientationAxisY {
+  width: 2px;
+  height: var(--axis-y-length);
+  left: 0;
+  bottom: 0;
+  background: #7db0ff;
+}
+
+.orientationAxisLabelX,
+.orientationAxisLabelY {
+  position: absolute;
+  font-family: var(--font-roboto);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.orientationAxisLabelX {
+  color: #f0e68a;
+  left: calc(var(--axis-x-length) + 4px);
+  bottom: -6px;
+}
+
+.orientationAxisLabelY {
+  color: #7db0ff;
+  left: -6px;
+  bottom: calc(var(--axis-y-length) + 4px);
+}
+
+.machineOption {
+  text-align: left;
+  padding: 10px 12px;
+  background-color: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 10px;
+  color: white;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  transition: background-color 140ms ease, border-color 140ms ease,
+    transform 140ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.machineOption:hover:enabled {
+  background-color: #111923;
+  border-color: #3b4754;
+}
+
+.machineOption:active:enabled {
+  transform: scale(0.98);
+}
+
+.machineOptionSelected {
+  border-color: var(--yellow-3);
+  background: rgba(230, 221, 94, 0.12);
+  color: var(--yellow-1);
+}
+
+.machineOption:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.machineOptionOrientation {
+  color: rgba(161, 161, 161, 0.85);
+  font-family: var(--font-roboto);
+  font-size: 12px;
+}
+
+.camModalToolList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 45vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.camModalToolGroup {
+  background: #0b0f14;
+  border: 1px solid #222b35;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.camModalToolGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.camModalToolGroupTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-roboto);
+  color: #e2e7ed;
+  font-size: 14px;
+}
+
+.camModalToolGroupCount {
+  font-size: 12px;
+  color: #9aa1a9;
+}
+
+.camModalToolGroupToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-roboto);
+  font-size: 12px;
+  color: #c1c7cf;
+  cursor: pointer;
+  user-select: none;
+}
+
+.camModalToolGroupToggle input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--yellow-1);
+}
+
+.camModalToolGroupList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.camModalToolOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+  color: white;
+}
+
+.camModalToolOption input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--yellow-1);
+}
+
+.camModalError {
+  margin-top: 6px;
+  padding: 0 16px 12px;
+  color: #f87171;
+  font-family: var(--font-roboto);
+  font-size: 13px;
+}
+
+.camModalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #2b2b2b;
+}
+
+.camModalCancel {
+  padding: 10px 14px;
+  background: none;
+  border: 1px solid #3b4754;
+  border-radius: 8px;
+  color: #c9d1d9;
+  font-family: var(--font-roboto);
+  font-size: 14px;
+}
+
+.camModalCancel:hover:enabled {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.camModalConfirm {
+  padding: 10px 14px;
+  border: 1px solid var(--yellow-3);
+  background: rgba(230, 221, 94, 0.12);
+  border-radius: 8px;
+  color: var(--yellow-1);
+  font-family: var(--font-roboto);
+  font-size: 14px;
+}
+
+.camModalConfirm:disabled {
+  opacity: 0.5;
+}
+
+@media screen and (max-width: 720px) {
+  .orientationGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media screen and (min-width: 1050px) {
+  .camModalBody {
+    grid-template-columns: auto minmax(280px, 340px);
+  }
 }

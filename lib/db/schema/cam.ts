@@ -51,7 +51,10 @@ export const Materials = pgTable("materials", {
 export const Machines = pgTable("machines", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
-  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
+  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" }),
+  can_run_box_tubes: boolean().notNull().default(false),
+  can_run_plates: boolean().notNull().default(true),
+  box_tube_default_orientation: text().notNull().default("vertical"),
 }, table => [
   unique().on(table.name, table.team_id),
 ]);

@@ -1,13 +1,15 @@
 .container {
     position: relative;
-    background-color:rgba(255,255,255,.16);
-    border: 1px solid rgba(255,255,255,.65);
+    background: linear-gradient(180deg, #0c0b0a 0%, #0f0e0c 100%);
+    border: 1px solid #23211f;
     height: 100%;
     padding: 10px;
-    border-radius: 7px;
+    border-radius: 14px;
     scroll-behavior: auto;
     overflow-y: scroll;
     width: calc(50% - 5px);
+    box-shadow: 0 24px 40px -34px rgba(0, 0, 0, 0.8);
+    animation: panelRise 0.45s ease both;
 }
 @media screen and (max-width: 994px) {
     .container {
@@ -18,8 +20,10 @@
     font-size: 22px;
     margin-top: 5px;
     margin-left: 2px;
-    font-weight: 400;
+    font-weight: 500;
     font-family: var(--font-roboto);
+    color: #e2e7ed;
+    letter-spacing: 0.2px;
 }
 
 .header {
@@ -31,17 +35,23 @@
     border: none;
     border-radius: 10px;
     padding : 0px 40px;
-    color: #D6D6D6;
-    border: 1px solid #D6D6D6;
-    background-color: #3E3E3E;
+    color: #f1e7a2;
+    border: 1px solid rgba(205, 180, 37, 0.4);
+    background-color: rgba(205, 180, 37, 0.08);
     font-family: var(--font-roboto);
     font-weight: 500;
     letter-spacing: 1px;
-    box-shadow: rgba(255,255,255,.16) 0px 4px 10px 0px;
+    box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.8);
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 10px 18px -16px rgba(205, 180, 37, 0.45);
+}
+.header > button:hover {
+    background-color: rgba(205, 180, 37, 0.16);
+    border-color: rgba(205, 180, 37, 0.6);
 }
 .epicTitle {
     font-size: 18px;
-    color:rgba(255,255,255,.45);
+    color:rgba(210, 200, 180, .55);
     margin-bottom: 8px;
 
 }
@@ -52,13 +62,13 @@
 }
 .partNumber {
     line-height:12px;
-    color:white;
+    color:#eef2f6;
     font-size: 18px;
     width: 300px;
     white-space:nowrap;
 }
 .recommendedQuantity {
-    color: rgba(255,255,255,.49);
+    color: rgba(190, 180, 160, .6);
     font-size: 14px;
     margin-bottom: 5px;
 }
@@ -73,10 +83,19 @@
     list-style-type: none; 
     height: 30px;
     border: None;
-    color:white;
-    background-color: black;
-    border-top: 1px #757575 solid;
-    border-bottom: 1px #757575 solid;
+    color:#f1f5f9;
+    background-color: #0b0a09;
+    border-top: 1px #2b2621 solid;
+    border-bottom: 1px #2b2621 solid;
+}
+
+@keyframes panelRise {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 .counterValue:focus {
     outline: None;
@@ -96,17 +115,17 @@ input::-webkit-inner-spin-button {
     border-radius: 5px 0px 0px 5px;
     width: 30px;
     outline: 0;
-    background-color: #3E3E3E;
-    color:white;
-    border: #D6D6D6 solid 1px;
+    background-color: #14120f;
+    color:#f1e7a2;
+    border: rgba(205, 180, 37, 0.45) solid 1px;
     height: 30px;
 }
 .counterButtonPlus {
     border-radius: 0px 5px 5px 0px;
     width: 30px;
     outline: 0;
-    background-color: #3E3E3E;
-    color:white;
-    border: #D6D6D6 solid 1px;
+    background-color: #14120f;
+    color:#f1e7a2;
+    border: rgba(205, 180, 37, 0.45) solid 1px;
     height: 30px;
 }

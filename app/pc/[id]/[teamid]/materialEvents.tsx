@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
 import type { Plate, Part } from "@/app/types";
 
 interface PartsToPlates {
@@ -41,6 +41,34 @@ export function MaterialEventsProvider({
   const [unassignedParts, setUnassignedParts] = useState<{
     [key: number]: number;
   }>({});
+
+  useEffect(() => {
+    if (parts.length === 0) return;
+    const assignedTotals = new Map<number, number>();
+    for (const assignments of Object.values(partsToPlates)) {
+      if (!Array.isArray(assignments)) continue;
+      for (const assignment of assignments) {
+        assignedTotals.set(
+          assignment.partId,
+          (assignedTotals.get(assignment.partId) ?? 0) + assignment.quantity
+        );
+      }
+    }
+    setSelectedParts((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const part of parts) {
+        const assigned = assignedTotals.get(part.id) ?? 0;
+        const unassigned = unassignedParts[part.id] ?? 0;
+        const total = assigned + unassigned;
+        if (next[part.id] !== total) {
+          next[part.id] = total;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [parts, partsToPlates, unassignedParts]);
 
   const value = useMemo(
     () => ({

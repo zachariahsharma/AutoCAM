@@ -75,6 +75,7 @@ export interface ToolItem {
   description: string;
   type: string;
   unit: "inches" | "millimeters";
+  default_selected?: boolean;
   vendor?: string;
   "product-id"?: string;
   "product-link"?: string;
@@ -144,6 +145,7 @@ export function createEmptyTool(): ToolItem {
     description: "",
     type: "flat end mill",
     unit: "inches",
+    default_selected: false,
     guid: crypto.randomUUID(),
     last_modified: Date.now(),
     geometry: {

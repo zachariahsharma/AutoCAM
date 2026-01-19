@@ -8,7 +8,12 @@ type PlatePartsSectionProps = {
   parts: { partId: number; quantity: number }[];
   onDeletePlate: (plateId: number) => void;
   onArrange: () => void;
+  arrangeLoading?: boolean;
+  loading?: boolean;
   onReceive: (data: { partId: number; quantity: number; from?: number }) => void;
+  trueDepthValue: string;
+  trueDepthStatus: "idle" | "saving" | "saved" | "error";
+  onTrueDepthChange: (value: string) => void;
 };
 
 export function PlatePartsSection({
@@ -17,8 +22,23 @@ export function PlatePartsSection({
   parts,
   onDeletePlate,
   onArrange,
+  arrangeLoading,
+  loading,
   onReceive,
+  trueDepthValue,
+  trueDepthStatus,
+  onTrueDepthChange,
 }: PlatePartsSectionProps) {
+  const trueDepthStatusText =
+    trueDepthStatus === "saving"
+      ? "Saving..."
+      : trueDepthStatus === "saved"
+      ? "Auto Saved"
+      : trueDepthStatus === "error"
+      ? "Save failed"
+      : "";
+  const visibleParts = parts.filter((part) => part.quantity > 0);
+
   return (
     <div
       className={styles.cardPlate}
@@ -36,6 +56,32 @@ export function PlatePartsSection({
     >
       <div id={styles.plateName}>Plate {plateIndex + 1}</div>
       {plateId != null ? (
+        <div className={styles.plateMetaRow}>
+          <span className={styles.plateMetaLabel}>True Depth</span>
+          <input
+            type="number"
+            min="0"
+            step="0.001"
+            className={styles.plateMetaInput}
+            value={trueDepthValue}
+            onChange={(e) => onTrueDepthChange(e.target.value)}
+          />
+          {trueDepthStatusText ? (
+            <span
+              className={`${styles.plateMetaStatus} ${
+                trueDepthStatus === "saved"
+                  ? styles.plateMetaStatusSaved
+                  : trueDepthStatus === "error"
+                  ? styles.plateMetaStatusError
+                  : ""
+              }`}
+            >
+              {trueDepthStatusText}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      {plateId != null ? (
         <button
           type="button"
           className={styles.plateDeleteButton}
@@ -51,19 +97,37 @@ export function PlatePartsSection({
           />
         </button>
       ) : null}
-      {plateId != null
-        ? parts
-            .filter((p) => p.quantity > 0)
-            .map((part, index) => (
-              <PartsCard
-                key={`${part.partId}-${index}`}
-                partId={part.partId}
-                quantity={part.quantity}
-                plateId={plateId}
-              />
-            ))
-        : null}
-      <button className={styles.arrangeButton} onClick={onArrange}>
+      {plateId != null ? (
+        loading ? (
+          <div className={styles.partsSkeletonList} aria-hidden>
+            <div
+              className={`${styles.skeletonBlock} ${styles.partSkeletonRow}`}
+            />
+            <div
+              className={`${styles.skeletonBlock} ${styles.partSkeletonRow} ${styles.partSkeletonRowShort}`}
+            />
+            <div
+              className={`${styles.skeletonBlock} ${styles.partSkeletonRow}`}
+            />
+          </div>
+        ) : visibleParts.length > 0 ? (
+          visibleParts.map((part, index) => (
+            <PartsCard
+              key={`${part.partId}-${index}`}
+              partId={part.partId}
+              quantity={part.quantity}
+              plateId={plateId}
+            />
+          ))
+        ) : (
+          <div className={styles.emptyPlatePlaceholder}>Drag parts here</div>
+        )
+      ) : null}
+      <button
+        className={styles.arrangeButton}
+        onClick={onArrange}
+        disabled={Boolean(arrangeLoading)}
+      >
         <span>Arrange</span>
         <Image
           src="/mat_thickness/Arrange.svg"

@@ -215,6 +215,10 @@ export default function CollaboratorsSettingsPage({
     // Clear any previous alert
     setAlertMessage(null);
 
+    if (collaborator.role === newRole) {
+      return;
+    }
+
     // Check if this would remove the last user with admin privileges
     // (Only block if demoting an Admin AND there are no other Admins or Owners left)
     if (
@@ -226,8 +230,8 @@ export default function CollaboratorsSettingsPage({
       return;
     }
 
-    // Check if user is trying to change their own permissions - show confirmation
-    if (collaborator.email === currentUserEmail && !confirmed) {
+    // Confirm role changes for all collaborators.
+    if (!confirmed) {
       setConfirmModal({ open: true, collaborator, newRole });
       return;
     }
@@ -245,19 +249,14 @@ export default function CollaboratorsSettingsPage({
     if (collaborator.role === "pending") return;
 
     try {
-      const formData = new FormData();
-      formData.append(
-        "data",
-        JSON.stringify({
-          email: collaborator.email,
-          admin: newRole === "Admin",
-        })
-      );
-
-      const response = await fetch(`/api/teams/${teamDbId}/members`, {
-        method: "PATCH",
-        body: formData,
-      });
+    const response = await fetch(`/api/teams/${teamDbId}/members`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: collaborator.email,
+        admin: newRole === "Admin",
+      }),
+    });
 
       if (!response.ok) {
         console.error("Failed to update role:", await response.text());
@@ -416,13 +415,20 @@ export default function CollaboratorsSettingsPage({
       {confirmModal.open && (
         <div className={styles.confirmModalOverlay}>
           <div className={styles.confirmModal}>
-            <h3>Change Your Own Role?</h3>
+            <h3>Change Role?</h3>
             <p>
-              Are you sure you want to change your role to{" "}
+              Are you sure you want to change{" "}
+              <strong>
+                {confirmModal.collaborator?.name ||
+                  confirmModal.collaborator?.email}
+              </strong>{" "}
+              from{" "}
+              <strong>{confirmModal.collaborator?.role}</strong> to{" "}
               <strong>{confirmModal.newRole}</strong>?
-              {confirmModal.newRole === "Member" && (
-                <> You will lose admin privileges.</>
-              )}
+              {confirmModal.collaborator?.email === currentUserEmail &&
+                confirmModal.newRole === "Member" && (
+                  <> You will lose admin privileges.</>
+                )}
             </p>
             <div className={styles.confirmModalButtons}>
               <button

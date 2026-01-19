@@ -1,5 +1,5 @@
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { TeamMembers } from "@/lib/db/schema/entities";
+import { TeamMembers, Teams } from "@/lib/db/schema/entities";
 import { user } from "@/lib/db/schema/auth";
 import { and, eq } from "drizzle-orm";
 import zod from "zod";
@@ -9,7 +9,8 @@ import { registry } from "@/lib/openapi/registry";
 import { createSelectSchema } from "drizzle-zod";
 
 const Member = createSelectSchema(TeamMembers).omit({ user_id: true, team_id: true })
-  .extend(createSelectSchema(user).pick({ email: true, name: true }).shape);
+  .extend(createSelectSchema(user).pick({ email: true, name: true }).shape)
+  .extend({ isOwner: zod.boolean() });
 
 registerTeamEndpoint([scopes.teams.read], {
   method: "get",
@@ -33,10 +34,16 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
   id ??= await teamIdFromDigest(tx, authType);
   await checkUserTeam(tx, authType, id);
   
+  const team = await tx.query.Teams.findFirst({
+    where: eq(Teams.id, id),
+    columns: { owner: true }
+  });
+  const ownerId = team?.owner ?? null;
+
   return routeResponse(200, await parseSchema((await tx.query.TeamMembers.findMany({
     where: eq(TeamMembers.team_id, id),
     with: { user: true },
-  })).map(x => ({ ...x, ...x.user })), zod.array(Member)));
+  })).map(x => ({ ...x, ...x.user, isOwner: ownerId === x.user_id })), zod.array(Member)));
 }, {
   user: { idPolicy: IDPolicy.Required },
   apiKey: { scopes: [scopes.teams.read], idPolicy: IDPolicy.Forbidden }

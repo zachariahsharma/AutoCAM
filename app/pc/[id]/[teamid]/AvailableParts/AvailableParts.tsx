@@ -6,8 +6,10 @@ import { useMaterialEvents } from "../materialEvents";
 
 export default function AvailableParts({
   epicsMap,
+  sectionId,
 }: {
   epicsMap: { [key: string]: Part[] };
+  sectionId?: string;
 }) {
   const {
     selectedParts,
@@ -70,7 +72,7 @@ export default function AvailableParts({
     );
   }, [epicsMap, setSelectedParts, setUnassignedParts]);
   return (
-    <div className={styles.container}>
+    <div className={styles.container} id={sectionId}>
       <div className={styles.header}>
         <h1 id={styles.title}>Available Parts</h1>
         <button

@@ -124,7 +124,11 @@ export default function FileUploadModal({
           >
             <div className={styles.header}>
               <h2>{title}</h2>
-              <button className={styles.closeButton} onClick={handleClose}>
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={handleClose}
+              >
                 <Image
                   src="/settings/teams/X.svg"
                   alt="Close"
@@ -176,6 +180,7 @@ export default function FileUploadModal({
                       />
                       <span className={styles.fileName}>{file.name}</span>
                       <button
+                        type="button"
                         className={styles.removeFile}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -213,10 +218,14 @@ export default function FileUploadModal({
             </div>
 
             <div className={styles.footer}>
-              <button className={styles.cancelButton} onClick={handleClose}>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={handleClose}
+              >
                 Cancel
               </button>
-              <PrimaryButton onClick={handleSubmit}>
+              <PrimaryButton type="button" onClick={handleSubmit}>
                 <span className="textGradient">Add {title.split(" ")[1]}</span>
               </PrimaryButton>
             </div>

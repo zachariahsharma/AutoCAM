@@ -414,6 +414,20 @@
   gap: 10px;
 }
 
+.machineSelectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.machineDefaultOrientationHint {
+  color: rgba(255, 255, 255, 0.65);
+  font-family: var(--font-roboto);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
 .camModalLabel {
   color: #a1a1a1;
   font-family: var(--font-roboto);
@@ -639,7 +653,7 @@
 }
 
 .machineOptionOrientation {
-  color: rgba(161, 161, 161, 0.85);
+  color: rgba(226, 231, 237, 0.75);
   font-family: var(--font-roboto);
   font-size: 12px;
 }

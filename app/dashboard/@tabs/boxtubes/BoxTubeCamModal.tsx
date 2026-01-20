@@ -117,6 +117,13 @@ export function BoxTubeCamModal({
     : `${fallbackMaterialName} (default)`;
   const formatOrientationLabel = (value?: string) =>
     value ? value.charAt(0).toUpperCase() + value.slice(1) : "Vertical";
+  const selectedMachine = machines.find(
+    (machine) => machine.id === selectedMachineId
+  );
+  const selectedMachineDefaultOrientation =
+    selectedMachine?.box_tube_default_orientation === "horizontal"
+      ? "horizontal"
+      : "vertical";
   const portalContainer = useMemo(() => {
     if (typeof document === "undefined") return null;
     const container = document.createElement("div");
@@ -170,7 +177,17 @@ export function BoxTubeCamModal({
             <div className={styles.camModalBody}>
               <div className={styles.camModalMain}>
                 <div className={styles.camModalControls}>
-                  <label className={styles.camModalLabel}>Machine</label>
+                  <div className={styles.machineSelectionHeader}>
+                    <label className={styles.camModalLabel}>Machine</label>
+                    {machines.length > 0 && (
+                      <span className={styles.machineDefaultOrientationHint}>
+                        Default:{" "}
+                        {formatOrientationLabel(
+                          selectedMachineDefaultOrientation
+                        )}
+                      </span>
+                    )}
+                  </div>
                   {machines.length === 0 ? (
                     <div className={styles.camModalPlaceholder}>
                       {loading
@@ -205,9 +222,9 @@ export function BoxTubeCamModal({
                           </span>
                         </button>
                       ))}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    )}
+                  </div>
                 <div className={styles.camModalControls}>
                   <label className={styles.camModalLabel}>Orientation</label>
                   <div

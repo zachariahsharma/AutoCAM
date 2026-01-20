@@ -267,13 +267,10 @@ export default function Boxtubes() {
     () => machines.filter((machine) => machine.can_run_box_tubes),
     [machines]
   );
-  const activeMaterialId = useMemo(() => {
-    return (
-      camMaterialId ??
-      team?.box_tube_material_id ??
-      findPreferredMaterialId(materials)
-    );
-  }, [camMaterialId, materials, team]);
+  const activeMaterialId = useMemo(
+    () => camMaterialId ?? findPreferredMaterialId(materials),
+    [camMaterialId, materials]
+  );
   const eligibleMaterialToolIds = useMemo(() => {
     if (activeMaterialId == null) return null;
     const matched = tools
@@ -481,11 +478,10 @@ export default function Boxtubes() {
 
   useEffect(() => {
     if (!camModalOpen) return;
-    const preferredId =
-      team?.box_tube_material_id ?? findPreferredMaterialId(materials);
+    const preferredId = findPreferredMaterialId(materials);
     setCamMaterialId(preferredId ?? null);
     setCamMaterialOverride(false);
-  }, [camModalOpen, materials, team]);
+  }, [camModalOpen, materials]);
 
   useEffect(() => {
     if (!camModalOpen) return;

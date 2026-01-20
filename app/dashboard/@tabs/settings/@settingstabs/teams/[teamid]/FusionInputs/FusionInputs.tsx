@@ -854,12 +854,16 @@ function Tools({ teamId }: { teamId: number }) {
               return {
                 id: t.id,
                 name: t.name,
-                materials: materialIds
-                  .map((id) => materialsById.get(id))
-                  .filter((m): m is Material => Boolean(m)),
-                machines: machineIds
-                  .map((id) => machinesById.get(id))
-                  .filter((m): m is Machine => Boolean(m)),
+                materials: uniqById(
+                  materialIds
+                    .map((id) => materialsById.get(id))
+                    .filter((m): m is Material => Boolean(m))
+                ),
+                machines: uniqById(
+                  machineIds
+                    .map((id) => machinesById.get(id))
+                    .filter((m): m is Machine => Boolean(m))
+                ),
                 file: "",
                 default_selected: Boolean(t.default_selected),
               };

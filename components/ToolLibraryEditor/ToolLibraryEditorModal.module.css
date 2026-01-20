@@ -134,6 +134,10 @@
   cursor: pointer;
   transition: background-color 0.2s;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .toolListItem:hover {
@@ -143,6 +147,41 @@
 .toolListItem.active {
   background-color: rgba(230, 221, 94, 0.1);
   border: 1px solid rgba(230, 221, 94, 0.3);
+}
+
+.toolListItemContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolListItemActions {
+  display: flex;
+  align-items: center;
+}
+
+.toolListItemActionButton {
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.toolListItemActionButton:hover:enabled {
+  opacity: 1;
+}
+
+.toolListItemActionButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .toolListItemName {

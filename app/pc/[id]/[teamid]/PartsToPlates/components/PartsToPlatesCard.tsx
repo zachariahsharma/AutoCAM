@@ -26,6 +26,20 @@ function formatMachiningTime(seconds: number): string {
   return `${secs}s`;
 }
 
+async function detectFileType(url: string, signal?: AbortSignal) {
+  try {
+    const head = await fetch(url, { method: "HEAD", signal });
+    if (!head.ok) return null;
+    const ct = head.headers.get("content-type")?.toLowerCase() ?? null;
+    if (!ct) return null;
+    if (ct.startsWith("image/")) return "image" as const;
+    if (ct.includes("application/pdf")) return "pdf" as const;
+    return "other" as const;
+  } catch {
+    return null;
+  }
+}
+
 function getMachiningTimeSeconds(response: unknown): number | null {
   if (!response || typeof response !== "object") return null;
   const value = (response as { total_machining_time?: unknown })
@@ -414,21 +428,6 @@ export function PartsToPlatesCard({
     setPlateDeleteTargetId(null);
   }
 
-  async function detectFileType(url: string, signal?: AbortSignal) {
-    try {
-      const head = await fetch(url, { method: "HEAD", signal });
-      if (!head.ok) return null;
-      const ct = head.headers.get("content-type")?.toLowerCase() ?? null;
-      if (!ct) return null;
-      if (ct.startsWith("image/")) return "image" as const;
-      if (ct.includes("application/pdf")) return "pdf" as const;
-      return "other" as const;
-    } catch {
-      // Common if the signed URL doesn't allow HEAD/CORS. We'll fall back to rendering as an image.
-      return null;
-    }
-  }
-
   const applyExcessParts = useCallback(
     async (
       plateId: number,
@@ -696,42 +695,48 @@ export function PartsToPlatesCard({
       return;
     }
     let mounted = true;
+    let refreshInterval: ReturnType<typeof setInterval> | null = null;
     setCamModalLoading(true);
     setCamModalError(null);
     setCamFileUrl(null);
     setCamFileType(null);
 
-    async function load() {
+    async function fetchJobFile() {
       try {
-        const [jobRes, machinesRes, toolsRes, materialsRes] = await Promise.all(
-          [
-            fetch(`/api/jobs/${camModalArrangeJobId}`),
-            fetch(`/api/teams/${teamDbId}/machines`),
-            fetch(`/api/teams/${teamDbId}/tools`),
-            fetch(`/api/teams/${teamDbId}/materials`),
-          ]
-        );
-
+        const jobRes = await fetch(`/api/jobs/${camModalArrangeJobId}`);
         if (!mounted) return;
-
         if (jobRes.ok) {
           const jobData: { file?: string | null } = await jobRes.json();
           const url = jobData.file ?? null;
           setCamFileUrl(url);
-
           if (url) {
             const detected = await detectFileType(url);
-            // If we can't detect (often due to CORS/HEAD), default to image so screenshots still render.
+            if (!mounted) return;
             setCamFileType(detected ?? "image");
           } else {
             setCamFileType(null);
           }
+          setCamModalError(null);
         } else {
-          // Keep loading machines/tools even if the screenshot request fails.
-          setCamModalError((await jobRes.text()) || "Failed to load job.");
+          const message = (await jobRes.text()) || "Failed to load job.";
+          setCamModalError(message);
           setCamFileUrl(null);
           setCamFileType(null);
         }
+      } catch (err) {
+        console.error("Failed to refresh CAM job file:", err);
+      }
+    }
+
+    async function loadResources() {
+      try {
+        const [machinesRes, toolsRes, materialsRes] = await Promise.all([
+          fetch(`/api/teams/${teamDbId}/machines`),
+          fetch(`/api/teams/${teamDbId}/tools`),
+          fetch(`/api/teams/${teamDbId}/materials`),
+        ]);
+
+        if (!mounted) return;
 
         if (machinesRes.ok) {
           const machinesData = (await machinesRes.json()) as Array<{
@@ -824,6 +829,8 @@ export function PartsToPlatesCard({
             id: number;
             name: string;
           }>;
+          setMaterials(materialsData);
+          setMaterialIdForCategory(null);
           if (materialNameForCategory) {
             const match = materialsData.find(
               (m) =>
@@ -831,20 +838,39 @@ export function PartsToPlatesCard({
             );
             if (match) setMaterialIdForCategory(match.id);
           }
+        } else {
+          setMaterials([]);
         }
       } catch (err) {
         console.error("Error loading CAM modal data:", err);
         if (!mounted) return;
         setCamModalError("Failed to load CAM modal data.");
-      } finally {
-        if (!mounted) return;
-        setCamModalLoading(false);
       }
     }
 
-    load();
+    const initialize = async () => {
+      try {
+        await Promise.all([fetchJobFile(), loadResources()]);
+      } finally {
+        if (mounted) {
+          setCamModalLoading(false);
+        }
+      }
+    };
+
+    initialize();
+
+    if (typeof window !== "undefined") {
+      refreshInterval = window.setInterval(() => {
+        fetchJobFile().catch(() => {});
+      }, 60 * 1000);
+    }
+
     return () => {
       mounted = false;
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
     };
   }, [camModalOpen, camModalArrangeJobId, teamDbId, materialNameForCategory]);
 

@@ -154,6 +154,7 @@ export default function Plates() {
     if (team) {
       load();
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
     return () => {

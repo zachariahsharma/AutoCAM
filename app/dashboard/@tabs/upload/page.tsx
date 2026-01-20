@@ -256,7 +256,19 @@ function UploadPageContent() {
     }, 2000);
 
     return () => clearTimeout(timeout);
-  }, [name, epic, ticket, quantity, selectedCategoryId, newMaterial, newThickness, activeTab]);
+  }, [
+    name,
+    epic,
+    ticket,
+    quantity,
+    selectedCategoryId,
+    newMaterial,
+    newThickness,
+    activeTab,
+    team,
+    hasUnsavedChanges,
+    saveDraft,
+  ]);
 
   // Warn on navigation if unsaved
   useEffect(() => {

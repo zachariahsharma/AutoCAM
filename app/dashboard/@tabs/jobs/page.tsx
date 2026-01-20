@@ -9,12 +9,21 @@ import { useEffect, useState } from "react";
 import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 
+type PlateWithJobs = {
+  id: number;
+  jobs?: PlatesJob[];
+};
+
+type PartCategoryWithPlates = PartCategory & {
+  plates?: PlateWithJobs[];
+};
+
 function PartCatCard({
   partcat,
   delay,
   teamid,
 }: {
-  partcat: PartCategory;
+  partcat: PartCategoryWithPlates;
   delay: number;
   teamid: number;
 }) {
@@ -40,13 +49,13 @@ function PartCatCard({
       </div>
       <div>
         {partcat.plates && partcat.plates.length > 0 ? (
-          (partcat.plates as any[]).map((plate: any, index: number) => (
-            <div key={index} className={styles.plateJobRow}>
+          partcat.plates.map((plate, index) => (
+            <div key={plate.id ?? index} className={styles.plateJobRow}>
               <span className={styles.plateJobId}>Plate {index + 1}</span>
               {Array.isArray(plate.jobs) &&
-                plate.jobs.map((job: any, index: number) => (
+                plate.jobs.map((job, jobIndex) => (
                   <div key={job.id} className={styles.jobStatusContainer}>
-                    <span className={styles.jobId}>Job {index + 1}</span>
+                    <span className={styles.jobId}>Job {jobIndex + 1}</span>
                     <div>
                       <div>
                         <span />
@@ -92,12 +101,14 @@ async function fetchPartCategories({
       },
     });
     if (response.ok) {
-      const data = await response.json();
+      const data = (await response.json()) as PartCategoryWithPlates[];
       for (const cat of data) {
         const platesResponse = await fetch(`/api/pc/${cat.id}/plates`);
         if (platesResponse.ok) {
           const platesData = await platesResponse.json();
-          cat.plates = platesData.map((plate: any) => ({ id: plate.id }));
+          cat.plates = platesData.map(
+            (plate: { id: number }) => ({ id: plate.id })
+          );
           for (const plate of cat.plates) {
             const jobResponse = await fetch(`/api/plates/${plate.id}/jobs`);
             if (jobResponse.ok) {

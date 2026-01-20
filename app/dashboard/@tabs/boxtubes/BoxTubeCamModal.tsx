@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import styles from "./boxtubes.module.css";
 import type { Material } from "@/app/types";
@@ -117,19 +117,20 @@ export function BoxTubeCamModal({
     : `${fallbackMaterialName} (default)`;
   const formatOrientationLabel = (value?: string) =>
     value ? value.charAt(0).toUpperCase() + value.slice(1) : "Vertical";
-  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
-    null
-  );
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
+  const portalContainer = useMemo(() => {
+    if (typeof document === "undefined") return null;
     const container = document.createElement("div");
     document.body.appendChild(container);
-    setPortalContainer(container);
-    return () => {
-      document.body.removeChild(container);
-    };
+    return container;
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (portalContainer && document.body.contains(portalContainer)) {
+        document.body.removeChild(portalContainer);
+      }
+    };
+  }, [portalContainer]);
 
   if (!portalContainer) return null;
 

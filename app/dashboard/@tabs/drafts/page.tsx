@@ -7,7 +7,7 @@ import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Draft, PendingCategory } from "@/app/types";
+import { Draft } from "@/app/types";
 
 function formatRelativeTime(date: Date): string {
   const now = new Date();

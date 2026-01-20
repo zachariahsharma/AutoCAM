@@ -147,7 +147,7 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
   const part = await tx.query.Parts.findFirst({
     where: eq(Parts.id, id),
     with: { category: true }
-  });
+  }) as (typeof Parts.$inferSelect & { category: typeof PartCategories.$inferSelect }) | undefined;
   if (!part) return routeResponse(404);
   await checkUserTeam(tx, authType, part.category.team_id);
   return routeResponse(200, await parseSchema({
@@ -184,7 +184,7 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
   const part = await tx.query.Parts.findFirst({
     where: eq(Parts.id, id),
     with: { category: true }
-  });
+  }) as (typeof Parts.$inferSelect & { category: typeof PartCategories.$inferSelect }) | undefined;
   await checkUserTeam(tx, authType, part?.category.team_id);
   const body = await parseSchema(await req.json(), UpdateSchema);
   await tx.update(Parts).set(body).where(eq(Parts.id, id)).returning({ id: Parts.id });
@@ -195,7 +195,7 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
   const part = await tx.query.Parts.findFirst({
     where: eq(Parts.id, id),
     with: { category: true }
-  });
+  }) as (typeof Parts.$inferSelect & { category: typeof PartCategories.$inferSelect }) | undefined;
   if (!part) return routeResponse(404);
   await checkUserTeam(tx, authType, part.category.team_id);
   await tx.delete(Parts).where(eq(Parts.id, id));

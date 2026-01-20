@@ -1,4 +1,4 @@
-import { Materials } from "@/lib/db/schema/cam";
+import { Materials } from "@/lib/db/schema/core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";

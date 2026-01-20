@@ -1,5 +1,5 @@
 import { Drafts, PartCategories, Parts, BoxTubes } from "@/lib/db/schema/cam";
-import { Teams } from "@/lib/db/schema/entities";
+import { Teams } from "@/lib/db/schema/core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";

@@ -1,17 +1,7 @@
 import { boolean, char, integer, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { relations } from "drizzle-orm";
-import { Machines, Materials, PartCategories, Tools, BoxTubes } from "./cam";
-
-export const Teams = pgTable("teams", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  name: text().notNull(),
-  owner: text().notNull().references(() => user.id),
-  logo: text(),
-  box_tube_material_id: integer().references(() => Materials.id, {
-    onDelete: "set null",
-  }),
-});
+import { Teams } from "./core";
 
 export const TeamInvites = pgTable("team_invites", {
   id: uuid().primaryKey().defaultRandom(),
@@ -58,22 +48,6 @@ export const TeamMembersRelations = relations(TeamMembers, ({ one }) => ({
   }),
   user: one(user, {
     fields: [TeamMembers.user_id],
-    references: [user.id],
-  })
-}));
-
-export const TeamsRelationse = relations(Teams, ({ many, one }) => ({
-  teamMembers: many(TeamMembers),
-  teamInvites: many(TeamInvites),
-  runners: many(TeamRunners),
-  partCategories: many(PartCategories),
-  boxTubes: many(BoxTubes),
-  keys: many(TeamKeys),
-  materials: many(Materials),
-  machines: many(Machines),
-  tools: many(Tools),
-  owner: one(user, {
-    fields: [Teams.owner],
     references: [user.id],
   })
 }));

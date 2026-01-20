@@ -9,18 +9,20 @@ export function ModalPortal({
 }: {
   children: ReactNode;
 }) {
-  const [element, setElement] = useState<HTMLElement | null>(null);
+  const [element] = useState<HTMLElement | null>(() => {
+    if (typeof document === "undefined") return null;
+    return document.createElement("div");
+  });
 
   useEffect(() => {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    setElement(container);
+    if (!element) return;
+    document.body.appendChild(element);
     return () => {
-      if (document.body.contains(container)) {
-        document.body.removeChild(container);
+      if (document.body.contains(element)) {
+        document.body.removeChild(element);
       }
     };
-  }, []);
+  }, [element]);
 
   if (!element) {
     return null;

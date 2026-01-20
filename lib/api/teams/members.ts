@@ -1,5 +1,6 @@
 import { teamIdFromDigest } from "@/lib/auth/server";
-import { TeamMembers, Teams } from "@/lib/db/schema/entities";
+import { TeamMembers } from "@/lib/db/schema/entities";
+import { Teams } from "@/lib/db/schema/core";
 import { user } from "@/lib/db/schema/auth";
 import { and, eq } from "drizzle-orm";
 import zod from "zod";

@@ -9,6 +9,8 @@ import { eq } from "drizzle-orm";
 
 import "./jobs";
 
+type PlateCategoryRef = { team_id: number };
+
 const CreateSchema = createInsertSchema(Plates).omit({ category_id: true });
 const UpdateSchema = createUpdateSchema(Plates).omit({ category_id: true });
 const Plate = createSelectSchema(Plates).omit({ category_id: true }).openapi("Plate");
@@ -176,7 +178,11 @@ export const SingleGET = routeFactory(async (req, authType, tx, id) => {
     with: { category: true }
   });
   if (!plate) return routeResponse(404);
-  await checkUserTeam(tx, authType, plate.category.team_id);
+  await checkUserTeam(
+    tx,
+    authType,
+    (plate.category as PlateCategoryRef | null)?.team_id
+  );
   return routeResponse(200, await parseSchema(plate, PlateWithCategory));
 }, { user: {}, apiKey: { scopes: [scopes.plates.read] } });
 
@@ -195,7 +201,11 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     where: eq(Plates.id, id),
     with: { category: true }
   });
-  await checkUserTeam(tx, authType, plate?.category.team_id);
+  await checkUserTeam(
+    tx,
+    authType,
+    (plate?.category as PlateCategoryRef | null)?.team_id
+  );
   const body = await parseSchema(await req.json(), UpdateSchema);
   await tx.update(Plates).set(body).where(eq(Plates.id, id)).returning({ id: Plates.id });
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.plates.write] } });
@@ -206,6 +216,10 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
     where: eq(Plates.id, id),
     with: { category: true }
   });
-  await checkUserTeam(tx, authType, plate?.category.team_id);
+  await checkUserTeam(
+    tx,
+    authType,
+    (plate?.category as PlateCategoryRef | null)?.team_id
+  );
   await tx.delete(Plates).where(eq(Plates.id, id));
 }, { user: { emailVerified: true }, apiKey: { scopes: [scopes.plates.write] } });

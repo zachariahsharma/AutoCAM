@@ -746,34 +746,33 @@ export default function DashboardLayout({ tabs }: { tabs: React.ReactNode }) {
 function EmailVerificationModal() {
   const { emailVerified, isLoadingAuth, userId, userEmail, sessionExpiresAt } =
     useDashboardEvents();
-  const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  useEffect(() => {
-    if (isLoadingAuth || emailVerified) {
-      setOpen(false);
-      return;
-    }
-    if (!userId) return;
-    if (pathname.includes("/dashboard/settings/personal")) return;
-
-    const storageKey = `autocam:emailVerificationModalDismissed:${userId}:${
-      sessionExpiresAt ?? "unknown"
-    }`;
-    if (sessionStorage.getItem(storageKey) === "1") return;
-
-    setOpen(true);
-  }, [emailVerified, isLoadingAuth, pathname, sessionExpiresAt, userId]);
+  const storageKey =
+    userId && !isLoadingAuth
+      ? `autocam:emailVerificationModalDismissed:${userId}:${
+          sessionExpiresAt ?? "unknown"
+        }`
+      : null;
+  const isStorageDismissed =
+    storageKey && typeof window !== "undefined"
+      ? sessionStorage.getItem(storageKey) === "1"
+      : false;
+  const open =
+    !isLoadingAuth &&
+    !emailVerified &&
+    !!userId &&
+    !pathname.includes("/dashboard/settings/personal") &&
+    !dismissed &&
+    !isStorageDismissed;
 
   const close = () => {
-    if (userId) {
-      const storageKey = `autocam:emailVerificationModalDismissed:${userId}:${
-        sessionExpiresAt ?? "unknown"
-      }`;
+    if (storageKey) {
       sessionStorage.setItem(storageKey, "1");
     }
-    setOpen(false);
+    setDismissed(true);
   };
 
   if (!open) return null;

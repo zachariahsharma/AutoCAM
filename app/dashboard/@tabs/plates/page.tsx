@@ -138,10 +138,13 @@ function NoTeamCard() {
 export default function Plates() {
   const { team } = useDashboardEvents();
   const [partcats, setCategories] = useState<PartCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     let mounted = true;
+    if (!team) return () => {
+      mounted = false;
+    };
     const load = async () => {
       setIsLoading(true);
       const categories = await fetchPartCategories({ team });
@@ -153,8 +156,6 @@ export default function Plates() {
     };
     if (team) {
       load();
-    } else {
-      setIsLoading(false);
     }
     return () => {
       mounted = false;

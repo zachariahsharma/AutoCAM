@@ -7,6 +7,8 @@ import { scopeNames as scopes } from "@/lib/scopes";
 import { checkUserTeam, CommonAuthorization, Conflict, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
 import { Job, queuePositionSubquery } from "../jobs";
 
+type PlateCategoryRef = { team_id: number };
+
 const CreateSchema = zod.discriminatedUnion("type", [
   zod.object({ type: zod.literal("arrange") }),
   zod.object({
@@ -88,7 +90,11 @@ export const GET = routeFactory(async (req, authType, tx, id) => {
     where: eq(Plates.id, id),
     with: { category: true }
   });
-  await checkUserTeam(tx, authType, plate?.category.team_id);
+  await checkUserTeam(
+    tx,
+    authType,
+    (plate?.category as PlateCategoryRef | null)?.team_id
+  );
   const subquery = queuePositionSubquery(tx);
   const result = (await tx.select().from(PlateJobs)
     .innerJoin(subquery, eq(PlateJobs.job_id, subquery.id))
@@ -103,7 +109,11 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
     with: { category: true }
   });
   if (!plate) return routeResponse(404);
-  await checkUserTeam(tx, authType, plate?.category.team_id);
+  await checkUserTeam(
+    tx,
+    authType,
+    (plate?.category as PlateCategoryRef | null)?.team_id
+  );
   const body = await parseSchema(await req.json(), CreateSchema);
 
   const { type, ...payload } = body;
@@ -112,7 +122,7 @@ export const POST = routeFactory(async (req, authType, tx, plate_id) => {
     columns: { part_id: true, quantity: true }
   });
   const [id] = await tx.insert(Jobs).values({
-    team_id: plate.category.team_id,
+    team_id: (plate.category as PlateCategoryRef).team_id,
     kind: `plate:${type}`,
     payload: { ...payload, assignments, plate_id }
   }).returning({ id: Jobs.id });

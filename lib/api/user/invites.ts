@@ -13,10 +13,21 @@ const Invite = createSelectSchema(TeamInvites).extend({ team: zod.string() });
 export const GET = routeFactory(async (req, authType, tx) => {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return routeResponse(401);
-  return routeResponse(200, await parseSchema((await tx.query.TeamInvites.findMany({
-    with: { team: true },
-    where: eq(TeamInvites.email, session.user.email)
-  })).map(x => ({ ...x, team: x.team.name })), zod.array(Invite)))
+  return routeResponse(
+    200,
+    await parseSchema(
+      (
+        await tx.query.TeamInvites.findMany({
+          with: { team: true },
+          where: eq(TeamInvites.email, session.user.email),
+        })
+      ).map((x) => ({
+        ...x,
+        team: x.team ? (x.team as { name: string }).name : "",
+      })),
+      zod.array(Invite)
+    )
+  );
 }, { user: {} });
 
 export const Accept = routeFactory<string>(async (req, authType, tx, id) => {

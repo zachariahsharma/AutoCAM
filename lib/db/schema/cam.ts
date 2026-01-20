@@ -1,6 +1,7 @@
-import { and, isNotNull, isNull, relations } from "drizzle-orm";
-import { boolean, doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex } from "drizzle-orm/pg-core";
-import { TeamKeys, Teams } from "./entities";
+import { and, isNotNull, isNull, relations, type BuildQueryResult, type DBQueryConfig, type ExtractTablesWithRelations } from "drizzle-orm";
+import { boolean, doublePrecision, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uniqueIndex, type PgTableWithColumns } from "drizzle-orm/pg-core";
+import { TeamKeys } from "./entities";
+import { Materials, Teams } from "./core";
 import { user } from "./auth";
 
 export const PartCategories = pgTable("part_categories", {
@@ -39,14 +40,6 @@ export const BoxTubes = pgTable("box_tubes", {
   quantity: integer().default(1).notNull(),
   team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
 });
-
-export const Materials = pgTable("materials", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  name: text().notNull(),
-  team_id: integer().notNull().references(() => Teams.id, { onDelete: "cascade" })
-}, table => [
-  unique().on(table.name, table.team_id),
-]);
 
 export const Machines = pgTable("machines", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

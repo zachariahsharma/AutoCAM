@@ -682,7 +682,7 @@ function UploadPageContent() {
           </div>
 
           <div className={styles.actions}>
-            <SecondaryButton onClick={saveDraft} disabled={isSaving}>
+            <SecondaryButton onClick={() => saveDraft()} disabled={isSaving}>
               <span className="textGradient">Save as Draft</span>
             </SecondaryButton>
             <PrimaryButton onClick={handleSubmit} disabled={isSubmitting}>

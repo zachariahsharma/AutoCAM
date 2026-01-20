@@ -1,4 +1,5 @@
-import { TeamInvites, Teams } from "@/lib/db/schema/entities";
+import { TeamInvites } from "@/lib/db/schema/entities";
+import { Teams } from "@/lib/db/schema/core";
 import { user } from "@/lib/db/schema/auth";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import zod from "zod";

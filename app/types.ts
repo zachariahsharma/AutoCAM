@@ -6,7 +6,7 @@ import {
   BoxTubes,
   Drafts,
 } from "@/lib/db/schema/cam";
-import { Teams } from "@/lib/db/schema/entities";
+import { Teams } from "@/lib/db/schema/core";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 

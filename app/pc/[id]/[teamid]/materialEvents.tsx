@@ -54,6 +54,7 @@ export function MaterialEventsProvider({
         );
       }
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedParts((prev) => {
       let changed = false;
       const next = { ...prev };

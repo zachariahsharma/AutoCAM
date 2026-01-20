@@ -82,7 +82,7 @@ export const PUT = routeFactory(async (req, authType, tx) => {
     where: eq(Plates.id, body.plate_id),
     with: { category: true }
   });
-  if (!plate) return routeResponse(404);
+  if (!plate || Array.isArray(plate.category)) return routeResponse(404);
   await checkUserTeam(tx, authType, plate.category.team_id)
   if (body.quantity > 0) {
     await tx.insert(PartCategoryAssignments).values({ ...body, category_id: plate.category_id })

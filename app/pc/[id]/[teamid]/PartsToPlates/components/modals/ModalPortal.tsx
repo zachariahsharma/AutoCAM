@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 export function ModalPortal({
@@ -9,24 +9,22 @@ export function ModalPortal({
 }: {
   children: ReactNode;
 }) {
-  const portalElement = useMemo(() => {
-    if (typeof document === "undefined") return null;
-    const element = document.createElement("div");
-    document.body.appendChild(element);
-    return element;
-  }, []);
+  const [element, setElement] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    setElement(container);
     return () => {
-      if (portalElement && document.body.contains(portalElement)) {
-        document.body.removeChild(portalElement);
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
       }
     };
-  }, [portalElement]);
+  }, []);
 
-  if (!portalElement) {
+  if (!element) {
     return null;
   }
 
-  return createPortal(children, portalElement);
+  return createPortal(children, element);
 }

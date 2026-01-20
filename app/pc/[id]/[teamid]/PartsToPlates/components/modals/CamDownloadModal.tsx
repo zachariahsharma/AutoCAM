@@ -73,13 +73,10 @@ export function CamDownloadModal({
                   ) : arrangePreviewUrl ? (
                     arrangePreviewType === "image" ? (
                       <div style={{ display: "grid", gap: 8 }}>
-                        <Image
+                        <img
                           src={arrangePreviewUrl}
                           alt="Arrangement screenshot"
                           className={styles.camModalImage}
-                          width={640}
-                          height={360}
-                          style={{ width: "100%", height: "auto" }}
                         />
                       </div>
                     ) : (

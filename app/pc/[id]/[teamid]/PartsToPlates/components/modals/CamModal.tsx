@@ -133,16 +133,13 @@ export function CamModal({
                       <div className={styles.camModalPlaceholder}>Loading…</div>
                     ) : camFileUrl ? (
                       camFileType === "image" ? (
-                      <div style={{ display: "grid", gap: 8 }}>
-                        <Image
-                          src={camFileUrl}
-                          alt="Arrangement screenshot"
-                          width={640}
-                          height={360}
-                          className={styles.camModalImage}
-                          style={{ width: "100%", height: "auto" }}
-                        />
-                      </div>
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <img
+                            src={camFileUrl}
+                            alt="Arrangement screenshot"
+                            className={styles.camModalImage}
+                          />
+                        </div>
                       ) : (
                         <div className={styles.camModalPlaceholder}>
                           <div>No preview available.</div>

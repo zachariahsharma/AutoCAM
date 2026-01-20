@@ -10,6 +10,7 @@ import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMa
 import { PrimaryButton, SecondaryButton } from "@/components/Buttons/Buttons";
 
 function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
+  if (!part) return null;
   const [quantity, setQuantity] = useState<number>(part.quantity);
   useEffect(() => {
     fetch(`/api/parts/${part.id}`, {
@@ -19,7 +20,7 @@ function QuantitiesCard({ part, delay }: { part: Part; delay: number }) {
       },
       body: JSON.stringify({ quantity: quantity }),
     });
-  }, [quantity, part.id]);
+  }, [quantity]);
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -153,13 +154,15 @@ export default function Quantitys() {
         <p id={styles.noboxes}>No Parts available.</p>
       ) : (
         <div className={styles.quantityslist}>
-          {parts.map((part, index) => (
-            <QuantitiesCard
-              key={part.id}
-              part={part}
-              delay={index * 0.2 + 0.3}
-            />
-          ))}
+          {parts.map((part, index) => {
+            return (
+              <QuantitiesCard
+                key={index}
+                part={part}
+                delay={index * 0.2 + 0.3}
+              />
+            );
+          })}
         </div>
       )}
     </>

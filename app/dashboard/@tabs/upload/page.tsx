@@ -256,19 +256,7 @@ function UploadPageContent() {
     }, 2000);
 
     return () => clearTimeout(timeout);
-  }, [
-    name,
-    epic,
-    ticket,
-    quantity,
-    selectedCategoryId,
-    newMaterial,
-    newThickness,
-    activeTab,
-    team,
-    hasUnsavedChanges,
-    saveDraft,
-  ]);
+  }, [name, epic, ticket, quantity, selectedCategoryId, newMaterial, newThickness, activeTab]);
 
   // Warn on navigation if unsaved
   useEffect(() => {

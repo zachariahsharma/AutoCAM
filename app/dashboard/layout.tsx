@@ -752,7 +752,6 @@ function EmailVerificationModal() {
 
   useEffect(() => {
     if (isLoadingAuth || emailVerified) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOpen(false);
       return;
     }

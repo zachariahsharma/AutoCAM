@@ -12,7 +12,6 @@ export function ModalPortal({
   const portalElement = useMemo(() => {
     if (typeof document === "undefined") return null;
     const element = document.createElement("div");
-    element.className = "modal-portal";
     document.body.appendChild(element);
     return element;
   }, []);

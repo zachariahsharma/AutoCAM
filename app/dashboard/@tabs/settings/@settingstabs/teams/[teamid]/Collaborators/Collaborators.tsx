@@ -515,7 +515,7 @@ function CollaboratorCard({
       </div>
       <div className={styles.role}>
         {showRoleDropdown ? (
-          <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)}>
+          <button onClick={() => setDropdownOpen(!dropdownOpen)}>
             {collaborator.role}
             <Image
               alt="dropdown"

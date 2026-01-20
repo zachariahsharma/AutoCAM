@@ -89,20 +89,6 @@ export default function ToolLibraryEditorModal({
     ? library.data[selectedToolIndex]
     : null;
 
-  const cloneToolItem = useCallback((tool: ToolItem): ToolItem => {
-    const duplicatedTool = structuredClone(tool) as ToolItem;
-    duplicatedTool.guid = crypto.randomUUID();
-    duplicatedTool.last_modified = Date.now();
-    if (duplicatedTool["start-values"]?.presets) {
-      duplicatedTool["start-values"].presets =
-        duplicatedTool["start-values"].presets.map((preset) => ({
-          ...preset,
-          guid: crypto.randomUUID(),
-        }));
-    }
-    return duplicatedTool;
-  }, []);
-
   const handleToolUpdate = useCallback((updates: Partial<ToolItem>) => {
     if (library === null || selectedToolIndex === null) return;
 
@@ -146,26 +132,30 @@ export default function ToolLibraryEditorModal({
     setHasUnsavedChanges(true);
   }, [library, selectedToolIndex]);
 
-  const handleDuplicateToolAtIndex = useCallback((index: number) => {
-    if (index < 0) return;
-    setLibrary((prev) => {
+  const handleDuplicateTool = useCallback(() => {
+    if (!library || selectedToolIndex === null) return;
+
+    const toolToDuplicate = library.data[selectedToolIndex];
+    const duplicatedTool = structuredClone(toolToDuplicate) as ToolItem;
+    duplicatedTool.guid = crypto.randomUUID();
+    duplicatedTool.last_modified = Date.now();
+    if (duplicatedTool["start-values"]?.presets) {
+      duplicatedTool["start-values"].presets = duplicatedTool["start-values"].presets.map(preset => ({
+        ...preset,
+        guid: crypto.randomUUID(),
+      }));
+    }
+
+    setLibrary(prev => {
       if (!prev) return prev;
-      const toolToDuplicate = prev.data[index];
-      if (!toolToDuplicate) return prev;
-      const duplicatedTool = cloneToolItem(toolToDuplicate);
       const newData = [...prev.data];
-      newData.splice(index + 1, 0, duplicatedTool);
+      newData.splice(selectedToolIndex + 1, 0, duplicatedTool);
       return { ...prev, data: newData };
     });
-    setSelectedToolIndex(index + 1);
+    setSelectedToolIndex(selectedToolIndex + 1);
     setActiveTab("basic");
     setHasUnsavedChanges(true);
-  }, [cloneToolItem]);
-
-  const handleDuplicateTool = useCallback(() => {
-    if (selectedToolIndex === null) return;
-    handleDuplicateToolAtIndex(selectedToolIndex);
-  }, [selectedToolIndex, handleDuplicateToolAtIndex]);
+  }, [library, selectedToolIndex]);
 
   const handleSave = useCallback(async () => {
     if (!library) return;
@@ -284,37 +274,14 @@ export default function ToolLibraryEditorModal({
                     library.data.map((tool, index) => (
                       <div
                         key={tool.guid}
-                        className={`${styles.toolListItem} ${
-                          selectedToolIndex === index ? styles.active : ""
-                        }`}
+                        className={`${styles.toolListItem} ${selectedToolIndex === index ? styles.active : ""}`}
                         onClick={() => setSelectedToolIndex(index)}
                       >
-                        <div className={styles.toolListItemContent}>
-                          <div className={styles.toolListItemName}>
-                            {tool.description || "Unnamed Tool"}
-                          </div>
-                          <div className={styles.toolListItemType}>
-                            {tool.type}
-                          </div>
+                        <div className={styles.toolListItemName}>
+                          {tool.description || "Unnamed Tool"}
                         </div>
-                        <div className={styles.toolListItemActions}>
-                          <button
-                            type="button"
-                            className={styles.toolListItemActionButton}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleDuplicateToolAtIndex(index);
-                            }}
-                            disabled={isLoading || isSaving}
-                            title="Duplicate tool"
-                          >
-                            <Image
-                              src="/settings/teams/apikey/Copy.svg"
-                              alt="Duplicate"
-                              width={16}
-                              height={16}
-                            />
-                          </button>
+                        <div className={styles.toolListItemType}>
+                          {tool.type}
                         </div>
                       </div>
                     ))

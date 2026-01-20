@@ -26,12 +26,6 @@ body {
 	color: var(--text);
 }
 
-.modal-portal {
-	position: fixed;
-	inset: 0;
-	z-index: 600;
-}
-
 /* Cursors for interactive elements */
 button,
 input[type="button"],

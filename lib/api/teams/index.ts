@@ -8,13 +8,14 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from "driz
 import zod from "zod";
 import { registry } from "@/lib/openapi/registry";
 import { apiKey, userSession } from "../auth";
-import { scopeNames as scopes } from "../../scopes";
+import { scopeNames, scopeNames as scopes } from "../../scopes";
 import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseSchema, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError, parseFormData } from "../common";
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { procedure, router } from "../trpc";
+import db from "@/lib/db";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });
 const UpdateSchema = zod.object({
@@ -219,7 +220,46 @@ export const DELETE = routeFactory(async (req, authType, tx, id) => {
 }, { user: { emailVerified: true } });
 
 export default router({
-  get: protectedProcedure.query(async opts => {
-    return "Hello World";
+  get: procedure.meta({
+    authStrategies: ["user", "apiKey"],
+    scopes: [scopeNames.teams.read]
+  }).output(zod.union([
+    createSelectSchema(Teams).extend({
+      owner: zod.object({
+        email: zod.email()
+      }).transform(x => x.email).pipe(zod.email())
+    }),
+    zod.array(createSelectSchema(Teams).extend({
+      owner: zod.object({
+        email: zod.email()
+      }).transform(x => x.email).pipe(zod.email())
+    }))
+  ])).query(async opts => {
+    if (opts.ctx.session) {
+      return (await db.query.TeamMembers.findMany({
+        where: eq(TeamMembers.user_id, opts.ctx.session.user.id),
+        with: { team: { with: { owner: true } } }
+      })).map(x => x.team);
+    }
+    const key = await db.query.TeamKeys.findFirst({
+      where: eq(TeamKeys.digest, opts.ctx.apiKey!),
+      with: { team: { with: { owner: true } } }
+    });
+    return key!.team;
+  }),
+
+  create: procedure.meta({
+    authStrategies: ["user"]
+  }).input(createInsertSchema(Teams).omit({ owner: true, logo: true })).mutation(async opts => {
+    const [id] = await db.insert(Teams).values({
+      ...opts.input,
+      owner: opts.ctx.session!.user.id
+    }).returning({ id: Teams.id });
+    await db.insert(TeamMembers).values({
+      user_id: opts.ctx.session!.user.id,
+      team_id: id.id,
+      admin: true
+    });
+    return id;
   })
 });

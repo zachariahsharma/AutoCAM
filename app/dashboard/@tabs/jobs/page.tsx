@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import styles from "./jobs.module.css";
-import type { PartCategory, PlatesJob, Team } from "@/app/types";
+import type { PartCategory, Plate, PlatesJob, Team } from "@/app/types";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -14,7 +14,7 @@ function PartCatCard({
   delay,
   teamid,
 }: {
-  partcat: PartCategory;
+  partcat: PartCategoryWithJobs;
   delay: number;
   teamid: number;
 }) {
@@ -40,13 +40,13 @@ function PartCatCard({
       </div>
       <div>
         {partcat.plates && partcat.plates.length > 0 ? (
-          (partcat.plates as any[]).map((plate: any, index: number) => (
+          partcat.plates.map((plate, index) => (
             <div key={index} className={styles.plateJobRow}>
               <span className={styles.plateJobId}>Plate {index + 1}</span>
               {Array.isArray(plate.jobs) &&
-                plate.jobs.map((job: any, index: number) => (
+                plate.jobs.map((job, jobIndex) => (
                   <div key={job.id} className={styles.jobStatusContainer}>
-                    <span className={styles.jobId}>Job {index + 1}</span>
+                    <span className={styles.jobId}>Job {jobIndex + 1}</span>
                     <div>
                       <div>
                         <span />
@@ -79,11 +79,14 @@ function PartCatCard({
   );
 }
 
+type PlateWithJobs = Plate & { jobs?: PlatesJob[] };
+type PartCategoryWithJobs = PartCategory & { plates?: PlateWithJobs[] };
+
 async function fetchPartCategories({
   team,
 }: {
   team: Team | null;
-}): Promise<PartCategory[] | undefined> {
+}): Promise<PartCategoryWithJobs[] | undefined> {
   if (team !== null) {
     const response = await fetch(`/api/teams/${team.id}/pc`, {
       method: "GET",
@@ -92,12 +95,12 @@ async function fetchPartCategories({
       },
     });
     if (response.ok) {
-      const data = await response.json();
+      const data: PartCategoryWithJobs[] = await response.json();
       for (const cat of data) {
         const platesResponse = await fetch(`/api/pc/${cat.id}/plates`);
         if (platesResponse.ok) {
-          const platesData = await platesResponse.json();
-          cat.plates = platesData.map((plate: any) => ({ id: plate.id }));
+          const platesData: PlateWithJobs[] = await platesResponse.json();
+          cat.plates = platesData.map((plate) => ({ ...plate, jobs: [] }));
           for (const plate of cat.plates) {
             const jobResponse = await fetch(`/api/plates/${plate.id}/jobs`);
             if (jobResponse.ok) {
@@ -164,7 +167,7 @@ function NoTeamCard() {
 
 export default function Jobs() {
   const { team } = useDashboardEvents();
-  const [partcats, setCategories] = useState<PartCategory[]>([]);
+  const [partcats, setCategories] = useState<PartCategoryWithJobs[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

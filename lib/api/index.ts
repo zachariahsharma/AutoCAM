@@ -1,3 +1,5 @@
+import { router } from "../trpc/server";
+
 import teams from "./teams";
 import "./machines";
 import "./materials";
@@ -9,8 +11,9 @@ import "./user";
 import "./auth";
 import "./tools";
 import "./jobs";
-import { router } from "./trpc";
 
-export default router({
+export const appRouter = router({
   teams
 });
+
+export type AppRouter = typeof appRouter;

@@ -14,7 +14,7 @@ import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema/auth";
 import { client } from "@/lib/aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { procedure, router } from "../trpc";
+import { procedure, router } from "../../trpc/server";
 import db from "@/lib/db";
 
 const CreateSchema = createInsertSchema(Teams).omit({ owner: true, logo: true });

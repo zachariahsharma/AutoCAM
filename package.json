@@ -16,6 +16,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@scalar/nextjs-api-reference": "^0.9.10",
+    "@trpc/client": "^11.8.1",
     "@trpc/server": "^11.8.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",

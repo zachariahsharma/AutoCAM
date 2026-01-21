@@ -55,25 +55,6 @@ registry.registerPath({
   }
 });
 
-registry.registerPath({
-  method: "delete",
-  path: "/api/teams/{id}",
-  tags: ["Teams"],
-  summary: "Delete Team",
-  description: "This endpoint requires the user's email to be verified. The user must be the owner of the team",
-  request: {
-    params: zod.object({ id: zod.number().openapi({ description: "ID of the team that is being deleted" }) }),
-  },
-  responses: {
-    204: {
-      description: "Team deleted successfully",
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...NotFound
-  }
-});
-
 export const PATCH = routeFactory(async (req, authType, tx, id) => {
   if (!id) return routeResponse(422);
   await checkUserTeam(tx, authType, id, true);
@@ -103,18 +84,6 @@ export const PATCH = routeFactory(async (req, authType, tx, id) => {
     }));
   }
   return routeResponse(204);
-}, { user: { emailVerified: true } });
-
-export const DELETE = routeFactory(async (req, authType, tx, id) => {
-  if (!id) return routeResponse(422);
-  const team = await tx.query.Teams.findFirst({
-    where: eq(Teams.id, id),
-    columns: { owner: true }
-  });
-  if (!team) return routeResponse(404);
-  if (team.owner !== authType.userId) throw routeResponse(401, { message: "The user is not the owner of the team" });
-  tx.delete(Teams).where(eq(Teams.id, id));
-  await s3DeleteWithPrefix(`teams/${id}/`);
 }, { user: { emailVerified: true } });
 
 export default router({

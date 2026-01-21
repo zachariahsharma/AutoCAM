@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import FileUploadModal from "@/components/FileUploadModal/FileUploadModal";
 import ToolLibraryEditorModal from "@/components/ToolLibraryEditor/ToolLibraryEditorModal";
 import { useSearchParams } from "next/navigation";
+import trpcClient from '@/lib/trpc/client';
 
 function uniqueNumericIds(ids?: Array<number | string>): number[] {
   return Array.from(
@@ -368,12 +369,7 @@ function Materials({ teamId }: { teamId: number }) {
     setIsDefaultLoading(true);
     async function loadTeamDefaults() {
       try {
-        const response = await fetch("/api/teams");
-        if (!response.ok) return;
-        const teams = (await response.json()) as Array<{
-          id: number;
-          box_tube_material_id?: number | null;
-        }>;
+        const teams = (await trpcClient.teams.get.query());
         if (!mounted) return;
         const team = teams.find((t) => t.id === teamId);
         setBoxTubeMaterialId(team?.box_tube_material_id ?? null);

@@ -7,6 +7,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTabEvents } from "../../teamUpdate";
 import { useDashboardEvents } from "@/app/dashboard/dashboardTeam";
+import trpcClient from '@/lib/trpc/client';
+import { lte } from "drizzle-orm";
 
 export default function JoinTeamSettingsPage() {
   const [invites, setInvites] = useState<TeamInvite[]>([]);
@@ -91,9 +93,8 @@ function JoinCard({
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
 
         // Reload the teams list
-        const teamsResponse = await fetch("/api/teams");
-        if (teamsResponse.ok) {
-          const teamsData = await teamsResponse.json();
+        try {
+          let teamsData = await trpcClient.teams.get.query();
           teamsData.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
           setTeams(teamsData);
 
@@ -102,7 +103,7 @@ function JoinCard({
 
           notifyUpdate();
           router.push(`/dashboard/settings/teams/${team_id}`);
-        }
+        } catch {}
       } else {
         console.error("Failed to accept invite");
         setIsJoining(false);

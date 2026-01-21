@@ -8,11 +8,13 @@ import { SidebarProvider, useSidebar } from "@/app/dashboard/sidebarContext";
 import styles from "./layout.module.css";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
+import trpcClient from '@/lib/trpc/client';
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { Team } from "@/app/types";
 import { motion, AnimatePresence, useAnimate } from "framer-motion";
 import { useSelectedLayoutSegment, usePathname } from "next/navigation";
+import { inferRouterOutputs } from "@trpc/server";
+import { AppRouter } from "@/lib/api";
 
 // Patch performance.measure to suppress parallel route timing errors
 if (typeof window !== "undefined" && window.performance?.measure) {
@@ -40,7 +42,7 @@ export function useCurrentTab() {
 function TeamDropdown() {
   const [teamDropdownOpen, setTeamDropdownOpen] = useState(false);
   const { team, setTeam, teamsRefreshCount } = useDashboardEvents();
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<Extract<inferRouterOutputs<AppRouter>['teams']['get'], any[]>>([]);
   const dropdownTeamRef = useRef<HTMLDivElement>(null);
   const { isCollapsed } = useSidebar();
 
@@ -48,8 +50,9 @@ function TeamDropdown() {
     let mounted = true;
     async function loadTeams() {
       try {
-        const response = await fetch("/api/teams");
-        const data: Team[] = await response.json();
+        let data = await trpcClient.teams.get.query();
+        if (!Array.isArray(data))
+          data = [data];
         if (mounted) {
           setTeams(data);
           if (!team) setTeam(data[0]);

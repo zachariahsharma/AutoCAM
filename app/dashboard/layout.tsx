@@ -51,8 +51,6 @@ function TeamDropdown() {
     async function loadTeams() {
       try {
         let data = await trpcClient.teams.get.query();
-        if (!Array.isArray(data))
-          data = [data];
         if (mounted) {
           setTeams(data);
           if (!team) setTeam(data[0]);

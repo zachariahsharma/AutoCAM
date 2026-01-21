@@ -3,7 +3,6 @@ import { OpenApiMeta } from 'trpc-to-openapi';
 import { auth } from '../auth/server';
 import crypto from "crypto";
 import { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
-import { ZodType } from 'zod';
 import db from '../db';
 import { TeamKeys } from '../db/schema/entities';
 import { eq } from 'drizzle-orm';

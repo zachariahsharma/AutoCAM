@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useAnimate } from "framer-motion";
+import trpcClient from '@/lib/trpc/client';
 export function useCurrentTab() {
   const segments = useSelectedLayoutSegments("settingstabs");
   console.log('SEGMENTS', segments)
@@ -26,7 +27,7 @@ function Sidebar() {
     let mounted = true;
     (async function () {
       try {
-        const teamsTemp = await (await fetch("/api/teams")).json();
+        let teamsTemp = await trpcClient.teams.get.query();
         if (!mounted) return;
         teamsTemp.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
         setTeams(teamsTemp);

@@ -1,1 +1,1 @@
-export { PATCH, DELETE } from "@/lib/api/teams";
+export { PATCH } from "@/lib/api/teams";

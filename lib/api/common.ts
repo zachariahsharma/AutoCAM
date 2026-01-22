@@ -10,6 +10,8 @@ import { auth, AuthType, getKeyDigest } from "../auth/server";
 import { client } from "../aws";
 import db, { Transaction } from "../db";
 import { TeamMembers, TeamKeys } from "../db/schema/entities";
+import { Context } from "../trpc/server";
+import { TRPCError } from "@trpc/server";
 
 export const CommonAuthorization: Record<string, ResponseConfig> = {
   401: {
@@ -175,6 +177,18 @@ export async function checkUserTeam(tx: Transaction, authType: AuthType, tid: nu
   });
   if (!member) throw routeResponse(403, { message: "The user is not part of the team" });
   if (admin && !member.admin) throw routeResponse(403, { message: "The user is not an admin" });
+}
+
+export async function checkUserTeamTRPC(ctx: Context, tid: number, admin: boolean = false) {
+  if (!ctx.session) return;
+  const member = await db.query.TeamMembers.findFirst({
+    where: and(
+      eq(TeamMembers.user_id, ctx.session.user.id),
+      eq(TeamMembers.team_id, tid)
+    )
+  });
+  if (!member) throw new TRPCError({ code: "FORBIDDEN" });
+  if (admin && !member.admin) throw new TRPCError({ code: "FORBIDDEN" });
 }
 
 export enum IDPolicy {

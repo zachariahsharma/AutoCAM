@@ -1,5 +1,4 @@
 import "./invites";
-import "./keys";
 import "./members";
 
 import { TeamKeys, TeamMembers } from "@/lib/db/schema/entities";
@@ -17,6 +16,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { procedure, router } from "../../trpc/server";
 import db from "@/lib/db";
 import { TRPCError } from "@trpc/server";
+import keys from "./keys";
 
 const UpdateSchema = zod.object({
   data: createUpdateSchema(Teams).extend({
@@ -92,10 +92,10 @@ export default router({
     authStrategies: ["user", "apiKey"],
     scopes: [scopeNames.teams.read]
   }).output(zod.array(createSelectSchema(Teams).extend({
-      owner: zod.object({
-        email: zod.email()
-      }).transform(x => x.email).pipe(zod.email())
-    }))).query(async opts => {
+    owner: zod.object({
+      email: zod.email()
+    }).transform(x => x.email).pipe(zod.email())
+  }))).query(async opts => {
     if (opts.ctx.session) {
       return (await db.query.TeamMembers.findMany({
         where: eq(TeamMembers.user_id, opts.ctx.session.user.id),
@@ -113,21 +113,23 @@ export default router({
     openapi: { method: "POST", path: "/api/trpc/teams.create" },
     authStrategies: ["user"],
     emailVerified: true
-  }).input(createInsertSchema(Teams).omit({ owner: true, logo: true })).mutation(async opts => {
-    const [id] = await db.insert(Teams).values({
-      ...opts.input,
-      owner: opts.ctx.session!.user.id
-    }).returning({ id: Teams.id });
-    await db.insert(TeamMembers).values({
-      user_id: opts.ctx.session!.user.id,
-      team_id: id.id,
-      admin: true
-    });
-    return id;
-  }),
+  }).input(createInsertSchema(Teams).omit({ owner: true, logo: true }))
+    .output(zod.number())
+    .mutation(async opts => {
+      const [id] = await db.insert(Teams).values({
+        ...opts.input,
+        owner: opts.ctx.session!.user.id
+      }).returning({ id: Teams.id });
+      await db.insert(TeamMembers).values({
+        user_id: opts.ctx.session!.user.id,
+        team_id: id.id,
+        admin: true
+      });
+      return id.id;
+    }),
 
   delete: procedure.meta({
-    openapi: { method: "GET", path: "/api/trpc/teams.delete" },
+    openapi: { method: "POST", path: "/api/trpc/teams.delete" },
     authStrategies: ["user"],
     emailVerified: true
   }).input(zod.number()).mutation(async opts => {
@@ -139,5 +141,7 @@ export default router({
     if (team.owner !== opts.ctx.session!.user.id) throw new TRPCError({ code: "FORBIDDEN" });
     await db.delete(Teams).where(eq(Teams.id, opts.input));
     await s3DeleteWithPrefix(`teams/${opts.input}/`);
-  })
+  }),
+
+  keys
 });

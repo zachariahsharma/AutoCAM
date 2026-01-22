@@ -1,1 +1,0 @@
-export { DELETE, PATCH } from "@/lib/api/teams/keys";

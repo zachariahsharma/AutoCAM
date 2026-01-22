@@ -18,11 +18,11 @@ export default function NewteamSettingsPage() {
   async function handleCreateTeam(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const data = await trpcClient.teams.create.mutate({ name: teamName });
+      const id = await trpcClient.teams.create.mutate({ name: teamName });
       // Send invites to all collaborators
       for (const collaborator of collaborators) {
         try {
-          await fetch(`/api/teams/${data.id}/invites`, {
+          await fetch(`/api/teams/${id}/invites`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -36,7 +36,7 @@ export default function NewteamSettingsPage() {
       }
 
       notifyUpdate();
-      router.push("/dashboard/settings/teams/" + data.id);
+      router.push("/dashboard/settings/teams/" + id);
     } catch (err) {
       if (isTRPCClientError(err))
         console.error("Error creating team:", err.cause);

@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert } from "@/app/signup/page";
 import type { ApiKey } from "@/app/types";
+import trpcClient from '@/lib/trpc/client';
 
 // Scopes required for Fusion Server
 const FUSION_SERVER_SCOPES = ["jobs:process", "parts:read", "plates:read", "tools:read", "materials:read", "machines:read", "box_tubes:read"];
@@ -82,8 +83,7 @@ export default function FusionServerPage() {
     setIsLoading(true);
     async function loadFusionServers() {
       try {
-        const response = await fetch(`/api/teams/${teamDbId}/keys`);
-        const data: ApiKey[] = await response.json();
+        const data = await trpcClient.teams.keys.get.query(teamDbId);
         if (mounted) {
           // Filter to only show keys marked as fusion server
           const fusionKeys = data.filter((key) => key.is_fusion_server);
@@ -125,25 +125,19 @@ export default function FusionServerPage() {
 
     if (!Number.isFinite(teamDbId)) return;
 
-    // Call the API key endpoint with fusion server scopes and flag
-    const response = await fetch(`/api/teams/${teamDbId}/keys`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: name,
+    try {
+      // Call the API key endpoint with fusion server scopes and flag
+      const token = await trpcClient.teams.keys.create.mutate({
+        name,
         scopes: FUSION_SERVER_SCOPES,
         is_fusion_server: true,
-      }),
-    });
-
-    if (response.ok) {
+        team_id: teamDbId
+      });
       setModalOpen(false);
       setUpdates(!updates);
-      setGeneratedApiKey((await response.json()).token);
+      setGeneratedApiKey(token);
       setClipboardModalOpen(true);
-    } else if (response.status === 409) {
+    } catch {
       setAlertText("Fusion Server Name Already Exists");
       setAlertOpen(true);
     }
@@ -153,11 +147,10 @@ export default function FusionServerPage() {
     if (apiKeyId == undefined) {
       return;
     }
-    const response = await fetch(`/api/keys/${apiKeyId}`, {
-      method: "DELETE",
-    });
-    if (response.ok)
+    try {
+      await trpcClient.teams.keys.delete.mutate(apiKeyId);
       setUpdates(!updates);
+    } catch {}
   }
 
   return (

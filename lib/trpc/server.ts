@@ -15,7 +15,7 @@ export async function createContext({ req }: FetchCreateContextFnOptions) {
   return { session, apiKey };
 }
 
-type Context = Awaited<ReturnType<typeof createContext>>;
+export type Context = Awaited<ReturnType<typeof createContext>>;
 
 type Meta = OpenApiMeta & {
   authStrategies: ('user' | 'apiKey')[];

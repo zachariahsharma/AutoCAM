@@ -1,152 +1,66 @@
 import { TeamKeys } from "@/lib/db/schema/entities";
-import { registry } from "@/lib/openapi/registry";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
-import { userSession } from "../auth";
-import { checkUserTeam, CommonAuthorization, Conflict, NotFound, parseSchema, routeFactory, routeResponse, ValidationError } from "../common";
+import { checkUserTeamTRPC } from "../common";
 import { ScopeEnum } from "@/lib/scopes";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
+import { procedure, router } from "@/lib/trpc/server";
+import db from "@/lib/db";
+import { TRPCError } from "@trpc/server";
 
-const CreateSchema = createInsertSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum), is_fusion_server: zod.boolean().optional() }).omit({ team_id: true, digest: true });
-const UpdateSchema = createUpdateSchema(TeamKeys).extend({ scopes: zod.array(ScopeEnum).optional(), is_fusion_server: zod.boolean().optional() }).omit({ team_id: true, digest: true });
-const Key = createSelectSchema(TeamKeys).omit({ team_id: true, digest: true }).openapi("API Key");
+export default router({
+  get: procedure.meta({
+    openapi: { method: "GET", path: "/api/trpc/teams.keys.get" },
+    authStrategies: ["user"]
+  }).input(zod.number()).output(zod.array(createSelectSchema(TeamKeys).omit({ team_id: true, digest: true })))
+    .query(async opts => {
+      await checkUserTeamTRPC(opts.ctx, opts.input);
+      return await db.query.TeamKeys.findMany({ where: eq(TeamKeys.team_id, opts.input) });
+    }),
 
-registry.registerPath({
-  method: "get",
-  path: "/api/teams/{id}/keys",
-  tags: ["API Keys"],
-  security: [{ [userSession.name]: [] }],
-  summary: "Get API Keys",
-  request: {
-    params: zod.object({ id: zod.number().openapi({ description: "ID of the team" }) })
-  },
-  responses: {
-    200: {
-      description: "Returns the API keys for the team",
-      content: {
-        "application/json": {
-          schema: zod.array(Key)
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError
-  }
+  create: procedure.meta({
+    openapi: { method: "POST", path: "/api/trpc/teams.keys.create" },
+    authStrategies: ["user"],
+    emailVerified: true
+  }).input(createInsertSchema(TeamKeys).extend({
+    scopes: zod.array(ScopeEnum),
+    is_fusion_server: zod.boolean().optional()
+  }).omit({ digest: true })).output(zod.string())
+    .mutation(async opts => {
+      await checkUserTeamTRPC(opts.ctx, opts.input.team_id, true);
+      const token = crypto.randomBytes(32).toString("hex");
+      await db.insert(TeamKeys).values({
+        ...opts.input,
+        digest: crypto.createHmac("sha256", "key").update(token).digest("hex")
+      });
+      return token
+    }),
+
+  update: procedure.meta({
+    openapi: { method: "POST", path: "/api/trpc/teams.keys.update" },
+    authStrategies: ["user"],
+    emailVerified: true
+  }).input(createUpdateSchema(TeamKeys).extend({
+    team_id: zod.number(),
+    scopes: zod.array(ScopeEnum).optional(),
+    is_fusion_server: zod.boolean().optional()
+  }).omit({ digest: true }))
+    .mutation(async opts => {
+      const key = await db.query.TeamKeys.findFirst({ where: eq(TeamKeys.id, opts.input.team_id) });
+      if (!key) throw new TRPCError({ code: "NOT_FOUND" });
+      await checkUserTeamTRPC(opts.ctx, key.team_id, true);
+      await db.update(TeamKeys).set(opts.input).where(eq(TeamKeys.id, opts.input.team_id));
+    }),
+
+  delete: procedure.meta({
+    openapi: { method: "POST", path: "/api/trpc/teams.keys.delete" },
+    authStrategies: ["user"],
+    emailVerified: true
+  }).input(zod.number()).mutation(async opts => {
+    const key = await db.query.TeamKeys.findFirst({ where: eq(TeamKeys.id, opts.input) });
+    if (!key) throw new TRPCError({ code: "NOT_FOUND" });
+    await checkUserTeamTRPC(opts.ctx, key.team_id, true);
+    await db.delete(TeamKeys).where(eq(TeamKeys.id, opts.input));
+  })
 });
-
-registry.registerPath({
-  method: "post",
-  path: "/api/teams/{id}/keys",
-  tags: ["API Keys"],
-  security: [{ [userSession.name]: [] }],
-  summary: "Generate API Key",
-  request: {
-    params: zod.object({ id: zod.number().openapi({ description: "ID of the team" }) }),
-    body: {
-      content: {
-        "application/json": {
-          schema: CreateSchema
-        }
-      }
-    }
-  },
-  responses: {
-    201: {
-      description: "Returns the ID of the created API key",
-      content: {
-        "application/json": {
-          schema: zod.object({ id: zod.number() })
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict
-  }
-});
-
-registry.registerPath({
-  method: "patch",
-  path: "/api/teams/keys/{id}",
-  tags: ["API Keys"],
-  security: [{ [userSession.name]: [] }],
-  summary: "Update API Key",
-  request: {
-    params: zod.object({ id: zod.number().openapi({ description: "ID of the API key" }) }),
-    body: {
-      content: {
-        "application/json": {
-          schema: UpdateSchema
-        }
-      }
-    }
-  },
-  responses: {
-    204: {
-      description: "API key updated successfully",
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...NotFound
-  }
-});
-
-registry.registerPath({
-  method: "delete",
-  path: "/api/teams/keys/{id}",
-  tags: ["API Keys"],
-  security: [{ [userSession.name]: [] }],
-  summary: "Delete API Key",
-  request: {
-    params: zod.object({ id: zod.number().openapi({ description: "ID of the API key" }) })
-  },
-  responses: {
-    204: {
-      description: "API key deleted successfully",
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...NotFound
-  }
-});
-
-export const GET = routeFactory(async (req, authType, tx, id) => {
-  if (!id) return routeResponse(422);
-  await checkUserTeam(tx, authType, id);
-  return routeResponse(200, await parseSchema(await tx.query.TeamKeys.findMany({
-    where: eq(TeamKeys.team_id, id),
-  }), zod.array(Key)));
-}, { user: {} });
-
-export const POST = routeFactory(async (req, authType, tx, team_id) => {
-  if (!team_id) return routeResponse(422);
-  await checkUserTeam(tx, authType, team_id, true);
-  const token = crypto.randomBytes(32).toString("hex");
-  const body = await parseSchema(await req.json(), CreateSchema);
-
-  await tx.insert(TeamKeys).values({
-    ...body, team_id,
-    digest: crypto.createHmac("sha256", "key").update(token).digest("hex")
-  });
-  return routeResponse(201, { token });
-}, { user: { emailVerified: true } });
-
-export const DELETE = routeFactory(async (req, authType, tx, id) => {
-  if (!id) return routeResponse(422);
-  const key = await tx.query.TeamKeys.findFirst({ where: eq(TeamKeys.id, id) });
-  if (!key) return routeResponse(404);
-  await checkUserTeam(tx, authType, key.team_id, true);
-  await tx.delete(TeamKeys).where(eq(TeamKeys.id, id));
-}, { user: { emailVerified: true } });
-
-export const PATCH = routeFactory(async (req, authType, tx, id) => {
-  if (!id) return routeResponse(422);
-  const key = await tx.query.TeamKeys.findFirst({ where: eq(TeamKeys.id, id) });
-  await checkUserTeam(tx, authType, key?.team_id, true);
-  const body = await parseSchema(await req.json(), UpdateSchema);
-  await tx.update(TeamKeys)
-    .set(body)
-    .where(eq(TeamKeys.id, id))
-    .returning({ id: TeamKeys.id })
-}, { user: { emailVerified: true } })

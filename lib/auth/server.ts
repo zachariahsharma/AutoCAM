@@ -10,6 +10,7 @@ import { openAPI } from "better-auth/plugins";
 import { routeResponse } from "../api/common";
 import { NextRequest } from "next/server";
 import { PgliteDatabase } from "drizzle-orm/pglite";
+import { TRPCError } from "@trpc/server";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -52,6 +53,14 @@ export async function teamIdFromDigest(tx: Transaction, authType: AuthType) {
     where: eq(TeamKeys.digest, authType.keyDigest)
   }))?.team_id;
   if (!teamId) throw routeResponse(401, { message: "API key is not valid" });
+  return teamId;
+}
+
+export async function teamIdFromDigestTRPC(digest: string) {
+  const teamId = (await db.query.TeamKeys.findFirst({
+    where: eq(TeamKeys.digest, digest)
+  }))?.team_id;
+  if (!teamId) throw new TRPCError({ code: "UNAUTHORIZED" });
   return teamId;
 }
 

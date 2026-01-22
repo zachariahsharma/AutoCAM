@@ -4,7 +4,6 @@ import { registry } from "../openapi/registry";
 import { apiKey, userSession } from "./auth";
 import { paginateListObjectsV2, PutObjectTaggingCommand } from "@aws-sdk/client-s3";
 import { DrizzleQueryError, and, eq, arrayContains } from "drizzle-orm";
-import { headers } from "next/headers";
 import { NextResponse, NextRequest } from "next/server";
 import { DatabaseError } from "pg";
 import { auth, AuthType, getKeyDigest } from "../auth/server";

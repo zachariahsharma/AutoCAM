@@ -7,6 +7,8 @@ import { PrimaryButton } from "@/components/Buttons/Buttons";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTabEvents } from "../../teamUpdate";
+import { isTRPCClientError } from "@trpc/client";
+import trpcClient from '@/lib/trpc/client';
 
 export default function NewteamSettingsPage() {
   const [teamName, setTeamName] = useState("");
@@ -15,18 +17,8 @@ export default function NewteamSettingsPage() {
   const { notifyUpdate } = useTabEvents();
   async function handleCreateTeam(e: React.FormEvent) {
     e.preventDefault();
-    const response = await fetch("/api/teams", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: teamName,
-      }),
-    });
-    if (response.ok) {
-      const data = await response.json();
-
+    try {
+      const data = await trpcClient.teams.create.mutate({ name: teamName });
       // Send invites to all collaborators
       for (const collaborator of collaborators) {
         try {
@@ -45,8 +37,9 @@ export default function NewteamSettingsPage() {
 
       notifyUpdate();
       router.push("/dashboard/settings/teams/" + data.id);
-    } else {
-      console.error("Error creating team:", response.statusText);
+    } catch (err) {
+      if (isTRPCClientError(err))
+        console.error("Error creating team:", err.cause);
     }
   }
   return (

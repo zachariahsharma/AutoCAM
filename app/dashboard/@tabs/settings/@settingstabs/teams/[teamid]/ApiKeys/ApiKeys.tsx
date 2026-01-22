@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Alert } from "@/app/signup/page";
 import { ConditionalMarquee } from "@/app/dashboard/@tabs/boxtubes/ConditionalMarquee";
 import { ScopeEnum } from "@/lib/scopes";
+import trpcClient from '@/lib/trpc/client';
 
 const scopes = ScopeEnum.options;
 
@@ -81,8 +82,7 @@ export default function ApiKeysPage() {
     setIsLoading(true);
     async function loadApiKeys() {
       try {
-        const response = await fetch(`/api/teams/${teamDbId}/keys`);
-        const data: ApiKey[] = await response.json();
+        const data = await trpcClient.teams.keys.get.query(teamDbId);
         if (mounted) {
           // Filter out fusion server keys - they're shown in a separate section
           setApiKeys(data.filter((key) => !key.is_fusion_server));
@@ -125,22 +125,17 @@ export default function ApiKeysPage() {
       setAlertOpen(true);
       return;
     }
-    const response = await fetch(`/api/teams/${teamDbId}/keys`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: name,
+    try {
+      const token = await trpcClient.teams.keys.create.mutate({
+        name: name as string,
         scopes: selectedScopes,
-      }),
-    });
-    if (response.ok) {
+        team_id: teamDbId
+      });
       setModalOpen(false);
       setUpdates(!updates);
-      setGeneratedapikey((await response.json()).token);
+      setGeneratedapikey(token);
       setClipboardModalOpen(true);
-    } else if (response.status === 409) {
+    } catch (err) {
       setAlertText("API Key Name Already Exists");
       setAlertOpen(true);
     }
@@ -155,11 +150,10 @@ export default function ApiKeysPage() {
     if (apiKeyId == undefined) {
       return;
     }
-    const response = await fetch(`/api/keys/${apiKeyId}`, {
-      method: "DELETE",
-    });
-    if (response.ok)
+    try {
+      await trpcClient.teams.keys.delete.mutate(apiKeyId);
       setUpdates(!updates);
+    } catch {}
   }
 
   return (

@@ -5,44 +5,13 @@ import { apiKey, userSession } from "../auth";
 import { PartCategories } from "../../db/schema/cam";
 import { scopeNames, scopeNames as scopes } from "../../scopes";
 import zod from "zod";
-import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
+import { checkUserTeam, checkUserTeamTRPC, CommonAuthorization, Conflict, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
 import { teamIdFromDigest, teamIdFromDigestTRPC } from "../../auth/server";
 import { and, eq } from "drizzle-orm";
 import { procedure, router } from '@/lib/trpc/server';
 import db from '@/lib/db';
 
-const CreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
-
-registerTeamEndpoint([scopes.pc.write], {
-  method: "post",
-  path: "/api/pc",
-  tags: ["Part Categories"],
-  summary: "Create Part Category",
-  description: "This endpoint requires the user's email to be verified",
-  request: {
-    body: {
-      content: {
-        "application/json": {
-          schema: CreateSchema
-        }
-      }
-    }
-  },
-  responses: {
-    201: {
-      description: "Returns the ID of the created part category",
-      content: {
-        "application/json": {
-          schema: zod.object({ id: zod.number() })
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError,
-    ...Conflict
-  }
-});
 
 registry.registerPath({
   method: "patch",
@@ -112,19 +81,20 @@ export default router({
           opts.input.thickness !== undefined ? eq(PartCategories.thickness, opts.input.thickness) : undefined
         )
       });
+    }),
+
+  create: procedure.meta({
+    openapi: { method: "POST", path: "/api/trpc/pc.create" },
+    authStrategies: ["user", "apiKey"],
+    scopes: [scopeNames.pc.write]
+  }).input(createInsertSchema(PartCategories).extend({ team_id: zod.number().optional() }))
+    .output(zod.number()).mutation(async opts => {
+      const team_id = opts.input.team_id ?? await teamIdFromDigestTRPC(opts.ctx.apiKey!);
+      await checkUserTeamTRPC(opts.ctx, team_id);
+
+      const [id] = await db.insert(PartCategories).values({ ...opts.input, team_id }).returning({ id: PartCategories.id });
+      return id.id;
     })
-});
-
-export const POST = routeFactory(async (req, authType, tx, team_id) => {
-  team_id ??= await teamIdFromDigest(tx, authType);
-  await checkUserTeam(tx, authType, team_id);
-
-  const data = await parseSchema(await req.json(), CreateSchema);
-  const [id] = await tx.insert(PartCategories).values({ ...data, team_id }).returning({ id: PartCategories.id })
-  return routeResponse(201, id);
-}, {
-  user: { idPolicy: IDPolicy.Required },
-  apiKey: { scopes: [scopes.pc.read], idPolicy: IDPolicy.Forbidden }
 });
 
 export const PATCH = routeFactory(async (req, authType, tx, id) => {

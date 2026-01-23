@@ -1,36 +1,13 @@
 import { Materials } from "@/lib/db/schema/core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import zod from "zod";
-import { registry } from "@/lib/openapi/registry";
-import { apiKey, userSession } from "./auth";
-import { scopeNames, scopeNames as scopes } from "../scopes";
-import { checkUserTeam, checkUserTeamTRPC, CommonAuthorization, routeFactory, routeResponse, ValidationError } from "./common";
+import { scopeNames } from "../scopes";
+import { checkUserTeamTRPC } from "./common";
 import { teamIdFromDigestTRPC } from "../auth/server";
 import { eq } from "drizzle-orm";
 import { procedure, router } from "../trpc/server";
 import db from "../db";
 import { TRPCError } from "@trpc/server";
-
-registry.registerPath({
-  method: "delete",
-  path: "/api/material/{id}",
-  tags: ["Materials"],
-  summary: "Delete Material",
-  security: [
-    { [userSession.name]: [] },
-    { [apiKey.name]: [scopes.materials.write] }
-  ],
-  request: {
-    params: zod.object({ id: zod.number().openapi({ description: "ID of the material" }) }),
-  },
-  responses: {
-    204: {
-      description: "Material successfully deleted",
-    },
-    ...CommonAuthorization,
-    ...ValidationError
-  }
-});
 
 export default router({
   get: procedure.meta({
@@ -72,22 +49,27 @@ export default router({
     }),
 
   update: procedure.meta({
-      openapi: { method: "POST", path: "/api/trpc/materials.update" },
-      authStrategies: ["user", "apiKey"],
-      scopes: [scopeNames.materials.write],
-      emailVerified: true
-    }).input(createUpdateSchema(Materials).extend({ id: zod.number() }))
+    openapi: { method: "POST", path: "/api/trpc/materials.update" },
+    authStrategies: ["user", "apiKey"],
+    scopes: [scopeNames.materials.write],
+    emailVerified: true
+  }).input(createUpdateSchema(Materials).extend({ id: zod.number() }))
     .mutation(async opts => {
       const material = await db.query.Materials.findFirst({ where: eq(Materials.id, opts.input.id) });
       if (!material) throw new TRPCError({ code: "NOT_FOUND" });
       await checkUserTeamTRPC(opts.ctx, material.team_id, true);
       await db.update(Materials).set(opts.input).where(eq(Materials.id, opts.input.id));
     }),
-});
 
-export const DELETE = routeFactory(async (req, authType, tx, id) => {
-  if (!id) return routeResponse(422);
-  const material = await tx.query.Materials.findFirst({ where: eq(Materials.id, id) });
-  await checkUserTeam(tx, authType, material?.team_id, true);
-  await tx.delete(Materials).where(eq(Materials.id, id));
-}, { user: { emailVerified: true }, apiKey: { scopes: [scopes.materials.write] } });
+  delete: procedure.meta({
+    openapi: { method: "POST", path: "/aip/trpc/materials.delete" },
+    authStrategies: ["user", "apiKey"],
+    scopes: [scopeNames.materials.write],
+    emailVerified: true
+  }).input(zod.number()).mutation(async opts => {
+    const material = await db.query.Materials.findFirst({ where: eq(Materials.id, opts.input) });
+    if (!material) throw new TRPCError({ code: "NOT_FOUND" });
+    await checkUserTeamTRPC(opts.ctx, material.team_id, true);
+    await db.delete(Materials).where(eq(Materials.id, opts.input));
+  })
+});

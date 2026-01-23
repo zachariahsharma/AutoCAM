@@ -3,41 +3,16 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from "driz
 import { registry } from "../../openapi/registry";
 import { apiKey, userSession } from "../auth";
 import { PartCategories } from "../../db/schema/cam";
-import { scopeNames as scopes } from "../../scopes";
+import { scopeNames, scopeNames as scopes } from "../../scopes";
 import zod from "zod";
 import { checkUserTeam, CommonAuthorization, Conflict, IDPolicy, parseSchema, registerTeamEndpoint, routeFactory, routeResponse, s3DeleteWithPrefix, ValidationError } from "../common";
-import { teamIdFromDigest } from "../../auth/server";
+import { teamIdFromDigest, teamIdFromDigestTRPC } from "../../auth/server";
 import { and, eq } from "drizzle-orm";
+import { procedure, router } from '@/lib/trpc/server';
+import db from '@/lib/db';
 
 const CreateSchema = createInsertSchema(PartCategories).omit({ team_id: true });
 const UpdateSchema = createUpdateSchema(PartCategories).omit({ team_id: true });
-const PartCategory = createSelectSchema(PartCategories).omit({ team_id: true }).openapi("Part Category");
-const SearchParams = zod.object({
-  material: zod.string().nullable(),
-  thickness: zod.coerce.number().positive().nullable()
-});
-
-registerTeamEndpoint([scopes.pc.read], {
-  method: "get",
-  path: "/api/pc",
-  tags: ["Part Categories"],
-  summary: "Get Part Categories",
-  request: {
-    query: SearchParams
-  },
-  responses: {
-    200: {
-      description: "This endpoint returns the part categories from the given team",
-      content: {
-        "application/json": {
-          schema: zod.array(PartCategory)
-        }
-      }
-    },
-    ...CommonAuthorization,
-    ...ValidationError
-  }
-});
 
 registerTeamEndpoint([scopes.pc.write], {
   method: "post",
@@ -118,25 +93,26 @@ registry.registerPath({
   }
 });
 
-export const GET = routeFactory(async (req, authType, tx, id) => {
-  id ??= await teamIdFromDigest(tx, authType);
-  await checkUserTeam(tx, authType, id);
-  const params = req.nextUrl.searchParams;
-
-  const data = await parseSchema({
-    material: params.get("material"),
-    thickness: params.get("thickness")
-  }, SearchParams);
-  return routeResponse(200, await parseSchema(await tx.query.PartCategories.findMany({
-    where: and(
-      eq(PartCategories.team_id, id),
-      data.material !== null ? eq(PartCategories.material, data.material) : undefined,
-      data.thickness ? eq(PartCategories.thickness, data.thickness) : undefined
-    )
-  }), zod.array(PartCategory)))
-}, {
-  user: { idPolicy: IDPolicy.Required },
-  apiKey: { scopes: [scopes.pc.read], idPolicy: IDPolicy.Forbidden }
+export default router({
+  get: procedure.meta({
+    openapi: { method: "GET", path: "/api/trpc/pc.get" },
+    authStrategies: ["user", "apiKey"],
+    scopes: [scopeNames.pc.read]
+  }).input(zod.object({
+    material: zod.string().optional(),
+    thickness: zod.number().optional(),
+    team_id: zod.number().optional()
+  })).output(zod.array(createSelectSchema(PartCategories).omit({ team_id: true })))
+    .query(async opts => {
+      opts.input.team_id ??= await teamIdFromDigestTRPC(opts.ctx.apiKey!);
+      return await db.query.PartCategories.findMany({
+        where: and(
+          eq(PartCategories.team_id, opts.input.team_id),
+          opts.input.material !== undefined ? eq(PartCategories.material, opts.input.material) : undefined,
+          opts.input.thickness !== undefined ? eq(PartCategories.thickness, opts.input.thickness) : undefined
+        )
+      });
+    })
 });
 
 export const POST = routeFactory(async (req, authType, tx, team_id) => {

@@ -1,6 +1,6 @@
-# AutoCAM
+<div align="center">
 
-AutoCAM is a multi-tenant CAM workflow application for managing teams, materials, machines, tools, parts, plates, box tubes, and CAM job queues.
+<img src="docs/branding/autocam-banner.png" alt="AutoCAM — Automated CAM toolpaths for manufacturing" width="100%" />
 
 <br />
 

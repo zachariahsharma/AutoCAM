@@ -3,13 +3,13 @@ import db, { Transaction } from "@/lib/db";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import * as schema from '../db/schema/auth';
 import transporter from "../mailer";
-import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { TeamKeys } from "../db/schema/entities";
 import { openAPI } from "better-auth/plugins";
 import { routeResponse } from "../api/common";
 import { NextRequest } from "next/server";
 import { PgliteDatabase } from "drizzle-orm/pglite";
+import { createKeyDigest } from "./keyDigest";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -43,7 +43,7 @@ export async function getKeyDigest(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return;
   const token = authHeader.split("Bearer ")[1];
-  return crypto.createHmac("sha256", "key").update(token).digest("hex");
+  return createKeyDigest(token);
 }
 
 export async function teamIdFromDigest(tx: Transaction, authType: AuthType) {

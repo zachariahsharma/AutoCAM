@@ -16,6 +16,8 @@ import { useSelectedLayoutSegment, usePathname } from "next/navigation";
 import { inferRouterOutputs } from "@trpc/server";
 import { AppRouter } from "@/lib/api";
 
+type TeamList = inferRouterOutputs<AppRouter>["teams"]["get"];
+
 // Patch performance.measure to suppress parallel route timing errors
 if (typeof window !== "undefined" && window.performance?.measure) {
   const origMeasure = window.performance.measure.bind(window.performance);
@@ -42,7 +44,7 @@ export function useCurrentTab() {
 function TeamDropdown() {
   const [teamDropdownOpen, setTeamDropdownOpen] = useState(false);
   const { team, setTeam, teamsRefreshCount } = useDashboardEvents();
-  const [teams, setTeams] = useState<Extract<inferRouterOutputs<AppRouter>['teams']['get'], any[]>>([]);
+  const [teams, setTeams] = useState<TeamList>([]);
   const dropdownTeamRef = useRef<HTMLDivElement>(null);
   const { isCollapsed } = useSidebar();
 
@@ -50,7 +52,7 @@ function TeamDropdown() {
     let mounted = true;
     async function loadTeams() {
       try {
-        let data = await trpcClient.teams.get.query();
+        const data = await trpcClient.teams.get.query();
         if (mounted) {
           setTeams(data);
           if (!team) setTeam(data[0]);

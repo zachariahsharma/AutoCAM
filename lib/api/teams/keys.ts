@@ -8,6 +8,7 @@ import crypto from "crypto";
 import { procedure, router } from "@/lib/trpc/server";
 import db from "@/lib/db";
 import { TRPCError } from "@trpc/server";
+import { createKeyDigest } from "@/lib/auth/keyDigest";
 
 export default router({
   get: procedure.meta({
@@ -32,7 +33,7 @@ export default router({
       const token = crypto.randomBytes(32).toString("hex");
       await db.insert(TeamKeys).values({
         ...opts.input,
-        digest: crypto.createHmac("sha256", "key").update(token).digest("hex")
+        digest: createKeyDigest(token)
       });
       return token
     }),

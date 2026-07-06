@@ -27,7 +27,7 @@ function Sidebar() {
     let mounted = true;
     (async function () {
       try {
-        let teamsTemp = await trpcClient.teams.get.query();
+        const teamsTemp = await trpcClient.teams.get.query();
         if (!mounted) return;
         teamsTemp.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
         setTeams(teamsTemp);

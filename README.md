@@ -29,7 +29,7 @@
 
 <br />
 
-[**Live App**](https://cam.valor6800.com) · [**Getting Started**](#-getting-started) · [**Architecture**](#-architecture) · [**API & Auth**](#-api--authentication) · [**Contributing**](#-contributing) · [**Security**](SECURITY.md)
+[**Live App**](https://cam.valor6800.com) · [**Getting Started**](#-getting-started) · [**Architecture**](#-architecture) · [**API & Auth**](#-api--authentication) · [**Fusion Runner**](#-fusion-360-runner) · [**Contributing**](#-contributing) · [**Security**](SECURITY.md)
 
 </div>
 
@@ -37,7 +37,7 @@
 
 ## Overview
 
-**AutoCAM** is a multi-tenant CAM (Computer-Aided Manufacturing) SaaS platform. It gives fabrication teams a single dashboard to manage the full path from raw stock to cut parts — materials, machines, tools, parts, plates, and box tubes — and coordinates the heavy CAM work through an asynchronous job queue that runners (Fusion 360 add-ins) claim and process.
+**AutoCAM** is a multi-tenant CAM (Computer-Aided Manufacturing) SaaS platform. It gives fabrication teams a single dashboard to manage the full path from raw stock to cut parts — materials, machines, tools, parts, plates, and box tubes — and coordinates the heavy CAM work through an asynchronous job queue that runners — the [**AutoCAM V2 Fusion 360 add-in**](https://github.com/zachariahsharma/Autocam-Server) — claim and process.
 
 Everything is scoped to a `team_id` for strict multi-tenancy, with dual authentication (user sessions **or** scoped API keys) so both humans and machine runners can talk to the same API.
 
@@ -174,6 +174,19 @@ API keys carry scoped permissions defined in `lib/scopes.ts`:
 ```
 
 Protected routes are guarded by middleware in `proxy.ts`, which redirects unauthenticated users.
+
+## 🤖 Fusion 360 Runner
+
+The heavy CAM work doesn't run in the browser — it's executed by a companion **Fusion 360 add-in** that acts as a runner. It authenticates with a scoped runner API key, polls this app's job queue, generates CAM setups and G-code in Fusion, and reports results back.
+
+➡️ **[AutoCAM V2 · Fusion 360 Add-in →](https://github.com/zachariahsharma/Autocam-Server)**
+
+Typical setup order:
+
+1. Deploy this WebUI (see [Getting Started](#-getting-started)) — or use the hosted app at [cam.valor6800.com](https://cam.valor6800.com)
+2. Create a team and generate a **runner API key** with `jobs` scopes
+3. Install the [Fusion add-in](https://github.com/zachariahsharma/Autocam-Server) and point it at your `BASE_URL` with that key
+4. Queue jobs from the dashboard — the runner claims and processes them
 
 ## ⚙️ Environment
 

@@ -11,12 +11,12 @@
 <br />
 
 [![Live App](https://img.shields.io/badge/live-cam.valor6800.com-E6DD5E?labelColor=0d1117&logo=vercel&logoColor=white)](https://cam.valor6800.com)
-[![License: MIT](https://img.shields.io/github/license/zachariahsharma/AutoCAM-WebUI?color=E6DD5E&labelColor=0d1117)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/zachariahsharma/AutoCAM-WebUI?color=E6DD5E&labelColor=0d1117&logo=github)](https://github.com/zachariahsharma/AutoCAM-WebUI/stargazers)
-[![Forks](https://img.shields.io/github/forks/zachariahsharma/AutoCAM-WebUI?color=E6DD5E&labelColor=0d1117&logo=github)](https://github.com/zachariahsharma/AutoCAM-WebUI/network/members)
-[![Issues](https://img.shields.io/github/issues/zachariahsharma/AutoCAM-WebUI?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM-WebUI/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/zachariahsharma/AutoCAM-WebUI?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM-WebUI/pulls)
-[![Last Commit](https://img.shields.io/github/last-commit/zachariahsharma/AutoCAM-WebUI?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM-WebUI/commits)
+[![License: MIT](https://img.shields.io/github/license/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117&logo=github)](https://github.com/zachariahsharma/AutoCAM/stargazers)
+[![Forks](https://img.shields.io/github/forks/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117&logo=github)](https://github.com/zachariahsharma/AutoCAM/network/members)
+[![Issues](https://img.shields.io/github/issues/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM/pulls)
+[![Last Commit](https://img.shields.io/github/last-commit/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM/commits)
 
 <br />
 
@@ -77,8 +77,8 @@ Everything is scoped to a `team_id` for strict multi-tenancy, with dual authenti
 
 ```bash
 # 1. Clone
-git clone https://github.com/zachariahsharma/AutoCAM-WebUI.git
-cd AutoCAM-WebUI
+git clone https://github.com/zachariahsharma/AutoCAM.git
+cd AutoCAM
 
 # 2. Configure environment
 cp .env.example .env   # then fill in local values

@@ -1,6 +1,6 @@
-# AutoCAM WebUI
+# AutoCAM
 
-AutoCAM WebUI is a multi-tenant CAM workflow application for managing teams, materials, machines, tools, parts, plates, box tubes, and CAM job queues.
+AutoCAM is a multi-tenant CAM workflow application for managing teams, materials, machines, tools, parts, plates, box tubes, and CAM job queues.
 
 The app is built with Next.js App Router, React, Drizzle ORM, PostgreSQL, Better Auth, tRPC, and Zod/OpenAPI helpers.
 

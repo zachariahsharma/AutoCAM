@@ -11,12 +11,12 @@
 <br />
 
 [![Live App](https://img.shields.io/badge/live-cam.valor6800.com-E6DD5E?labelColor=0d1117&logo=vercel&logoColor=white)](https://cam.valor6800.com)
-[![License: MIT](https://img.shields.io/github/license/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117&logo=github)](https://github.com/zachariahsharma/AutoCAM/stargazers)
-[![Forks](https://img.shields.io/github/forks/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117&logo=github)](https://github.com/zachariahsharma/AutoCAM/network/members)
-[![Issues](https://img.shields.io/github/issues/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM/pulls)
-[![Last Commit](https://img.shields.io/github/last-commit/zachariahsharma/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/zachariahsharma/AutoCAM/commits)
+[![License: MIT](https://img.shields.io/github/license/AutoCAM-FRC/AutoCAM?color=E6DD5E&labelColor=0d1117)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/AutoCAM-FRC/AutoCAM?color=E6DD5E&labelColor=0d1117&logo=github)](https://github.com/AutoCAM-FRC/AutoCAM/stargazers)
+[![Forks](https://img.shields.io/github/forks/AutoCAM-FRC/AutoCAM?color=E6DD5E&labelColor=0d1117&logo=github)](https://github.com/AutoCAM-FRC/AutoCAM/network/members)
+[![Issues](https://img.shields.io/github/issues/AutoCAM-FRC/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/AutoCAM-FRC/AutoCAM/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/AutoCAM-FRC/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/AutoCAM-FRC/AutoCAM/pulls)
+[![Last Commit](https://img.shields.io/github/last-commit/AutoCAM-FRC/AutoCAM?color=E6DD5E&labelColor=0d1117)](https://github.com/AutoCAM-FRC/AutoCAM/commits)
 
 <br />
 
@@ -37,7 +37,7 @@
 
 ## Overview
 
-**AutoCAM** is a multi-tenant CAM (Computer-Aided Manufacturing) SaaS platform. It gives fabrication teams a single dashboard to manage the full path from raw stock to cut parts — materials, machines, tools, parts, plates, and box tubes — and coordinates the heavy CAM work through an asynchronous job queue that runners — the [**AutoCAM V2 Fusion 360 add-in**](https://github.com/zachariahsharma/Autocam-Server) — claim and process.
+**AutoCAM** is a multi-tenant CAM (Computer-Aided Manufacturing) SaaS platform. It gives fabrication teams a single dashboard to manage the full path from raw stock to cut parts — materials, machines, tools, parts, plates, and box tubes — and coordinates the heavy CAM work through an asynchronous job queue that runners — the [**Runner Fusion 360 add-in**](https://github.com/AutoCAM-FRC/Runner) — claim and process.
 
 Everything is scoped to a `team_id` for strict multi-tenancy, with dual authentication (user sessions **or** scoped API keys) so both humans and machine runners can talk to the same API.
 
@@ -77,7 +77,7 @@ Everything is scoped to a `team_id` for strict multi-tenancy, with dual authenti
 
 ```bash
 # 1. Clone
-git clone https://github.com/zachariahsharma/AutoCAM.git
+git clone https://github.com/AutoCAM-FRC/AutoCAM.git
 cd AutoCAM
 
 # 2. Configure environment
@@ -179,13 +179,13 @@ Protected routes are guarded by middleware in `proxy.ts`, which redirects unauth
 
 The heavy CAM work doesn't run in the browser — it's executed by a companion **Fusion 360 add-in** that acts as a runner. It authenticates with a scoped runner API key, polls this app's job queue, generates CAM setups and G-code in Fusion, and reports results back.
 
-➡️ **[AutoCAM V2 · Fusion 360 Add-in →](https://github.com/zachariahsharma/Autocam-Server)**
+➡️ **[Runner · Fusion 360 Add-in →](https://github.com/AutoCAM-FRC/Runner)**
 
 Typical setup order:
 
 1. Deploy this WebUI (see [Getting Started](#-getting-started)) — or use the hosted app at [cam.valor6800.com](https://cam.valor6800.com)
 2. Create a team and generate a **runner API key** with `jobs` scopes
-3. Install the [Fusion add-in](https://github.com/zachariahsharma/Autocam-Server) and point it at your `BASE_URL` with that key
+3. Install the [Runner add-in](https://github.com/AutoCAM-FRC/Runner) and point it at your `BASE_URL` with that key
 4. Queue jobs from the dashboard — the runner claims and processes them
 
 ## ⚙️ Environment
